@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/portfolio_provider.dart';
@@ -58,22 +59,29 @@ class _AppInitializerState extends State<AppInitializer> {
       await AdService.instance.initialize();
       
       // Initialize providers
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      if (mounted) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+        
+        await Future.wait([
+          authProvider.initialize(),
+          themeProvider.initialize(),
+        ]);
+      }
       
-      await Future.wait([
-        authProvider.initialize(),
-        themeProvider.initialize(),
-      ]);
-      
-      setState(() {
-        _isInitialized = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
     } catch (e) {
       // Handle initialization errors
-      setState(() {
-        _isInitialized = true;
-      });
+      debugPrint('Initialization error: $e');
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
     }
   }
 
