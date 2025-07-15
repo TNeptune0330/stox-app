@@ -16,11 +16,12 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
+              const Color(0xFF1a1a2e),
+              const Color(0xFF16213e),
+              const Color(0xFF0f3460),
             ],
           ),
         ),
@@ -33,43 +34,62 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const Spacer(),
                 
-                // Logo and Title
+                // Game-like Logo and Title
                 Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        color: const Color(0xFF533483),
+                        borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
+                            color: const Color(0xFF533483).withOpacity(0.5),
+                            blurRadius: 30,
                             offset: const Offset(0, 10),
                           ),
                         ],
+                        border: Border.all(
+                          color: const Color(0xFF7209b7),
+                          width: 2,
+                        ),
                       ),
                       child: const Icon(
-                        Icons.trending_up,
-                        size: 48,
-                        color: Colors.green,
+                        Icons.auto_graph,
+                        size: 64,
+                        color: Color(0xFFf39c12),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'STOX',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 8,
+                    const SizedBox(height: 32),
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFFf39c12), Color(0xFFe74c3c)],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'STOX',
+                        style: TextStyle(
+                          fontSize: 56,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 12,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Stock Trading Simulator',
+                      'TRADING EMPIRE',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 22,
+                        color: Color(0xFFf39c12),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Build Your Financial Empire',
+                      style: TextStyle(
+                        fontSize: 16,
                         color: Colors.white70,
                         fontWeight: FontWeight.w300,
                       ),
@@ -79,44 +99,60 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 48),
                 
-                // Features List
+                // Game Features
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    color: const Color(0xFF1a1a2e).withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                      width: 1,
+                      color: const Color(0xFF7209b7).withOpacity(0.5),
+                      width: 2,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7209b7).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
                   child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Features:',
+                        '🎮 GAME FEATURES',
                         style: TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFf39c12),
                         ),
                       ),
-                      SizedBox(height: 16),
+                      SizedBox(height: 20),
                       _FeatureItem(
-                        icon: Icons.attach_money,
-                        text: 'Start with \$10,000 virtual cash',
+                        icon: Icons.monetization_on,
+                        text: 'Start with \$10,000 Empire Fund',
+                        color: Color(0xFF27ae60),
                       ),
                       _FeatureItem(
-                        icon: Icons.show_chart,
-                        text: 'Trade real stocks and crypto',
-                      ),
-                      _FeatureItem(
-                        icon: Icons.timeline,
-                        text: 'Track your portfolio performance',
+                        icon: Icons.trending_up,
+                        text: 'Trade Real Market Stocks & Crypto',
+                        color: Color(0xFF3498db),
                       ),
                       _FeatureItem(
                         icon: Icons.leaderboard,
-                        text: 'Compete with other traders',
+                        text: 'Compete on Global Leaderboards',
+                        color: Color(0xFFe74c3c),
+                      ),
+                      _FeatureItem(
+                        icon: Icons.emoji_events,
+                        text: 'Unlock Trading Achievements',
+                        color: Color(0xFFf39c12),
+                      ),
+                      _FeatureItem(
+                        icon: Icons.flash_on,
+                        text: 'Daily Trading Challenges',
+                        color: Color(0xFF9b59b6),
                       ),
                     ],
                   ),
@@ -124,43 +160,54 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const Spacer(),
                 
-                // Sign In Button
+                // Game-like Sign In Button
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
-                    return ElevatedButton.icon(
-                      onPressed: authProvider.isLoading 
-                          ? null 
-                          : () => _handleGoogleSignIn(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black87,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFf39c12), Color(0xFFe74c3c)],
                         ),
-                        elevation: 2,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFf39c12).withOpacity(0.5),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                      icon: authProvider.isLoading 
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
-                              ),
-                            )
-                          : Image.asset(
-                              'assets/images/google_logo.png',
-                              height: 20,
-                              width: 20,
-                              errorBuilder: (context, error, stackTrace) => 
-                                  const Icon(Icons.login, size: 20),
-                            ),
-                      label: Text(
-                        authProvider.isLoading ? 'Signing In...' : 'Continue with Google',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      child: ElevatedButton.icon(
+                        onPressed: authProvider.isLoading 
+                            ? null 
+                            : () => _handleGoogleSignIn(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                        ),
+                        icon: authProvider.isLoading 
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.play_arrow, size: 24),
+                        label: Text(
+                          authProvider.isLoading ? 'LOADING...' : 'START TRADING EMPIRE',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
                     );
@@ -209,30 +256,44 @@ class _LoginScreenState extends State<LoginScreen> {
 class _FeatureItem extends StatelessWidget {
   final IconData icon;
   final String text;
+  final Color? color;
   
   const _FeatureItem({
     required this.icon,
     required this.text,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: Colors.white70,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (color ?? Colors.white).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: (color ?? Colors.white).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: color ?? Colors.white,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
+                fontSize: 15,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),

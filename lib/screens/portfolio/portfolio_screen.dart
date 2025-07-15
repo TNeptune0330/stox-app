@@ -18,36 +18,82 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          AppBarTitle(
-            title: 'Portfolio',
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.history),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TransactionHistoryScreen(),
-                    ),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                  if (authProvider.user != null) {
-                    Provider.of<PortfolioProvider>(context, listen: false)
-                        .loadPortfolio(authProvider.user!.id);
-                  }
-                },
-              ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF1a1a2e),
+              Color(0xFF0f1419),
             ],
           ),
+        ),
+        child: CustomScrollView(
+          slivers: [
+            // Game-like Header
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              backgroundColor: Colors.transparent,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF533483), Color(0xFF7209b7)],
+                    ),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.account_balance_wallet,
+                          size: 48,
+                          color: Color(0xFFf39c12),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'TRADING EMPIRE',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.history, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TransactionHistoryScreen(),
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: () {
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    if (authProvider.user != null) {
+                      Provider.of<PortfolioProvider>(context, listen: false)
+                          .loadPortfolio(authProvider.user!.id);
+                    }
+                  },
+                ),
+              ],
+            ),
 
-          Consumer<PortfolioProvider>(
+            Consumer<PortfolioProvider>(
             builder: (context, portfolioProvider, child) {
               if (portfolioProvider.isLoading) {
                 return const SliverFillRemaining(
@@ -148,8 +194,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 ]),
               );
             },
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

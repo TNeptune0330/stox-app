@@ -6,6 +6,7 @@ import '../providers/market_provider.dart';
 import '../widgets/banner_ad_widget.dart';
 import 'market/market_screen.dart';
 import 'portfolio/portfolio_screen.dart';
+import 'leaderboard/leaderboard_screen.dart';
 import 'settings/settings_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -21,6 +22,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = [
     const MarketScreen(),
     const PortfolioScreen(),
+    const LeaderboardScreen(),
     const SettingsScreen(),
   ];
 
@@ -74,6 +76,10 @@ class _MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet),
             label: 'Portfolio',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.leaderboard),
+            label: 'Leaderboard',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
