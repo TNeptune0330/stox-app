@@ -1,8 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
+import 'connection_manager.dart';
 
 class LeaderboardService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final ConnectionManager _connectionManager = ConnectionManager();
 
   Future<List<Map<String, dynamic>>> getLeaderboard({int limit = 100}) async {
     try {
@@ -39,15 +41,15 @@ class LeaderboardService {
   }
 
   Future<void> updateUserRank(String userId) async {
+    print('🔄 Updating user rank for $userId...');
+    
+    // Skip leaderboard update if connection manager says not to retry
+    if (!_connectionManager.shouldRetry) {
+      print('⚠️ Connection backoff active, skipping leaderboard update');
+      return;
+    }
+    
     try {
-      print('🔄 Updating user rank for $userId...');
-      
-      // Skip leaderboard update if Supabase is unavailable
-      if (!await _isSupabaseAvailable()) {
-        print('⚠️ Supabase unavailable, skipping leaderboard update');
-        return;
-      }
-      
       // Get user's current portfolio and cash balance
       final user = await _supabase
           .from('users')
@@ -100,10 +102,12 @@ class LeaderboardService {
         'updated_at': DateTime.now().toIso8601String(),
       });
 
+      _connectionManager.recordSuccess();
       print('✅ User rank updated successfully');
     } catch (e) {
+      _connectionManager.recordFailure();
       print('❌ Error updating user rank: $e');
-      throw Exception('Failed to update user rank: $e');
+      // Don't throw exception to avoid breaking the trading flow
     }
   }
 

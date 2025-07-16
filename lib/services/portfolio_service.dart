@@ -3,39 +3,42 @@ import '../models/portfolio_model.dart';
 import '../models/transaction_model.dart';
 import '../services/storage_service.dart';
 import '../services/local_database_service.dart';
+import '../services/connection_manager.dart';
+import '../services/local_trading_service.dart';
 
 class PortfolioService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final ConnectionManager _connectionManager = ConnectionManager();
 
   Future<List<PortfolioModel>> getUserPortfolio(String userId) async {
-    try {
-      final response = await _supabase
-          .from('portfolio')
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+    return await _connectionManager.executeWithFallback<List<PortfolioModel>>(
+      () async {
+        final response = await _supabase
+            .from('portfolio')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false);
 
-      return response.map<PortfolioModel>((json) => PortfolioModel.fromJson(json)).toList();
-    } catch (e) {
-      print('❌ Error fetching portfolio: $e');
-      return [];
-    }
+        return response.map<PortfolioModel>((json) => PortfolioModel.fromJson(json)).toList();
+      },
+      () async => await LocalTradingService.getLocalPortfolio(userId),
+    ) ?? [];
   }
 
   Future<List<TransactionModel>> getUserTransactions(String userId, {int limit = 50}) async {
-    try {
-      final response = await _supabase
-          .from('transactions')
-          .select()
-          .eq('user_id', userId)
-          .order('timestamp', ascending: false)
-          .limit(limit);
+    return await _connectionManager.executeWithFallback<List<TransactionModel>>(
+      () async {
+        final response = await _supabase
+            .from('transactions')
+            .select()
+            .eq('user_id', userId)
+            .order('timestamp', ascending: false)
+            .limit(limit);
 
-      return response.map<TransactionModel>((json) => TransactionModel.fromJson(json)).toList();
-    } catch (e) {
-      print('❌ Error fetching transactions: $e');
-      return [];
-    }
+        return response.map<TransactionModel>((json) => TransactionModel.fromJson(json)).toList();
+      },
+      () async => await LocalTradingService.getLocalTransactions(userId, limit: limit),
+    ) ?? [];
   }
 
   Future<bool> executeTrade({
@@ -45,27 +48,11 @@ class PortfolioService {
     required int quantity,
     required double price,
   }) async {
-    try {
-      final totalValue = quantity * price;
-      
-      // Check if user has enough cash for buy orders
-      if (type == 'buy') {
-        final canAfford = await canAffordTrade(userId, totalValue);
-        if (!canAfford) {
-          throw Exception('Insufficient funds');
-        }
-      }
-      
-      // For sell orders, check if user has enough shares
-      if (type == 'sell') {
-        final sharesOwned = await getSharesOwned(userId, symbol);
-        if (sharesOwned < quantity) {
-          throw Exception('Insufficient shares');
-        }
-      }
-
-      // Execute the trade using database transaction or local storage
+    // Try Supabase first if connection allows
+    if (_connectionManager.shouldRetry) {
       try {
+        final totalValue = quantity * price;
+        
         await _supabase.rpc('execute_trade', params: {
           'user_id_param': userId,
           'symbol_param': symbol,
@@ -74,38 +61,25 @@ class PortfolioService {
           'price_param': price,
           'total_value_param': totalValue,
         });
-        print('✅ Trade executed successfully (Supabase): $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
-      } catch (e) {
-        print('❌ Supabase trade failed: $e');
-        // For demo purposes, just log the trade locally
-        print('✅ Trade executed locally (demo): $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
         
-        // Update cached user's cash balance
-        try {
-          final cachedUser = await StorageService.getCachedUser();
-          if (cachedUser != null) {
-            final newCashBalance = type == 'buy' 
-                ? cachedUser.cashBalance - totalValue
-                : cachedUser.cashBalance + totalValue;
-            
-            final updatedUser = cachedUser.copyWith(
-              cashBalance: newCashBalance,
-              updatedAt: DateTime.now(),
-            );
-            
-            await StorageService.cacheUser(updatedUser);
-            print('✅ Updated cached cash balance: \$${newCashBalance.toStringAsFixed(2)}');
-          }
-        } catch (storageError) {
-          print('❌ Error updating cached user: $storageError');
-        }
+        _connectionManager.recordSuccess();
+        print('✅ Trade executed successfully (Supabase): $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
+        return true;
+      } catch (e) {
+        _connectionManager.recordFailure();
+        print('❌ Supabase trade failed: $e');
       }
-      
-      return true;
-    } catch (e) {
-      print('❌ Trade execution failed: $e');
-      return false;
     }
+    
+    // Fallback to local trading
+    print('🔄 Executing trade locally...');
+    return await LocalTradingService.executeTrade(
+      userId: userId,
+      symbol: symbol,
+      type: type,
+      quantity: quantity,
+      price: price,
+    );
   }
 
   Future<double> calculatePortfolioValue(String userId) async {
@@ -141,116 +115,77 @@ class PortfolioService {
   }
 
   Future<Map<String, dynamic>> getPortfolioSummary(String userId) async {
-    try {
-      final portfolio = await getUserPortfolio(userId);
-      
-      // Get user's cash balance - try Supabase first, then local storage
-      double cashBalance = 0.0;
-      try {
+    return await _connectionManager.executeWithFallback<Map<String, dynamic>>(
+      () async {
+        final portfolio = await getUserPortfolio(userId);
+        
+        // Get user's cash balance from Supabase
         final user = await _supabase
             .from('users')
             .select('cash_balance')
             .eq('id', userId)
             .single();
-        cashBalance = (user['cash_balance'] as num).toDouble();
-      } catch (e) {
-        print('❌ Error fetching cash balance from Supabase: $e');
-        // Fallback to local storage
-        try {
-          final cachedUser = await StorageService.getCachedUser();
-          if (cachedUser != null) {
-            cashBalance = cachedUser.cashBalance;
-            print('✅ Using cached cash balance: \$${cashBalance.toStringAsFixed(2)}');
-          } else {
-            cashBalance = 10000.0; // Default starting balance
-            print('✅ Using default cash balance: \$${cashBalance.toStringAsFixed(2)}');
-          }
-        } catch (storageError) {
-          print('❌ Error fetching cached user: $storageError');
-          cashBalance = 10000.0; // Default starting balance
+        final cashBalance = (user['cash_balance'] as num).toDouble();
+
+        double totalHoldingsValue = 0.0;
+        double totalPnL = 0.0;
+
+        for (final holding in portfolio) {
+          final currentPrice = await _getCurrentPrice(holding.symbol);
+          final holdingValue = holding.quantity * currentPrice;
+          final holdingPnL = holding.calculatePnL(currentPrice);
+          
+          totalHoldingsValue += holdingValue;
+          totalPnL += holdingPnL;
         }
-      }
 
-      double totalHoldingsValue = 0.0;
-      double totalPnL = 0.0;
+        final netWorth = cashBalance + totalHoldingsValue;
 
-      for (final holding in portfolio) {
-        final currentPrice = await _getCurrentPrice(holding.symbol);
-        final holdingValue = holding.quantity * currentPrice;
-        final holdingPnL = holding.calculatePnL(currentPrice);
-        
-        totalHoldingsValue += holdingValue;
-        totalPnL += holdingPnL;
-      }
-
-      final netWorth = cashBalance + totalHoldingsValue;
-
-      return {
-        'cash_balance': cashBalance,
-        'holdings_value': totalHoldingsValue,
-        'net_worth': netWorth,
-        'total_pnl': totalPnL,
-        'total_pnl_percentage': totalHoldingsValue > 0 ? (totalPnL / (totalHoldingsValue - totalPnL)) * 100 : 0.0,
-      };
-    } catch (e) {
-      print('❌ Error calculating portfolio summary: $e');
-      return {
-        'cash_balance': 0.0,
-        'holdings_value': 0.0,
-        'net_worth': 0.0,
-        'total_pnl': 0.0,
-        'total_pnl_percentage': 0.0,
-      };
-    }
+        return {
+          'cash_balance': cashBalance,
+          'holdings_value': totalHoldingsValue,
+          'net_worth': netWorth,
+          'total_pnl': totalPnL,
+          'total_pnl_percentage': totalHoldingsValue > 0 ? (totalPnL / (totalHoldingsValue - totalPnL)) * 100 : 0.0,
+        };
+      },
+      () async => await LocalTradingService.getPortfolioSummary(userId),
+    ) ?? {
+      'cash_balance': 10000.0,
+      'holdings_value': 0.0,
+      'net_worth': 10000.0,
+      'total_pnl': 0.0,
+      'total_pnl_percentage': 0.0,
+    };
   }
 
   Future<bool> canAffordTrade(String userId, double totalCost) async {
-    try {
-      // Try Supabase first
-      final response = await _supabase
-          .from('users')
-          .select('cash_balance')
-          .eq('id', userId)
-          .single();
-
-      final cashBalance = (response['cash_balance'] as num).toDouble();
-      return cashBalance >= totalCost;
-    } catch (e) {
-      print('❌ Error checking affordability from Supabase: $e');
-      // Fallback to local storage
-      try {
-        final cachedUser = await StorageService.getCachedUser();
-        if (cachedUser != null) {
-          final cashBalance = cachedUser.cashBalance;
-          print('✅ Using cached cash balance for trade: \$${cashBalance.toStringAsFixed(2)}');
-          print('✅ Trade cost: \$${totalCost.toStringAsFixed(2)}');
-          return cashBalance >= totalCost;
-        } else {
-          // Default starting balance
-          print('✅ Using default cash balance for trade: \$10000.00');
-          return 10000.0 >= totalCost;
-        }
-      } catch (storageError) {
-        print('❌ Error checking cached user: $storageError');
-        return 10000.0 >= totalCost; // Default starting balance
-      }
+    final user = await StorageService.getCachedUser();
+    if (user != null) {
+      final canAfford = user.cashBalance >= totalCost;
+      print('✅ Checking affordability: \$${user.cashBalance.toStringAsFixed(2)} vs \$${totalCost.toStringAsFixed(2)} = $canAfford');
+      return canAfford;
     }
+    
+    // Fallback to default balance
+    print('✅ Using default cash balance for trade: \$10000.00');
+    return 10000.0 >= totalCost;
   }
 
   Future<int> getSharesOwned(String userId, String symbol) async {
-    try {
-      final response = await _supabase
-          .from('portfolio')
-          .select('quantity')
-          .eq('user_id', userId)
-          .eq('symbol', symbol)
-          .maybeSingle();
+    return await _connectionManager.executeWithFallback<int>(
+      () async {
+        final response = await _supabase
+            .from('portfolio')
+            .select('quantity')
+            .eq('user_id', userId)
+            .eq('symbol', symbol)
+            .maybeSingle();
 
-      return response?['quantity'] ?? 0;
-    } catch (e) {
-      print('❌ Error fetching shares owned: $e');
-      return 0;
-    }
+        return response?['quantity'] ?? 0;
+      },
+      () async => await LocalTradingService.getSharesOwned(userId, symbol),
+    ) ?? 0;
   }
 
   Future<double> getUserCashBalance(String userId) async {
