@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/market_provider.dart';
+import '../../providers/market_data_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/asset_list_tile.dart';
 import '../main_navigation.dart';
@@ -32,19 +32,19 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
   }
 
   void _onTabChanged() {
-    final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+    final marketProvider = Provider.of<MarketDataProvider>(context, listen: false);
     switch (_tabController.index) {
       case 0:
-        marketProvider.setAssetType('all');
+        marketProvider.setFilter('all');
         break;
       case 1:
-        marketProvider.setAssetType('stock');
+        marketProvider.setFilter('stock');
         break;
       case 2:
-        marketProvider.setAssetType('crypto');
+        marketProvider.setFilter('crypto');
         break;
       case 3:
-        marketProvider.setAssetType('etf');
+        marketProvider.setFilter('etf');
         break;
     }
   }
@@ -60,7 +60,7 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
               IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: () {
-                  Provider.of<MarketProvider>(context, listen: false).refreshAssets();
+                  Provider.of<MarketDataProvider>(context, listen: false).refreshMarketData();
                 },
               ),
             ],
@@ -80,7 +80,7 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
                           icon: const Icon(Icons.clear),
                           onPressed: () {
                             _searchController.clear();
-                            Provider.of<MarketProvider>(context, listen: false)
+                            Provider.of<MarketDataProvider>(context, listen: false)
                                 .setSearchQuery('');
                           },
                         )
@@ -90,7 +90,7 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
                   ),
                 ),
                 onChanged: (value) {
-                  Provider.of<MarketProvider>(context, listen: false)
+                  Provider.of<MarketDataProvider>(context, listen: false)
                       .setSearchQuery(value);
                 },
               ),
@@ -111,29 +111,68 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
           ),
           
           // Asset List
-          Consumer<MarketProvider>(
+          Consumer<MarketDataProvider>(
             builder: (context, marketProvider, child) {
-              if (marketProvider.isLoading && marketProvider.assets.isEmpty) {
+              if (marketProvider.isLoading && marketProvider.filteredAssets.isEmpty) {
                 return const SliverFillRemaining(
-                  child: LoadingWidget(),
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
                 );
               }
 
               if (marketProvider.error != null) {
                 return SliverFillRemaining(
-                  child: ErrorStateWidget(
-                    message: marketProvider.error!,
-                    onRetry: () => marketProvider.refreshAssets(),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          marketProvider.error!,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => marketProvider.refreshMarketData(),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }
 
-              if (marketProvider.assets.isEmpty) {
-                return const SliverFillRemaining(
-                  child: EmptyStateWidget(
-                    title: 'No Assets Found',
-                    message: 'Try adjusting your search or filters',
-                    icon: Icons.search_off,
+              if (marketProvider.filteredAssets.isEmpty) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.search_off, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No Assets Found',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try adjusting your search or filters',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }
@@ -141,13 +180,13 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final asset = marketProvider.assets[index];
+                    final asset = marketProvider.filteredAssets[index];
                     return AssetListTile(
                       asset: asset,
                       onTap: () => _showTradeDialog(context, asset),
                     );
                   },
-                  childCount: marketProvider.assets.length,
+                  childCount: marketProvider.filteredAssets.length,
                 ),
               );
             },

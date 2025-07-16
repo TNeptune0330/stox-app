@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/asset_model.dart';
@@ -8,6 +9,8 @@ class StorageService {
   static const String _userKey = 'cached_user';
   static const String _assetsBoxName = 'assets_cache';
   static const String _pricesBoxName = 'prices_cache';
+  static const String _unlockedAchievementsKey = 'unlocked_achievements';
+  static const String _userProgressKey = 'user_progress';
 
   static SharedPreferences? _prefs;
   static Box<Map>? _assetsBox;
@@ -24,20 +27,28 @@ class StorageService {
   }
 
   static String getTheme() {
-    return _prefs?.getString(_themeKey) ?? 'light';
+    return _prefs?.getString(_themeKey) ?? 'dark';
   }
 
   static Future<void> cacheUser(UserModel user) async {
-    await _prefs?.setString(_userKey, user.toJson().toString());
+    try {
+      final userJson = jsonEncode(user.toJson());
+      await _prefs?.setString(_userKey, userJson);
+    } catch (e) {
+      // If caching fails, log but don't crash
+      print('Failed to cache user: $e');
+    }
   }
 
   static UserModel? getCachedUser() {
     final userString = _prefs?.getString(_userKey);
     if (userString != null) {
       try {
-        // Note: This is a simplified approach. In production, use proper JSON serialization
-        return null; // Implement proper deserialization
+        final userJson = jsonDecode(userString) as Map<String, dynamic>;
+        return UserModel.fromJson(userJson);
       } catch (e) {
+        // If deserialization fails, return null
+        print('Failed to deserialize cached user: $e');
         return null;
       }
     }
@@ -95,5 +106,32 @@ class StorageService {
     final now = DateTime.now();
     final difference = now.difference(lastUpdated);
     return difference.inMinutes > 5; // Consider data stale after 5 minutes
+  }
+
+  // Achievement methods
+  static Future<void> saveUnlockedAchievements(Set<String> achievements) async {
+    await _prefs?.setStringList(_unlockedAchievementsKey, achievements.toList());
+  }
+
+  static Set<String> getUnlockedAchievements() {
+    final achievements = _prefs?.getStringList(_unlockedAchievementsKey) ?? [];
+    return achievements.toSet();
+  }
+
+  static Future<void> saveUserProgress(Map<String, int> progress) async {
+    final progressList = progress.entries.map((e) => '${e.key}:${e.value}').toList();
+    await _prefs?.setStringList(_userProgressKey, progressList);
+  }
+
+  static Map<String, int> getUserProgress() {
+    final progressList = _prefs?.getStringList(_userProgressKey) ?? [];
+    final progress = <String, int>{};
+    for (final entry in progressList) {
+      final parts = entry.split(':');
+      if (parts.length == 2) {
+        progress[parts[0]] = int.tryParse(parts[1]) ?? 0;
+      }
+    }
+    return progress;
   }
 }

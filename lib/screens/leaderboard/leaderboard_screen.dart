@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/leaderboard_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/leaderboard_service.dart';
 import '../main_navigation.dart';
 
 class LeaderboardScreen extends StatefulWidget {
@@ -13,6 +14,8 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   List<LeaderboardEntry> _leaderboard = [];
+  bool _isLoading = true;
+  final LeaderboardService _leaderboardService = LeaderboardService();
 
   @override
   void initState() {
@@ -20,10 +23,39 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     _loadLeaderboard();
   }
 
-  void _loadLeaderboard() {
-    setState(() {
-      _leaderboard = LeaderboardEntry.getMockLeaderboard();
-    });
+  Future<void> _loadLeaderboard() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      final leaderboardData = await _leaderboardService.getLeaderboard(limit: 100);
+      
+      final leaderboardEntries = leaderboardData.map((data) {
+        return LeaderboardEntry(
+          id: data['user_id'],
+          username: data['users']['username'] ?? 'Unknown',
+          avatarUrl: data['users']['avatar_url'],
+          netWorth: (data['net_worth'] as num?)?.toDouble() ?? 0.0,
+          totalPnL: (data['total_pnl'] as num?)?.toDouble() ?? 0.0,
+          totalPnLPercentage: (data['total_pnl_percentage'] as num?)?.toDouble() ?? 0.0,
+          totalTrades: (data['users']['total_trades'] as int?) ?? 0,
+          rank: data['rank'] ?? 0,
+          lastUpdated: DateTime.tryParse(data['updated_at'] ?? '') ?? DateTime.now(),
+        );
+      }).toList();
+
+      setState(() {
+        _leaderboard = leaderboardEntries;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error loading leaderboard: $e');
+      setState(() {
+        _leaderboard = [];
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -40,8 +72,43 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ],
           ),
         ),
-        child: CustomScrollView(
-          slivers: [
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7209b7)),
+                ),
+              )
+            : _leaderboard.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.leaderboard_outlined,
+                          size: 64,
+                          color: Colors.white54,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'No leaderboard data available',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Start trading to see rankings!',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : CustomScrollView(
+                    slivers: [
             // Game-like Header
             SliverAppBar(
               expandedHeight: 120,
@@ -117,9 +184,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 },
                 childCount: _leaderboard.length > 3 ? _leaderboard.length - 3 : 0,
               ),
-            ),
-          ],
-        ),
+                    ),
+                  ],
+                ),
       ),
     );
   }

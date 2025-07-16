@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portfolio_provider.dart';
-import '../providers/market_provider.dart';
+import '../providers/market_data_provider.dart';
 import '../widgets/banner_ad_widget.dart';
 import 'market/market_screen.dart';
 import 'portfolio/portfolio_screen.dart';
-import 'leaderboard/leaderboard_screen.dart';
+import 'achievements/achievements_screen.dart';
 import 'settings/settings_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -22,20 +22,23 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = [
     const MarketScreen(),
     const PortfolioScreen(),
-    const LeaderboardScreen(),
+    const AchievementsScreen(),
     const SettingsScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    _initializeData();
+    // Delay initialization to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
   }
 
   Future<void> _initializeData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final portfolioProvider = Provider.of<PortfolioProvider>(context, listen: false);
-    final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+    final marketProvider = Provider.of<MarketDataProvider>(context, listen: false);
 
     if (authProvider.user != null) {
       await Future.wait([
@@ -78,8 +81,8 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Portfolio',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.leaderboard),
-            label: 'Leaderboard',
+            icon: Icon(Icons.emoji_events),
+            label: 'Achievements',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),

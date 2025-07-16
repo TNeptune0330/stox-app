@@ -50,4 +50,24 @@ class PortfolioModel {
   double calculatePnLPercentage(double currentPrice) {
     return ((currentPrice - avgPrice) / avgPrice) * 100;
   }
+  
+  PortfolioModel copyWith({
+    String? id,
+    String? userId,
+    String? symbol,
+    int? quantity,
+    double? avgPrice,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return PortfolioModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      symbol: symbol ?? this.symbol,
+      quantity: quantity ?? this.quantity,
+      avgPrice: avgPrice ?? this.avgPrice,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

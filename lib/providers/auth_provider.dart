@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/auth_service_ios.dart';
+import '../services/ios_signin_test_service.dart';
 import '../services/storage_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
+  final AuthServiceIOS _authServiceIOS = AuthServiceIOS();
   
   UserModel? _user;
   bool _isLoading = false;
@@ -19,15 +23,27 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     
     try {
+      print('AuthProvider: Initializing...');
+      
+      // Check for existing Supabase session first
       if (_authService.isSignedIn) {
+        print('AuthProvider: Found existing Supabase session');
         _user = await _authService.getCurrentUserData();
         if (_user != null) {
           await StorageService.cacheUser(_user!);
+          print('AuthProvider: Restored user from Supabase: ${_user!.email}');
         }
       } else {
+        // Try to restore from cache
         _user = StorageService.getCachedUser();
+        if (_user != null) {
+          print('AuthProvider: Restored user from cache: ${_user!.email}');
+        } else {
+          print('AuthProvider: No existing session found');
+        }
       }
     } catch (e) {
+      print('AuthProvider: Error during initialization: $e');
       _setError('Failed to initialize auth: $e');
     } finally {
       _setLoading(false);
@@ -39,15 +55,40 @@ class AuthProvider with ChangeNotifier {
     _clearError();
     
     try {
-      final user = await _authService.signInWithGoogle();
+      print('AuthProvider: Starting sign in process...');
+      
+      // Run comprehensive tests on iOS
+      if (Platform.isIOS) {
+        print('AuthProvider: Running iOS-specific tests...');
+        await IOSSignInTestService.runAllTests();
+        await _authServiceIOS.debugGoogleSignInConfiguration();
+      }
+      
+      // Use platform-specific service
+      final user = Platform.isIOS 
+          ? await _authServiceIOS.signInWithGoogle()
+          : await _authService.signInWithGoogle();
+      
       if (user != null) {
+        print('AuthProvider: User signed in successfully: ${user.username}');
         _user = user;
-        await StorageService.cacheUser(user);
+        
+        // Cache user with error handling
+        try {
+          await StorageService.cacheUser(user);
+        } catch (cacheError) {
+          print('AuthProvider: Failed to cache user: $cacheError');
+          // Don't fail the sign in process if caching fails
+        }
+        
         notifyListeners();
         return true;
+      } else {
+        print('AuthProvider: Sign in returned null user');
+        return false;
       }
-      return false;
     } catch (e) {
+      print('AuthProvider: Sign in error: $e');
       _setError('Failed to sign in: $e');
       return false;
     } finally {
@@ -59,7 +100,13 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     
     try {
-      await _authService.signOut();
+      // Use platform-specific service
+      if (Platform.isIOS) {
+        await _authServiceIOS.signOut();
+      } else {
+        await _authService.signOut();
+      }
+      
       await StorageService.clearUserData();
       _user = null;
       notifyListeners();

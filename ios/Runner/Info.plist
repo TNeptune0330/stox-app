@@ -56,5 +56,18 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	
+	<!-- Google Sign-In Configuration -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.example.stox</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.264305191086-jr22tsn1j8gl9ihv3heragdk310os4pe</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

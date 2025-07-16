@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -15,8 +14,6 @@ import 'services/comprehensive_test_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/portfolio_provider.dart';
 import 'providers/market_data_provider.dart';
-import 'providers/theme_provider.dart';
-import 'providers/achievement_provider.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
@@ -123,25 +120,8 @@ Future<void> _runProductionTests() async {
   }
 }
 
-class StoxApp extends StatefulWidget {
+class StoxApp extends StatelessWidget {
   const StoxApp({super.key});
-
-  @override
-  State<StoxApp> createState() => _StoxAppState();
-}
-
-class _StoxAppState extends State<StoxApp> {
-  late ThemeProvider _themeProvider;
-  
-  @override
-  void initState() {
-    super.initState();
-    _themeProvider = ThemeProvider();
-    // Initialize theme provider after the database is ready
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _themeProvider.initialize();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,21 +130,49 @@ class _StoxAppState extends State<StoxApp> {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MarketDataProvider()),
-        ChangeNotifierProvider.value(value: _themeProvider),
-        ChangeNotifierProvider(create: (_) => AchievementProvider()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'Stox Trading Simulator',
-            debugShowCheckedModeBanner: false,
-            theme: themeProvider.themeData,
-            home: const SplashScreen(),
-            routes: {
-              '/login': (context) => const LoginScreen(),
-              '/main': (context) => const MainNavigation(),
-            },
-          );
+      child: MaterialApp(
+        title: 'Stox Trading Simulator',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.purple,
+          scaffoldBackgroundColor: const Color(0xFF0f1419),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1a1a2e),
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+          textTheme: const TextTheme(
+            bodyLarge: TextStyle(color: Colors.white),
+            bodyMedium: TextStyle(color: Colors.white),
+            headlineLarge: TextStyle(color: Colors.white),
+            headlineMedium: TextStyle(color: Colors.white),
+            headlineSmall: TextStyle(color: Colors.white),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7209b7),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: const Color(0xFF1a1a2e),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            hintStyle: const TextStyle(color: Colors.white70),
+          ),
+        ),
+        home: const SplashScreen(),
+        routes: {
+          '/login': (context) => const LoginScreen(),
+          '/main': (context) => const MainNavigation(),
         },
       ),
     );

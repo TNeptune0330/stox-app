@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/asset_model.dart';
+import '../models/market_asset_model.dart';
 import 'price_change_indicator.dart';
 
 class AssetListTile extends StatelessWidget {
-  final AssetModel asset;
+  final MarketAssetModel asset;
   final VoidCallback onTap;
 
   const AssetListTile({
@@ -20,7 +20,9 @@ class AssetListTile extends StatelessWidget {
         leading: CircleAvatar(
           backgroundColor: _getAssetColor(),
           child: Text(
-            asset.symbol.substring(0, 2).toUpperCase(),
+            asset.symbol.length >= 2 
+                ? asset.symbol.substring(0, 2).toUpperCase()
+                : asset.symbol.toUpperCase(),
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -50,7 +52,7 @@ class AssetListTile extends StatelessWidget {
               ),
             ),
             PriceChangeIndicator(
-              change: asset.changePercent24h,
+              change: asset.changePercent,
               showIcon: true,
             ),
           ],

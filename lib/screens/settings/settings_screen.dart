@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../main_navigation.dart';
 import 'profile_edit_screen.dart';
+import 'color_picker_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -83,14 +84,23 @@ class SettingsScreen extends StatelessWidget {
                               groupValue: themeProvider.selectedTheme,
                               onChanged: (value) {
                                 if (value != null) {
-                                  themeProvider.setTheme(value);
-                                  
-                                  // Update user theme in database
-                                  final authProvider = Provider.of<AuthProvider>(
-                                    context, 
-                                    listen: false,
-                                  );
-                                  authProvider.updateProfile(colorTheme: value);
+                                  if (value == 'custom') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const ColorPickerScreen(),
+                                      ),
+                                    );
+                                  } else {
+                                    themeProvider.setTheme(value);
+                                    
+                                    // Update user theme in database
+                                    final authProvider = Provider.of<AuthProvider>(
+                                      context, 
+                                      listen: false,
+                                    );
+                                    authProvider.updateProfile(colorTheme: value);
+                                  }
                                 }
                               },
                               title: Text(theme['name']),

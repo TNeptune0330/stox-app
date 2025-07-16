@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>264305191086-jr22tsn1j8gl9ihv3heragdk310os4pe.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.264305191086-jr22tsn1j8gl9ihv3heragdk310os4pe</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>264305191086-3o5t152r8ji2g1e2v55o88oil8v5nl9v.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyB2qwnQwh4BzYJ5etzP2eGekSxzFzfEQ80</string>
+	<key>GCM_SENDER_ID</key>
+	<string>264305191086</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.stox</string>
+	<key>PROJECT_ID</key>
+	<string>lithe-anvil-465819-v6</string>
+	<key>STORAGE_BUCKET</key>
+	<string>lithe-anvil-465819-v6.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:264305191086:ios:f2c743f78646fd6d44253f</string>
+</dict>
+</plist>

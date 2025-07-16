@@ -27,7 +27,7 @@ class TransactionModel {
       type: json['type'],
       quantity: json['quantity'],
       price: (json['price'] as num).toDouble(),
-      totalAmount: (json['total_amount'] as num).toDouble(),
+      totalAmount: (json['total_value'] as num).toDouble(),
       timestamp: DateTime.parse(json['timestamp']),
     );
   }
@@ -40,7 +40,7 @@ class TransactionModel {
       'type': type,
       'quantity': quantity,
       'price': price,
-      'total_amount': totalAmount,
+      'total_value': totalAmount,
       'timestamp': timestamp.toIso8601String(),
     };
   }

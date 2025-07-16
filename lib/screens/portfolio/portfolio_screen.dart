@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/portfolio_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/achievement_provider.dart';
 import '../../widgets/portfolio_summary_card.dart';
 import '../../widgets/price_change_indicator.dart';
 import '../main_navigation.dart';
@@ -126,6 +127,56 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                     totalPnLPercentage: portfolioProvider.totalPnLPercentage,
                   ),
 
+                  // Recent Achievements Preview
+                  Consumer<AchievementProvider>(
+                    builder: (context, achievementProvider, child) {
+                      final recentAchievements = achievementProvider.getRecentlyUnlocked();
+                      if (recentAchievements.isEmpty) return const SizedBox.shrink();
+                      
+                      return Container(
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1a1a2e),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFf39c12), width: 2),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.emoji_events, color: Color(0xFFf39c12), size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Recent Achievements',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFf39c12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ...recentAchievements.map((achievement) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                children: [
+                                  Icon(achievement.icon, color: achievement.color, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    achievement.title,
+                                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            )),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
                   // Holdings Section
                   if (portfolioProvider.portfolio.isNotEmpty) ...[
                     Padding(
@@ -180,17 +231,16 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         ),
                       ),
                     )),
-                  ] else
-                    const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: EmptyStateWidget(
-                          title: 'No Holdings',
-                          message: 'Start trading to build your portfolio',
-                          icon: Icons.trending_up,
-                        ),
+                  ] else ...[
+                    const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: EmptyStateWidget(
+                        title: 'No Holdings',
+                        message: 'Start trading to build your portfolio',
+                        icon: Icons.trending_up,
                       ),
                     ),
+                  ],
                 ]),
               );
             },

@@ -5,10 +5,12 @@ import 'providers/auth_provider.dart';
 import 'providers/portfolio_provider.dart';
 import 'providers/market_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/achievement_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation.dart';
 import 'services/storage_service.dart';
 import 'services/ad_service.dart';
+import 'services/price_update_service.dart';
 
 class StoxApp extends StatelessWidget {
   const StoxApp({super.key});
@@ -21,6 +23,7 @@ class StoxApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AchievementProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -58,14 +61,19 @@ class _AppInitializerState extends State<AppInitializer> {
       await StorageService.initialize();
       await AdService.instance.initialize();
       
+      // Start periodic price updates
+      PriceUpdateService.instance.startPeriodicUpdates();
+      
       // Initialize providers
       if (mounted) {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+        final achievementProvider = Provider.of<AchievementProvider>(context, listen: false);
         
         await Future.wait([
           authProvider.initialize(),
           themeProvider.initialize(),
+          achievementProvider.initialize(),
         ]);
       }
       

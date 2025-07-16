@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "264305191086",
+    "project_id": "lithe-anvil-465819-v6",
+    "storage_bucket": "lithe-anvil-465819-v6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:264305191086:android:33c8da42281e5de644253f",
+        "android_client_info": {
+          "package_name": "com.example.stox"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "264305191086-3o5t152r8ji2g1e2v55o88oil8v5nl9v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.stox",
+            "certificate_hash": "521fd0b2ffebcb0b449244a9762b2ec13af5b392"
+          }
+        },
+        {
+          "client_id": "264305191086-ruelf34qlbnngfubd7m52418hta9c3oh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6H8iyYavDAvbt2iTcdr_sc3M4sKQCN4c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "264305191086-ruelf34qlbnngfubd7m52418hta9c3oh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "264305191086-jr22tsn1j8gl9ihv3heragdk310os4pe.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.stox"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
