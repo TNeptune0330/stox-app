@@ -10,6 +10,7 @@ import 'services/local_database_service.dart';
 import 'services/enhanced_market_data_service.dart';
 import 'services/revenue_admob_service.dart';
 import 'services/comprehensive_test_service.dart';
+import 'services/storage_service.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -63,6 +64,10 @@ Future<void> _initializeCoreServices() async {
       anonKey: SupabaseConfig.anonKey,
     );
     print('✅ Supabase initialized');
+    
+    // Initialize Storage Service
+    await StorageService.initialize();
+    print('✅ Storage Service initialized');
     
     // Initialize Local Database
     await LocalDatabaseService.initialize();
@@ -132,14 +137,17 @@ class StoxApp extends StatefulWidget {
 
 class _StoxAppState extends State<StoxApp> {
   late ThemeProvider _themeProvider;
+  late AuthProvider _authProvider;
   
   @override
   void initState() {
     super.initState();
     _themeProvider = ThemeProvider();
-    // Initialize theme provider after the database is ready
+    _authProvider = AuthProvider();
+    // Initialize providers after the services are ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _themeProvider.initialize();
+      _authProvider.initialize();
     });
   }
 
@@ -147,7 +155,7 @@ class _StoxAppState extends State<StoxApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => PortfolioProvider()),
         ChangeNotifierProvider(create: (_) => MarketDataProvider()),
         ChangeNotifierProvider.value(value: _themeProvider),

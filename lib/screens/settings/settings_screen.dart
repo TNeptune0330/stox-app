@@ -21,8 +21,34 @@ class SettingsScreen extends StatelessWidget {
               // User Profile Section
               Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {
+                  if (authProvider.isLoading) {
+                    return Card(
+                      margin: const EdgeInsets.all(16),
+                      child: const ListTile(
+                        leading: CircleAvatar(
+                          child: CircularProgressIndicator(),
+                        ),
+                        title: Text('Loading...'),
+                        subtitle: Text('Please wait'),
+                      ),
+                    );
+                  }
+
                   if (authProvider.user == null) {
-                    return const SizedBox.shrink();
+                    return Card(
+                      margin: const EdgeInsets.all(16),
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.person_outline),
+                        ),
+                        title: const Text('Guest User'),
+                        subtitle: const Text('Sign in to save your progress'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.pushReplacementNamed(context, '/login');
+                        },
+                      ),
+                    );
                   }
 
                   return Card(
@@ -45,7 +71,20 @@ class SettingsScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      subtitle: Text(authProvider.user!.email),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(authProvider.user!.email),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Cash Balance: \$${authProvider.user!.cashBalance.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
                         Navigator.push(
@@ -204,15 +243,30 @@ class SettingsScreen extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Provider.of<AuthProvider>(context, listen: false).signOut();
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              return TextButton(
+                onPressed: authProvider.isLoading ? null : () async {
+                  Navigator.of(context).pop();
+                  await authProvider.signOut();
+                  
+                  // Navigate to login screen after sign out
+                  if (context.mounted) {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+                child: authProvider.isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Sign Out'),
+              );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Sign Out'),
           ),
         ],
       ),

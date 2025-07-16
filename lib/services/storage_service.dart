@@ -17,6 +17,9 @@ class StorageService {
   static Box<Map>? _pricesBox;
 
   static Future<void> initialize() async {
+    // Initialize Hive first
+    await Hive.initFlutter();
+    
     _prefs = await SharedPreferences.getInstance();
     _assetsBox = await Hive.openBox<Map>(_assetsBoxName);
     _pricesBox = await Hive.openBox<Map>(_pricesBoxName);
