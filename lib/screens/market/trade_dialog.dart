@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../models/asset_model.dart';
+import '../../models/market_asset_model.dart';
 import '../../providers/portfolio_provider.dart';
 import '../../widgets/price_change_indicator.dart';
 
 class TradeDialog extends StatefulWidget {
-  final AssetModel asset;
+  final MarketAssetModel asset;
   final String userId;
 
   const TradeDialog({
@@ -91,7 +91,7 @@ class _TradeDialogState extends State<TradeDialog> with TickerProviderStateMixin
                         ),
                       ),
                       PriceChangeIndicator(
-                        change: widget.asset.changePercent24h,
+                        change: widget.asset.changePercent,
                         showIcon: true,
                       ),
                     ],

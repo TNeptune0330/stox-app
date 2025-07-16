@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/portfolio_model.dart';
 import '../models/transaction_model.dart';
 import '../services/storage_service.dart';
+import '../services/local_database_service.dart';
 
 class PortfolioService {
   final SupabaseClient _supabase = Supabase.instance.client;

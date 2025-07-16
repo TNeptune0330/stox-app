@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/market_data_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../models/market_asset_model.dart';
 import '../../widgets/asset_list_tile.dart';
 import '../main_navigation.dart';
 import 'trade_dialog.dart';
@@ -196,7 +197,7 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
     );
   }
 
-  void _showTradeDialog(BuildContext context, asset) {
+  void _showTradeDialog(BuildContext context, MarketAssetModel asset) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     if (authProvider.user == null) {
