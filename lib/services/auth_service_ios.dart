@@ -23,7 +23,10 @@ class AuthServiceIOS {
       if (Platform.isIOS) {
         // iOS-specific configuration
         _googleSignIn = GoogleSignIn(
-          clientId: ApiKeys.googleSignInIOSClientId,
+          // Use web client ID for iOS to ensure compatibility with Supabase
+          serverClientId: ApiKeys.googleSignInWebClientId,
+          // Important: Don't set clientId to let it use the one from GoogleService-Info.plist
+          // but ensure server validation uses web client ID
           scopes: [
             'email',
             'profile',
@@ -33,6 +36,7 @@ class AuthServiceIOS {
       } else {
         // Android fallback
         _googleSignIn = GoogleSignIn(
+          serverClientId: ApiKeys.googleSignInWebClientId,
           scopes: [
             'email',
             'profile',
@@ -65,7 +69,7 @@ class AuthServiceIOS {
     try {
       print('$_logPrefix 🔑 Starting Google Sign In...');
       print('$_logPrefix Platform: ${Platform.operatingSystem}');
-      print('$_logPrefix Client ID: ${ApiKeys.googleSignInIOSClientId}');
+      print('$_logPrefix Server Client ID: ${ApiKeys.googleSignInWebClientId}');
       
       // Step 1: Check if Google Play Services are available (iOS doesn't need this)
       if (Platform.isIOS) {
@@ -133,33 +137,40 @@ class AuthServiceIOS {
         throw Exception('Failed to get authentication details: $e');
       }
       
-      // Step 7: Create user data for local storage
-      print('$_logPrefix Creating user data...');
-      final userData = UserModel(
-        id: googleUser.id,
-        email: googleUser.email,
-        username: googleUser.displayName ?? 'Unknown User',
-        avatarUrl: googleUser.photoUrl,
-        colorTheme: 'light',
-        cashBalance: 10000.0, // Starting balance
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      // Step 7: Authenticate with Supabase
+      print('$_logPrefix 🔐 Authenticating with Supabase...');
       
-      print('$_logPrefix ✅ User data created: ${userData.email}');
-      
-      // Step 8: Cache user data locally
-      print('$_logPrefix Caching user data...');
-      try {
-        await StorageService.cacheUser(userData);
-        print('$_logPrefix ✅ User data cached successfully');
-      } catch (e) {
-        print('$_logPrefix ❌ Error caching user data: $e');
-        // Don't fail the sign-in if caching fails
+      if (googleAuth.idToken == null || googleAuth.accessToken == null) {
+        throw Exception('Missing authentication tokens');
       }
       
-      print('$_logPrefix ✅ Successfully signed in with Google: ${userData.email}');
-      return userData;
+      final response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: googleAuth.idToken!,
+        accessToken: googleAuth.accessToken!,
+      );
+      
+      if (response.user == null) {
+        throw Exception('Failed to authenticate with Supabase');
+      }
+      
+      print('$_logPrefix ✅ Successfully authenticated with Supabase');
+      print('$_logPrefix Supabase User ID: ${response.user!.id}');
+      
+      // Step 8: Create or update user in database
+      final userData = await _createOrUpdateUser(response.user!, googleUser);
+      
+      if (userData != null) {
+        print('$_logPrefix ✅ User profile created/updated: ${userData.email}');
+        
+        // Cache user data locally for persistence
+        await StorageService.cacheUser(userData);
+        print('$_logPrefix ✅ User data cached successfully');
+        
+        return userData;
+      }
+      
+      throw Exception('Failed to create user profile');
       
     } catch (e) {
       print('$_logPrefix ❌ Google Sign In error: $e');
@@ -172,30 +183,27 @@ class AuthServiceIOS {
     try {
       print('$_logPrefix 🔄 Attempting silent sign-in...');
       
-      final googleUser = await _googleSignIn.signInSilently();
-      if (googleUser == null) {
-        print('$_logPrefix No existing Google session found');
-        return null;
+      // First check if there's an existing Supabase session
+      if (_supabase.auth.currentUser != null) {
+        print('$_logPrefix Found existing Supabase session');
+        
+        // Get user data from database
+        final response = await _supabase
+            .from('users')
+            .select()
+            .eq('id', _supabase.auth.currentUser!.id)
+            .maybeSingle();
+        
+        if (response != null) {
+          final userData = UserModel.fromJson(response);
+          await StorageService.cacheUser(userData);
+          print('$_logPrefix ✅ Silent sign-in successful from Supabase: ${userData.email}');
+          return userData;
+        }
       }
       
-      print('$_logPrefix ✅ Silent sign-in successful: ${googleUser.email}');
-      
-      // Create user data
-      final userData = UserModel(
-        id: googleUser.id,
-        email: googleUser.email,
-        username: googleUser.displayName ?? 'Unknown User',
-        avatarUrl: googleUser.photoUrl,
-        colorTheme: 'light',
-        cashBalance: 10000.0,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      
-      // Cache user data
-      await StorageService.cacheUser(userData);
-      
-      return userData;
+      print('$_logPrefix No existing session found');
+      return null;
     } catch (e) {
       print('$_logPrefix ❌ Silent sign-in failed: $e');
       return null;
@@ -254,7 +262,7 @@ class AuthServiceIOS {
       print('$_logPrefix === DEBUG: Google Sign-In Configuration ===');
       print('$_logPrefix Platform: ${Platform.operatingSystem}');
       print('$_logPrefix Platform version: ${Platform.operatingSystemVersion}');
-      print('$_logPrefix Client ID: ${ApiKeys.googleSignInIOSClientId}');
+      print('$_logPrefix Server Client ID: ${ApiKeys.googleSignInWebClientId}');
       print('$_logPrefix Scopes: ${_googleSignIn.scopes}');
       print('$_logPrefix Current user: ${_googleSignIn.currentUser?.email ?? 'None'}');
       
@@ -270,6 +278,76 @@ class AuthServiceIOS {
       print('$_logPrefix === END DEBUG ===');
     } catch (e) {
       print('$_logPrefix ❌ Error during debug: $e');
+    }
+  }
+
+  Future<UserModel?> _createOrUpdateUser(User user, GoogleSignInAccount googleUser) async {
+    try {
+      print('$_logPrefix 👤 Creating/updating user profile...');
+      
+      // Use the Supabase Auth user ID directly
+      final supabaseUserId = user.id;
+      print('$_logPrefix Using Supabase Auth user ID: $supabaseUserId');
+      
+      // Check if user already exists
+      final existingUser = await _supabase
+          .from('users')
+          .select()
+          .eq('id', supabaseUserId)
+          .maybeSingle();
+
+      if (existingUser == null) {
+        print('$_logPrefix 📝 Creating new user profile...');
+        
+        // Extract name from user metadata or Google user
+        final fullName = googleUser.displayName ?? 
+                        user.userMetadata?['full_name'] ?? 
+                        user.userMetadata?['name'] ?? 
+                        user.email!.split('@')[0];
+        
+        final newUser = {
+          'id': supabaseUserId,
+          'email': user.email!,
+          'username': fullName,
+          'avatar_url': googleUser.photoUrl ?? user.userMetadata?['avatar_url'],
+          'color_theme': 'light',
+          'cash_balance': 10000.0,
+          'total_trades': 0,
+          'created_at': DateTime.now().toIso8601String(),
+          'last_login': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+
+        final response = await _supabase
+            .from('users')
+            .insert(newUser)
+            .select()
+            .single();
+
+        print('$_logPrefix ✅ New user created successfully');
+        return UserModel.fromJson(response);
+      } else {
+        print('$_logPrefix 🔄 Updating existing user...');
+        
+        // Update last login and other fields
+        final updatedUser = {
+          'last_login': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+
+        final response = await _supabase
+            .from('users')
+            .update(updatedUser)
+            .eq('id', supabaseUserId)
+            .select()
+            .single();
+
+        print('$_logPrefix ✅ User updated successfully');
+        return UserModel.fromJson(response);
+      }
+    } catch (e) {
+      print('$_logPrefix ❌ Failed to create/update user: $e');
+      throw Exception('Failed to create/update user profile: $e');
     }
   }
 }
