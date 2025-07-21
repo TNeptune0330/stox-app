@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portfolio_provider.dart';
 import '../providers/market_data_provider.dart';
+import '../providers/theme_provider.dart';
+import '../providers/achievement_provider.dart';
+import '../utils/responsive_utils.dart';
 import '../widgets/banner_ad_widget.dart';
 import 'market/market_screen.dart';
 import 'portfolio/portfolio_screen.dart';
@@ -39,11 +42,19 @@ class _MainNavigationState extends State<MainNavigation> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final portfolioProvider = Provider.of<PortfolioProvider>(context, listen: false);
     final marketProvider = Provider.of<MarketDataProvider>(context, listen: false);
+    final achievementProvider = Provider.of<AchievementProvider>(context, listen: false);
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     if (authProvider.user != null) {
+      // Set user ID for data syncing
+      achievementProvider.setUserId(authProvider.user!.id);
+      themeProvider.setUserId(authProvider.user!.id);
+      
       await Future.wait([
         portfolioProvider.loadPortfolio(authProvider.user!.id),
         marketProvider.initialize(),
+        achievementProvider.initialize(authProvider.user!.id),
+        themeProvider.initialize(authProvider.user!.id),
       ]);
     }
   }
@@ -60,7 +71,7 @@ class _MainNavigationState extends State<MainNavigation> {
             ),
           ),
           // Banner Ad
-          const BannerAdWidget(),
+          const BannerAdWidget(), // Temporarily disabled for iOS build (returns empty container)
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -71,6 +82,9 @@ class _MainNavigationState extends State<MainNavigation> {
           });
         },
         type: BottomNavigationBarType.fixed,
+        iconSize: ResponsiveUtils.getIconSize(context, 20),
+        selectedFontSize: ResponsiveUtils.getFontSize(context, 10),
+        unselectedFontSize: ResponsiveUtils.getFontSize(context, 9),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.trending_up),

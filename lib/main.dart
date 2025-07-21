@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+// import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 // Services
 import 'services/local_database_service.dart';
@@ -11,6 +11,7 @@ import 'services/enhanced_market_data_service.dart';
 import 'services/revenue_admob_service.dart';
 import 'services/comprehensive_test_service.dart';
 import 'services/storage_service.dart';
+import 'services/connection_manager.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -23,6 +24,8 @@ import 'providers/achievement_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation.dart';
+import 'screens/auth_test_screen.dart';
+import 'screens/auth_flow_test_screen.dart';
 
 // Config
 import 'config/supabase_config.dart';
@@ -65,6 +68,9 @@ Future<void> _initializeCoreServices() async {
     );
     print('✅ Supabase initialized');
     
+    // Reset connection manager state (in case URL was changed)
+    ConnectionManager().resetConnectionState();
+    
     // Initialize Storage Service
     await StorageService.initialize();
     print('✅ Storage Service initialized');
@@ -77,7 +83,7 @@ Future<void> _initializeCoreServices() async {
     await EnhancedMarketDataService.initializeMarketData();
     print('✅ Market Data Service initialized');
     
-    // Initialize AdMob
+    // Initialize AdMob - Temporarily disabled for iOS build
     await RevenueAdMobService.initialize();
     print('✅ AdMob Service initialized');
     
@@ -171,6 +177,17 @@ class _StoxAppState extends State<StoxApp> {
             routes: {
               '/login': (context) => const LoginScreen(),
               '/main': (context) => const MainNavigation(),
+              '/auth-test': (context) => const AuthTestScreen(),
+              '/auth-flow-test': (context) => const AuthFlowTestScreen(),
+            },
+            builder: (context, child) {
+              // Ensure consistent text scaling on all devices
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: const TextScaler.linear(1.0),
+                ),
+                child: child!,
+              );
             },
           );
         },

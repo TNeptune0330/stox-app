@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+// import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 // Services
 import 'services/local_database_service.dart';
@@ -71,7 +71,7 @@ Future<void> _initializeCoreServices() async {
     print('✅ Market Data Service initialized');
     
     // Initialize AdMob
-    await RevenueAdMobService.initialize();
+    await RevenueAdMobService.initialize(); // Temporarily disabled for iOS build
     print('✅ AdMob Service initialized');
     
     // Start periodic market data updates
