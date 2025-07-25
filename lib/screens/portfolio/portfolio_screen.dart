@@ -94,7 +94,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  'Net Worth: \$${portfolioProvider.portfolioSummary?.netWorth.toStringAsFixed(2) ?? '0.00'}',
+                                  'Net Worth: \$${portfolioProvider.netWorth.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.white,
@@ -118,8 +118,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         MaterialPageRoute(
                           builder: (context) => const TransactionHistoryScreen(),
                         ),
-                    );
-                  },
+                      );
+                    },
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh, color: Colors.white),
@@ -132,10 +132,10 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                   },
                 ),
               ],
-            ),
+              ),
 
-            Consumer<PortfolioProvider>(
-            builder: (context, portfolioProvider, child) {
+              Consumer<PortfolioProvider>(
+                builder: (context, portfolioProvider, child) {
               if (portfolioProvider.isLoading) {
                 return const SliverFillRemaining(
                   child: LoadingWidget(),
@@ -247,11 +247,12 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                   ],
                 ]),
               );
-            },
-            ),
-          ],
-        ),
-      ),
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

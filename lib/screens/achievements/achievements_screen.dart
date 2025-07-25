@@ -147,9 +147,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 ),
               ],
             );
-          },
-        ),
-      ),
+            },
+          ),
+        );
+      },
     );
   }
 
