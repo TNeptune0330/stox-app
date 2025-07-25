@@ -1,8 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/ios_signin_test_service.dart';
+import '../../models/user_model.dart';
+import '../../utils/responsive_utils.dart';
+import '../main_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +13,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  
+  @override
+  void initState() {
+    super.initState();
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -169,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   const SizedBox(height: 100),
                   
-                  // Game-like Sign In Button
+                  // Google Sign-In Primary Button
                   Consumer<AuthProvider>(
                     builder: (context, authProvider, child) {
                       return Container(
@@ -209,9 +216,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
-                              : const Icon(Icons.play_arrow, size: 24),
+                              : const Icon(Icons.login, size: 24),
                           label: Text(
-                            authProvider.isLoading ? 'LOADING...' : 'START TRADING SIMULATOR',
+                            authProvider.isLoading ? 'SIGNING IN...' : 'SIGN IN WITH GOOGLE',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -225,30 +232,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  // iOS Debug Test Button
-                  if (Platform.isIOS) ...[
-                    ElevatedButton(
-                      onPressed: () async {
-                        await IOSSignInTestService.testFullSignInFlow();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                  // Demo Mode Secondary Button
+                  ElevatedButton(
+                    onPressed: () => _handleDemoMode(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade700,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        vertical: ResponsiveUtils.isTablet(context) ? 20 : 16,
+                        horizontal: ResponsiveUtils.isTablet(context) ? 32 : 16,
                       ),
-                      child: const Text(
-                        'DEBUG: Test iOS Sign-In',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                  ],
+                    child: Text(
+                      'CONTINUE AS DEMO USER',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.getFontSize(context, 16),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
                   
                   // Terms and Privacy
                   const Text(
@@ -280,20 +289,213 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _showSignInErrorDialog(BuildContext context, String error) {
+    String title = 'Sign-In Error';
+    String message = 'There was an issue with Google Sign-In.';
+    
+    // Check for specific error types
+    if (error.contains('cancelled') || error.contains('canceled')) {
+      title = 'Sign-In Cancelled';
+      message = 'You cancelled the sign-in process. You can try again or use Demo Mode.';
+    } else if (error.contains('network') || error.contains('connection')) {
+      title = 'Network Error';
+      message = 'Please check your internet connection and try again, or use Demo Mode.';
+    } else {
+      message = 'Google Sign-In encountered an error. You can try again or use Demo Mode.\n\nError: $error';
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1a1a1a),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF1565c0), width: 1),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Color(0xFFe74c3c),
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white70,
+              ),
+              child: const Text('Try Again'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _handleDemoMode(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1565c0),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Use Demo Mode'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showGoogleSignInDisabledDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1a1a1a),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF1565c0), width: 1),
+          ),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.construction,
+                color: Color(0xFFf39c12),
+                size: 24,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Under Maintenance',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Google Sign-In is temporarily disabled due to iOS compatibility issues. '
+            'We are working on a fix.\n\n'
+            'In the meantime, you can use the full trading simulator in Demo Mode with all features enabled.'
+            '\n\n'
+            '• Virtual \$10,000 starting balance\n'
+            '• Real-time market data\n'
+            '• Full portfolio management\n'
+            '• Trading achievements\n'
+            '• All app features',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white70,
+              ),
+              child: const Text('OK'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _handleDemoMode(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFf39c12),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Try Demo Mode'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _handleGoogleSignIn(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
-    final success = await authProvider.signInWithGoogle();
-    
-    if (!success && authProvider.error != null) {
+    try {
+      final success = await authProvider.signInWithGoogle();
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.error!),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (success) {
+          // Navigate to main app on successful sign-in
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const MainNavigation(),
+            ),
+          );
+        } else if (authProvider.error != null) {
+          // Show error and fallback to demo mode
+          _showSignInErrorDialog(context, authProvider.error!);
+        }
       }
+    } catch (e) {
+      if (mounted) {
+        _showSignInErrorDialog(context, e.toString());
+      }
+    }
+  }
+
+  Future<void> _handleDemoMode(BuildContext context) async {
+    print('🧪 Creating Demo User...');
+    await _createDemoUser(context);
+  }
+
+
+  Future<void> _createDemoUser(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Create a demo user
+    authProvider.setUser(
+      UserModel(
+        id: 'demo_user_${DateTime.now().millisecondsSinceEpoch}',
+        email: 'demo@stoxtrading.com',
+        username: 'Demo Trader',
+        avatarUrl: null,
+        colorTheme: 'light',
+        cashBalance: 10000.0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const MainNavigation(),
+        ),
+      );
     }
   }
 }

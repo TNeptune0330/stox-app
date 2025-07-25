@@ -11,6 +11,14 @@ class ConnectionManager {
   int _consecutiveFailures = 0;
   static const int _maxConsecutiveFailures = 3;
   static const Duration _backoffDuration = Duration(minutes: 5);
+  
+  // Reset connection state (useful when URL changes)
+  void resetConnectionState() {
+    _isOnline = true;
+    _lastFailureTime = null;
+    _consecutiveFailures = 0;
+    print('🔄 Connection manager state reset');
+  }
 
   bool get isOnline => _isOnline;
   bool get shouldRetry {
@@ -60,16 +68,49 @@ class ConnectionManager {
     }
   }
 
+  // Force retry even during backoff (useful for manual retries)
+  Future<T?> forceExecuteWithFallback<T>(
+    Future<T> Function() networkCall,
+    Future<T> Function() fallbackCall,
+  ) async {
+    try {
+      final result = await networkCall();
+      recordSuccess();
+      return result;
+    } catch (e) {
+      recordFailure();
+      print('⚠️ Network call failed, using fallback: $e');
+      return await fallbackCall();
+    }
+  }
+
   Future<bool> checkConnection() async {
     try {
+      // First check general internet connectivity
       final result = await InternetAddress.lookup('google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         recordSuccess();
         return true;
       }
     } catch (e) {
-      recordFailure();
+      // If Google is down, try another reliable host
+      try {
+        final result = await InternetAddress.lookup('cloudflare.com');
+        if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+          recordSuccess();
+          return true;
+        }
+      } catch (e2) {
+        recordFailure();
+      }
     }
     return false;
   }
+
+  Future<bool> hasConnection() async {
+    return await checkConnection();
+  }
+
+  // Callback for connection restoration
+  void Function()? onConnectionRestored;
 }

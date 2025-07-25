@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+// import 'package:google_sign_in/google_sign_in.dart'; // Temporarily disabled
 import '../config/api_keys.dart';
 
 class IOSSignInTestService {
@@ -8,20 +8,12 @@ class IOSSignInTestService {
 
   static Future<void> runAllTests() async {
     print('$_logPrefix ========================================');
-    print('$_logPrefix      iOS GOOGLE SIGN-IN TESTS');
+    print('$_logPrefix iOS GOOGLE SIGN-IN TESTS TEMPORARILY DISABLED');
     print('$_logPrefix ========================================');
-    
-    await _testPlatformInfo();
-    await _testGoogleSignInConfiguration();
-    await _testGoogleSignInInitialization();
-    await _testGoogleSignInAvailability();
-    await _testSignInProcess();
-    
-    print('$_logPrefix ========================================');
-    print('$_logPrefix           TESTS COMPLETED');
-    print('$_logPrefix ========================================');
+    return; // Exit early to prevent Google Sign-In crashes
   }
-
+  
+  /*
   static Future<void> _testPlatformInfo() async {
     print('$_logPrefix Test 1: Platform Information');
     try {
@@ -187,4 +179,5 @@ class IOSSignInTestService {
     print('$_logPrefix        FULL TEST COMPLETED');
     print('$_logPrefix ========================================');
   }
+  */
 }

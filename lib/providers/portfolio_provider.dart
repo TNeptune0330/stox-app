@@ -5,6 +5,9 @@ import '../models/transaction_model.dart';
 import '../services/portfolio_service.dart';
 import '../services/ad_service.dart';
 import '../services/leaderboard_service.dart';
+import '../services/sync_service.dart';
+import '../services/connection_manager.dart';
+import 'achievement_provider.dart';
 
 class PortfolioProvider with ChangeNotifier {
   final PortfolioService _portfolioService = PortfolioService();
@@ -99,6 +102,7 @@ class PortfolioProvider with ChangeNotifier {
     required String type,
     required int quantity,
     required double price,
+    AchievementProvider? achievementProvider,
   }) async {
     print('💱 Executing trade: $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
     _setLoading(true);
@@ -133,6 +137,60 @@ class PortfolioProvider with ChangeNotifier {
 
       if (success) {
         print('✅ Trade executed successfully');
+        
+        // Record trade for achievements
+        if (achievementProvider != null) {
+          await achievementProvider.recordTrade();
+          
+          // Calculate profit/loss for this trade
+          final currentValue = quantity * price;
+          final previousHolding = getHoldingBySymbol(symbol);
+          if (previousHolding != null && type == 'sell') {
+            final profit = currentValue - (previousHolding.avgPrice * quantity);
+            if (profit > 0) {
+              await achievementProvider.recordProfit(profit);
+            } else {
+              await achievementProvider.recordLargeLoss(profit.abs());
+            }
+          }
+          
+          // Update net worth achievement
+          await achievementProvider.recordNetWorth(netWorth);
+          
+          // Record sector-specific achievements
+          if (type == 'buy') {
+            await achievementProvider.recordTechStockPurchase(symbol);
+            await achievementProvider.recordEnergyStockPurchase(symbol);
+            await achievementProvider.recordHealthcareStockPurchase(symbol);
+            await achievementProvider.recordFinancialStockPurchase(symbol);
+            await achievementProvider.recordMemeStockPurchase(symbol);
+            await achievementProvider.recordSP500StockPurchase(symbol);
+            await achievementProvider.recordETFPurchase(symbol);
+            await achievementProvider.recordDividendStockPurchase(symbol);
+            await achievementProvider.recordSmallCapPurchase(symbol);
+            await achievementProvider.recordInternationalPurchase(symbol);
+            await achievementProvider.recordConsumerStockPurchase(symbol);
+          }
+          
+          // Record high-value trade
+          await achievementProvider.recordHighValueTrade(totalCost);
+          
+          // Record low-price high-volume trades
+          await achievementProvider.recordLowPriceHighVolume(price, quantity);
+          
+          // Record time-based achievements
+          await achievementProvider.recordTimeBasedTrade(DateTime.now());
+          
+          // Record portfolio concentration and cash percentage
+          final portfolioValue = netWorth - cashBalance;
+          if (portfolioValue > 0) {
+            final concentration = (currentValue / portfolioValue) * 100;
+            await achievementProvider.recordPortfolioConcentration(concentration);
+          }
+          
+          final cashPercentage = (cashBalance / netWorth) * 100;
+          await achievementProvider.recordCashPercentage(cashPercentage);
+        }
         
         // Trigger ad after trade
         AdService.instance.onTradeCompleted();
@@ -197,6 +255,67 @@ class PortfolioProvider with ChangeNotifier {
     print('🔄 Refreshing portfolio data...');
     await loadPortfolio(userId);
     await loadTransactions(userId);
+  }
+
+  Future<void> forceRefreshWithConnection(String userId) async {
+    print('🔄 Force refreshing portfolio with connection reset...');
+    
+    // Reset connection manager state
+    ConnectionManager().resetConnectionState();
+    
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      await loadPortfolio(userId);
+      await loadTransactions(userId);
+      print('✅ Force refresh completed successfully');
+    } catch (e) {
+      print('❌ Force refresh failed: $e');
+      _setError('Failed to refresh: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> syncPendingData(String userId) async {
+    print('🔄 Syncing pending data...');
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final syncSuccess = await SyncService.performFullSync(userId);
+      
+      if (syncSuccess) {
+        // Reload portfolio data after successful sync
+        await loadPortfolio(userId);
+        await loadTransactions(userId);
+        print('✅ Portfolio sync completed successfully');
+        return true;
+      } else {
+        _setError('Failed to sync some data');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Sync error: $e');
+      _setError('Sync failed: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<Map<String, dynamic>> getSyncStatus(String userId) async {
+    try {
+      return await SyncService.getSyncStatus(userId);
+    } catch (e) {
+      print('❌ Error getting sync status: $e');
+      return {
+        'pending_trades': 0,
+        'has_connection': false,
+        'last_sync': null,
+      };
+    }
   }
 
   PortfolioModel? getHoldingBySymbol(String symbol) {

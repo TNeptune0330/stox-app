@@ -7,8 +7,11 @@ import '../providers/market_data_provider.dart';
 import '../services/local_database_service.dart';
 import '../services/enhanced_market_data_service.dart';
 import '../services/revenue_admob_service.dart';
+import '../utils/responsive_utils.dart';
+import '../utils/legal_utils.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/main_navigation.dart';
+import '../screens/legal/terms_acceptance_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -133,6 +136,22 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
   
   Future<void> _checkAuthentication() async {
+    // First check if user has accepted terms and privacy policy
+    await _updateStatus('Checking legal agreements...', 0.7);
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    final hasAcceptedTerms = await LegalUtils.hasAcceptedTerms();
+    final needsReAcceptance = await LegalUtils.needsReAcceptance();
+    
+    if (!hasAcceptedTerms || needsReAcceptance) {
+      // User needs to accept terms first
+      await _navigateToTermsAcceptance();
+      return;
+    }
+    
+    await _updateStatus('Checking authentication...', 0.9);
+    await Future.delayed(const Duration(milliseconds: 300));
+    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUser = LocalDatabaseService.getCurrentUser();
     
@@ -162,6 +181,17 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const LoginScreen(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _navigateToTermsAcceptance() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const TermsAcceptanceScreen(),
         ),
       );
     }
@@ -205,8 +235,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           children: [
                             // Logo
                             Container(
-                              width: 120,
-                              height: 120,
+                              width: ResponsiveUtils.getIconSize(context, 120),
+                              height: ResponsiveUtils.getIconSize(context, 120),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF7209b7),
                                 borderRadius: BorderRadius.circular(24),
@@ -218,19 +248,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   ),
                                 ],
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.trending_up,
-                                size: 64,
+                                size: ResponsiveUtils.getIconSize(context, 64),
                                 color: Colors.white,
                               ),
                             ),
                             const SizedBox(height: 24),
                             
                             // App Name
-                            const Text(
+                            Text(
                               'STOX',
                               style: TextStyle(
-                                fontSize: 42,
+                                fontSize: ResponsiveUtils.getFontSize(context, 42),
                                 fontWeight: FontWeight.w900,
                                 color: Colors.white,
                                 letterSpacing: 4,
@@ -239,10 +269,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             const SizedBox(height: 8),
                             
                             // Subtitle
-                            const Text(
+                            Text(
                               'TRADING SIMULATOR',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: ResponsiveUtils.getFontSize(context, 16),
                                 fontWeight: FontWeight.w500,
                                 color: Colors.white70,
                                 letterSpacing: 2,

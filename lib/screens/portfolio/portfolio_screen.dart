@@ -3,9 +3,16 @@ import 'package:provider/provider.dart';
 import '../../providers/portfolio_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/achievement_provider.dart';
+import '../../providers/market_data_provider.dart';
 import '../../widgets/portfolio_summary_card.dart';
 import '../../widgets/price_change_indicator.dart';
+import '../../widgets/achievement_banner_widget.dart';
+import '../../widgets/portfolio_holding_tile.dart';
+import '../../utils/responsive_utils.dart';
+import '../../models/portfolio_model.dart';
+import '../../models/market_asset_model.dart';
 import '../main_navigation.dart';
+import '../market/trade_dialog.dart';
 import 'transaction_history.dart';
 
 class PortfolioScreen extends StatefulWidget {
@@ -34,7 +41,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           slivers: [
             // Game-like Header
             SliverAppBar(
-              expandedHeight: 120,
+              expandedHeight: ResponsiveUtils.isTablet(context) ? 160 : 120,
               floating: false,
               pinned: true,
               backgroundColor: Colors.transparent,
@@ -45,20 +52,20 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       colors: [Color(0xFF533483), Color(0xFF7209b7)],
                     ),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.account_balance_wallet,
-                          size: 48,
-                          color: Color(0xFFf39c12),
+                          size: ResponsiveUtils.getIconSize(context, 48),
+                          color: const Color(0xFFf39c12),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
                           'TRADING EMPIRE',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: ResponsiveUtils.getFontSize(context, 24),
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
                             letterSpacing: 2,
@@ -87,7 +94,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                     final authProvider = Provider.of<AuthProvider>(context, listen: false);
                     if (authProvider.user != null) {
                       Provider.of<PortfolioProvider>(context, listen: false)
-                          .loadPortfolio(authProvider.user!.id);
+                          .forceRefreshWithConnection(authProvider.user!.id);
                     }
                   },
                 ),
@@ -126,6 +133,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                     totalPnL: portfolioProvider.totalPnL,
                     totalPnLPercentage: portfolioProvider.totalPnLPercentage,
                   ),
+
+                  // Achievement Banner
+                  const AchievementBannerWidget(),
 
                   // Recent Achievements Preview
                   Consumer<AchievementProvider>(
@@ -188,48 +198,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         ),
                       ),
                     ),
-                    ...portfolioProvider.portfolio.map((holding) => Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.blue,
-                          child: Text(
-                            holding.symbol.substring(0, 2).toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          holding.symbol,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '${holding.quantity} shares @ \$${holding.avgPrice.toStringAsFixed(2)}',
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '\$${holding.totalValue.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            // Note: This would need current price to calculate P&L
-                            // For now, showing a placeholder
-                            const PriceChangeIndicator(
-                              change: 0.0,
-                              showIcon: true,
-                            ),
-                          ],
-                        ),
-                      ),
+                    ...portfolioProvider.portfolio.map((holding) => PortfolioHoldingTile(
+                      holding: holding,
+                      onTap: () => _showSellDialog(context, holding),
                     )),
                   ] else ...[
                     const Padding(
@@ -247,6 +218,44 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSellDialog(BuildContext context, PortfolioModel holding) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final marketDataProvider = Provider.of<MarketDataProvider>(context, listen: false);
+    
+    if (authProvider.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to trade'),
+        ),
+      );
+      return;
+    }
+
+    // Find the current market price for this asset
+    final marketAsset = marketDataProvider.allAssets.firstWhere(
+      (asset) => asset.symbol == holding.symbol,
+      orElse: () => MarketAssetModel(
+        symbol: holding.symbol,
+        name: holding.symbol,
+        price: holding.avgPrice, // Use avg price as fallback
+        change: 0.0,
+        changePercent: 0.0,
+        type: 'stock',
+        lastUpdated: DateTime.now(),
+      ),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => TradeDialog(
+        asset: marketAsset,
+        userId: authProvider.user!.id,
+        initialTab: 1, // Start on sell tab
+        maxQuantity: holding.quantity,
       ),
     );
   }

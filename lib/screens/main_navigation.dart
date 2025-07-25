@@ -61,30 +61,50 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: _screens,
-            ),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Scaffold(
+          backgroundColor: themeProvider.background,
+          body: Column(
+            children: [
+              Expanded(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: _screens,
+                ),
+              ),
+              // Banner Ad
+              const BannerAdWidget(), // Temporarily disabled for iOS build (returns empty container)
+            ],
           ),
-          // Banner Ad
-          const BannerAdWidget(), // Temporarily disabled for iOS build (returns empty container)
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        iconSize: ResponsiveUtils.getIconSize(context, 20),
-        selectedFontSize: ResponsiveUtils.getFontSize(context, 10),
-        unselectedFontSize: ResponsiveUtils.getFontSize(context, 9),
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              color: themeProvider.backgroundHigh,
+              boxShadow: [
+                BoxShadow(
+                  color: themeProvider.isDark ? Colors.black26 : Colors.grey.shade300,
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: BottomNavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: themeProvider.theme,
+              unselectedItemColor: themeProvider.isDark 
+                ? Colors.white54 
+                : Colors.black54,
+              iconSize: ResponsiveUtils.getIconSize(context, 20),
+              selectedFontSize: ResponsiveUtils.getFontSize(context, 10),
+              unselectedFontSize: ResponsiveUtils.getFontSize(context, 9),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.trending_up),
@@ -102,8 +122,11 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.settings),
             label: 'Settings',
           ),
-        ],
-      ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

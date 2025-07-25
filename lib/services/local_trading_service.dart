@@ -220,11 +220,12 @@ class LocalTradingService {
   }
 
   // Get pending trades
-  static Future<List<TransactionModel>> getPendingTrades() async {
+  static Future<List<TransactionModel>> getPendingTrades(String userId) async {
     try {
       final pendingTrades = await LocalDatabaseService.getSetting<List<dynamic>>(_pendingTradesKey) ?? [];
       return pendingTrades
           .map((json) => TransactionModel.fromJson(Map<String, dynamic>.from(json)))
+          .where((trade) => trade.userId == userId)
           .toList();
     } catch (e) {
       print('❌ Error getting pending trades: $e');
@@ -275,6 +276,47 @@ class LocalTradingService {
         'total_pnl': 0.0,
         'total_pnl_percentage': 0.0,
       };
+    }
+  }
+
+  // Clear synced trades after successful sync
+  static Future<void> clearSyncedTrades(String userId, int syncedCount) async {
+    try {
+      final pendingTrades = await LocalDatabaseService.getSetting<List<dynamic>>(_pendingTradesKey) ?? [];
+      
+      // Convert to TransactionModel list for filtering
+      final allTrades = pendingTrades
+          .map((json) => TransactionModel.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
+      
+      // Remove the first syncedCount trades for this user
+      final userTrades = allTrades.where((trade) => trade.userId == userId).toList();
+      final tradesToRemove = userTrades.take(syncedCount).toList();
+      
+      // Filter out the synced trades
+      final remainingTrades = allTrades
+          .where((trade) => !tradesToRemove.contains(trade))
+          .map((trade) => trade.toJson())
+          .toList();
+      
+      await LocalDatabaseService.saveSetting(_pendingTradesKey, remainingTrades);
+      print('🧹 Cleared $syncedCount synced trades for user $userId');
+    } catch (e) {
+      print('❌ Error clearing synced trades: $e');
+    }
+  }
+
+  // Get local user data
+  static Future<UserModel?> getLocalUserData(String userId) async {
+    try {
+      final user = await StorageService.getCachedUser();
+      if (user?.id == userId) {
+        return user;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting local user data: $e');
+      return null;
     }
   }
 }

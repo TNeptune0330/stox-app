@@ -194,14 +194,48 @@ class LocalDatabaseService {
   
   // Settings Operations
   static Future<void> saveSetting(String key, dynamic value) async {
-    await _settingsBox.put(key, {'value': value});
+    // Handle complex types that Hive can't store directly
+    if (value is Set<String>) {
+      await _settingsBox.put(key, {'value': value.toList()});
+    } else if (value is Map<String, int>) {
+      await _settingsBox.put(key, {'value': Map<String, dynamic>.from(value)});
+    } else {
+      await _settingsBox.put(key, {'value': value});
+    }
     print('⚙️ Setting saved: $key = $value');
   }
   
   static T? getSetting<T>(String key) {
     final settingData = _settingsBox.get(key);
     if (settingData == null) return null;
-    return settingData['value'] as T?;
+    
+    final value = settingData['value'];
+    if (value == null) return null;
+    
+    // Handle type conversions for complex types
+    if (T == Set<String>) {
+      if (value is List) {
+        return Set<String>.from(value.map((e) => e.toString())) as T?;
+      }
+      return null;
+    } else if (T == Map<String, int>) {
+      if (value is Map) {
+        final result = <String, int>{};
+        for (final entry in value.entries) {
+          final key = entry.key.toString();
+          final val = entry.value;
+          if (val is num) {
+            result[key] = val.toInt();
+          } else if (val is String) {
+            result[key] = int.tryParse(val) ?? 0;
+          }
+        }
+        return result as T?;
+      }
+      return null;
+    }
+    
+    return value as T?;
   }
   
   // Trading Operations

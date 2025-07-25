@@ -8,7 +8,7 @@ import '../services/storage_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
-  final AuthServiceIOS _authServiceIOS = AuthServiceIOS();
+  // final AuthServiceIOS _authServiceIOS = AuthServiceIOS(); // Disabled - using main AuthService now
   
   UserModel? _user;
   bool _isLoading = false;
@@ -38,6 +38,7 @@ class AuthProvider with ChangeNotifier {
         _user = StorageService.getCachedUser();
         if (_user != null) {
           print('AuthProvider: Restored user from cache: ${_user!.email}');
+          print('AuthProvider: User ID: ${_user!.id}');
         } else {
           print('AuthProvider: No existing session found');
         }
@@ -50,6 +51,11 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Helper method to notify achievement provider of user changes
+  void _notifyUserChange() {
+    notifyListeners();
+  }
+
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
     _clearError();
@@ -57,39 +63,57 @@ class AuthProvider with ChangeNotifier {
     try {
       print('AuthProvider: Starting sign in process...');
       
-      // Run comprehensive tests on iOS
-      if (Platform.isIOS) {
-        print('AuthProvider: Running iOS-specific tests...');
-        await IOSSignInTestService.runAllTests();
-        await _authServiceIOS.debugGoogleSignInConfiguration();
-      }
+      // Use only the standard auth service with enhanced error handling
+      UserModel? user;
       
-      // Use platform-specific service
-      final user = Platform.isIOS 
-          ? await _authServiceIOS.signInWithGoogle()
-          : await _authService.signInWithGoogle();
+      print('AuthProvider: Using standard auth service for all platforms...');
+      user = await _authService.signInWithGoogle();
       
       if (user != null) {
-        print('AuthProvider: User signed in successfully: ${user.username}');
+        print('AuthProvider: User signed in successfully: ${user.username} (${user.email})');
         _user = user;
         
         // Cache user with error handling
         try {
           await StorageService.cacheUser(user);
+          print('AuthProvider: User cached successfully');
         } catch (cacheError) {
           print('AuthProvider: Failed to cache user: $cacheError');
           // Don't fail the sign in process if caching fails
         }
         
+        _clearError();
         notifyListeners();
         return true;
       } else {
-        print('AuthProvider: Sign in returned null user');
+        print('AuthProvider: Sign in returned null user - user canceled');
+        _setError('Sign in was canceled');
         return false;
       }
     } catch (e) {
       print('AuthProvider: Sign in error: $e');
-      _setError('Failed to sign in: $e');
+      String errorMessage = 'Failed to sign in';
+      
+      // Provide more specific error messages
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('canceled') || errorStr.contains('cancelled')) {
+        errorMessage = 'Sign in was canceled';
+        return false; // Don't show error for user cancellation
+      } else if (errorStr.contains('timeout')) {
+        errorMessage = 'Sign in timed out - please try again';
+      } else if (errorStr.contains('network')) {
+        errorMessage = 'Network error - please check your connection';
+      } else if (errorStr.contains('configuration')) {
+        errorMessage = 'App configuration error - please contact support';
+      } else if (errorStr.contains('crash') || errorStr.contains('abort')) {
+        errorMessage = 'Google Sign-In encountered an error. Please try again or restart the app.';
+      } else if (errorStr.contains('google')) {
+        errorMessage = 'Google Sign-In failed - please try again';
+      } else {
+        errorMessage = 'Sign-in failed - please try again';
+      }
+      
+      _setError(errorMessage);
       return false;
     } finally {
       _setLoading(false);
@@ -100,12 +124,8 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     
     try {
-      // Use platform-specific service
-      if (Platform.isIOS) {
-        await _authServiceIOS.signOut();
-      } else {
-        await _authService.signOut();
-      }
+      // Use standard auth service for all platforms to avoid crashes
+      await _authService.signOut();
       
       await StorageService.clearUserData();
       _user = null;
@@ -115,6 +135,27 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  // Test methods for authentication testing
+  void setUser(UserModel user) {
+    _user = user;
+    _clearError();
+    notifyListeners();
+    
+    // Cache the user
+    StorageService.cacheUser(user);
+    
+    print('🧪 Test user set: ${user.username} (${user.email})');
+    print('🧪 User ID: ${user.id}');
+  }
+
+  void clearUser() {
+    _user = null;
+    _clearError();
+    notifyListeners();
+    
+    print('🧪 Test user cleared');
   }
 
   Future<void> updateProfile({

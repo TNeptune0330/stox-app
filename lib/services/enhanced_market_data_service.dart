@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../config/api_keys.dart';
 import '../models/market_asset_model.dart';
 import '../services/local_database_service.dart';
+import '../services/realistic_price_simulator.dart';
 
 class EnhancedMarketDataService {
   static const String _logPrefix = '[MarketData]';
@@ -424,17 +425,29 @@ class EnhancedMarketDataService {
   }
   
   static Future<void> startPeriodicUpdates() async {
-    print('$_logPrefix Starting periodic market data updates...');
+    print('$_logPrefix Starting enhanced market data updates...');
     
     // Update immediately
     await updateAllMarketData();
     
-    // Schedule periodic updates every 5 minutes
-    Stream.periodic(const Duration(minutes: 5)).listen((_) async {
+    // Schedule periodic updates every 2 minutes with realistic price simulation
+    Stream.periodic(const Duration(minutes: 2)).listen((_) async {
       try {
-        await updateAllMarketData();
+        // Use realistic price simulation first
+        await RealisticPriceSimulator.simulateRealisticPriceUpdates();
+        
+        // Occasionally try real API updates (every 5th update)
+        if (DateTime.now().minute % 10 == 0) {
+          await updateAllMarketData();
+        }
       } catch (e) {
         print('$_logPrefix ❌ Periodic update failed: $e');
+        // Fallback to basic simulation if everything fails
+        try {
+          await RealisticPriceSimulator.simulateRealisticPriceUpdates();
+        } catch (fallbackError) {
+          print('$_logPrefix ❌ Fallback simulation also failed: $fallbackError');
+        }
       }
     });
   }

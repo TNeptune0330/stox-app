@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../main_navigation.dart';
+import '../legal/legal_document_screen.dart';
 import 'profile_edit_screen.dart';
 import 'color_picker_screen.dart';
+import 'five_color_demo_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -156,6 +159,25 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
 
+              // 5-Color Design System Demo
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.palette, color: Colors.purple),
+                  title: const Text('5-Color Design System'),
+                  subtitle: const Text('See the new simplified color palette'),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const FiveColorDemoScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
               // App Info Section
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -196,15 +218,35 @@ class SettingsScreen extends StatelessWidget {
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.privacy_tip_outlined),
-                      title: const Text('Privacy Policy'),
-                      subtitle: const Text('Read our privacy policy'),
+                      leading: const Icon(Icons.description_outlined),
+                      title: const Text('Terms of Service'),
+                      subtitle: const Text('App terms and conditions'),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
-                        // TODO: Implement privacy policy screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Privacy Policy coming soon!'),
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const LegalDocumentScreen(
+                              title: 'Terms of Service',
+                              assetPath: 'assets/legal/terms_of_service.md',
+                              showAcceptButton: false,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.privacy_tip_outlined),
+                      title: const Text('Privacy Policy'),
+                      subtitle: const Text('How we protect your data'),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const LegalDocumentScreen(
+                              title: 'Privacy Policy',
+                              assetPath: 'assets/legal/privacy_policy.md',
+                              showAcceptButton: false,
+                            ),
                           ),
                         );
                       },
@@ -212,6 +254,34 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // Debug Section (only show in debug mode)
+              if (kDebugMode)
+                Card(
+                  margin: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.bug_report, color: Colors.orange),
+                        title: const Text('Auth Test Screen'),
+                        subtitle: const Text('Test authentication flow'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/auth-test');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.login, color: Colors.blue),
+                        title: const Text('Auth Flow Test'),
+                        subtitle: const Text('Complete sign-in/sign-out flow test'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/auth-flow-test');
+                        },
+                      ),
+                    ],
+                  ),
+                ),
 
               // Sign Out Section
               Card(

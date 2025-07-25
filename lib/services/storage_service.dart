@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/asset_model.dart';
 import '../models/user_model.dart';
+import '../utils/uuid_utils.dart';
 
 class StorageService {
   static const String _themeKey = 'selected_theme';
@@ -37,6 +38,7 @@ class StorageService {
     try {
       final userJson = jsonEncode(user.toJson());
       await _prefs?.setString(_userKey, userJson);
+      print('✅ User cached successfully with ID: ${user.id}');
     } catch (e) {
       // If caching fails, log but don't crash
       print('Failed to cache user: $e');
@@ -48,7 +50,23 @@ class StorageService {
     if (userString != null) {
       try {
         final userJson = jsonDecode(userString) as Map<String, dynamic>;
-        return UserModel.fromJson(userJson);
+        final user = UserModel.fromJson(userJson);
+        
+        // Check if the user ID is in the old Google ID format and needs migration
+        if (_needsUuidMigration(user.id)) {
+          print('🔄 Migrating user ID from Google ID format to UUID format');
+          print('  Original ID: ${user.id}');
+          final convertedId = UuidUtils.ensureUuidFormat(user.id);
+          print('  Converted ID: $convertedId');
+          final migratedUser = user.copyWith(id: convertedId);
+          
+          // Cache the migrated user synchronously
+          _cacheMigratedUser(migratedUser);
+          
+          return migratedUser;
+        }
+        
+        return user;
       } catch (e) {
         // If deserialization fails, return null
         print('Failed to deserialize cached user: $e');
@@ -56,6 +74,21 @@ class StorageService {
       }
     }
     return null;
+  }
+  
+  static void _cacheMigratedUser(UserModel user) {
+    try {
+      final userJson = jsonEncode(user.toJson());
+      _prefs?.setString(_userKey, userJson);
+      print('✅ Migrated user cached successfully with ID: ${user.id}');
+    } catch (e) {
+      print('❌ Failed to cache migrated user: $e');
+    }
+  }
+  
+  static bool _needsUuidMigration(String id) {
+    // Check if ID is in raw Google ID format (all digits)
+    return RegExp(r'^\d+$').hasMatch(id);
   }
 
   static Future<void> cacheAssets(List<AssetModel> assets) async {

@@ -5,27 +5,35 @@ import '../services/storage_service.dart';
 import '../services/local_database_service.dart';
 import '../services/connection_manager.dart';
 import '../services/local_trading_service.dart';
+import '../utils/uuid_utils.dart';
 
 class PortfolioService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final ConnectionManager _connectionManager = ConnectionManager();
 
   Future<List<PortfolioModel>> getUserPortfolio(String userId) async {
-    return await _connectionManager.executeWithFallback<List<PortfolioModel>>(
+    // Use the user ID directly (should be Supabase Auth user ID)
+    return await _connectionManager.forceExecuteWithFallback<List<PortfolioModel>>(
       () async {
+        print('🔄 Attempting to load portfolio from Supabase...');
         final response = await _supabase
             .from('portfolio')
             .select()
             .eq('user_id', userId)
             .order('created_at', ascending: false);
 
+        print('✅ Portfolio loaded from Supabase: ${response.length} holdings');
         return response.map<PortfolioModel>((json) => PortfolioModel.fromJson(json)).toList();
       },
-      () async => await LocalTradingService.getLocalPortfolio(userId),
+      () async {
+        print('📱 Loading portfolio from local storage...');
+        return await LocalTradingService.getLocalPortfolio(userId);
+      },
     ) ?? [];
   }
 
   Future<List<TransactionModel>> getUserTransactions(String userId, {int limit = 50}) async {
+    // Use the user ID directly (should be Supabase Auth user ID)
     return await _connectionManager.executeWithFallback<List<TransactionModel>>(
       () async {
         final response = await _supabase
@@ -53,14 +61,25 @@ class PortfolioService {
       try {
         final totalValue = quantity * price;
         
-        await _supabase.rpc('execute_trade', params: {
+        // Get asset info from market data for sector tracking
+        final marketData = await _getMarketAssetInfo(symbol);
+        
+        // Use the user ID directly (should be Supabase Auth user ID)
+        final result = await _supabase.rpc('execute_trade', params: {
           'user_id_param': userId,
           'symbol_param': symbol,
           'type_param': type,
           'quantity_param': quantity,
           'price_param': price,
           'total_value_param': totalValue,
+          'sector_param': marketData['sector'],
+          'asset_type_param': marketData['type'],
         });
+        
+        // Check if trade was successful
+        if (result['success'] != true) {
+          throw Exception(result['error'] ?? 'Trade execution failed');
+        }
         
         _connectionManager.recordSuccess();
         print('✅ Trade executed successfully (Supabase): $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
@@ -73,6 +92,7 @@ class PortfolioService {
     
     // Fallback to local trading
     print('🔄 Executing trade locally...');
+    // Use the user ID directly (should be Supabase Auth user ID)
     return await LocalTradingService.executeTrade(
       userId: userId,
       symbol: symbol,
@@ -105,18 +125,49 @@ class PortfolioService {
           .from('market_prices')
           .select('price')
           .eq('symbol', symbol)
-          .single();
+          .maybeSingle();
 
-      return (response['price'] as num).toDouble();
+      if (response != null) {
+        return (response['price'] as num).toDouble();
+      }
+      print('⚠️ No price data found for $symbol, using fallback');
+      return 0.0;
     } catch (e) {
       print('❌ Error fetching current price for $symbol: $e');
       return 0.0;
     }
   }
 
+  Future<Map<String, dynamic>> _getMarketAssetInfo(String symbol) async {
+    try {
+      final response = await _supabase
+          .from('market_prices')
+          .select('sector, type')
+          .eq('symbol', symbol)
+          .maybeSingle();
+
+      if (response != null) {
+        return {
+          'sector': response['sector'] ?? 'Unknown',
+          'type': response['type'] ?? 'stock',
+        };
+      }
+    } catch (e) {
+      print('❌ Error fetching asset info for $symbol: $e');
+    }
+    
+    // Default fallback
+    return {
+      'sector': 'Unknown',
+      'type': 'stock',
+    };
+  }
+
   Future<Map<String, dynamic>> getPortfolioSummary(String userId) async {
-    return await _connectionManager.executeWithFallback<Map<String, dynamic>>(
+    // Use the user ID directly (should be Supabase Auth user ID)
+    return await _connectionManager.forceExecuteWithFallback<Map<String, dynamic>>(
       () async {
+        print('🔄 Attempting to load portfolio summary from Supabase...');
         final portfolio = await getUserPortfolio(userId);
         
         // Get user's cash balance from Supabase
@@ -124,8 +175,16 @@ class PortfolioService {
             .from('users')
             .select('cash_balance')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
+        
+        if (user == null) {
+          print('⚠️ User not found in Supabase for ID: $userId');
+          throw Exception('User not found in database');
+        }
+        
         final cashBalance = (user['cash_balance'] as num).toDouble();
+        
+        print('✅ Portfolio summary loaded from Supabase: Cash \$${cashBalance.toStringAsFixed(2)}');
 
         double totalHoldingsValue = 0.0;
         double totalPnL = 0.0;
@@ -173,6 +232,7 @@ class PortfolioService {
   }
 
   Future<int> getSharesOwned(String userId, String symbol) async {
+    // Use the user ID directly (should be Supabase Auth user ID)
     return await _connectionManager.executeWithFallback<int>(
       () async {
         final response = await _supabase
@@ -190,21 +250,27 @@ class PortfolioService {
 
   Future<double> getUserCashBalance(String userId) async {
     try {
+      // Use the user ID directly (should be Supabase Auth user ID)
       final response = await _supabase
           .from('users')
           .select('cash_balance')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
 
-      return (response['cash_balance'] as num).toDouble();
+      if (response != null) {
+        return (response['cash_balance'] as num).toDouble();
+      }
+      print('⚠️ User not found in Supabase for cash balance: $userId');
+      return 10000.0; // Default starting balance
     } catch (e) {
       print('❌ Error fetching cash balance: $e');
-      return 0.0;
+      return 10000.0; // Default starting balance
     }
   }
 
   Future<void> updateUserCashBalance(String userId, double newBalance) async {
     try {
+      // Use the user ID directly (should be Supabase Auth user ID)
       await _supabase
           .from('users')
           .update({'cash_balance': newBalance})

@@ -3,16 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/market_asset_model.dart';
 import '../../providers/portfolio_provider.dart';
+import '../../providers/achievement_provider.dart';
 import '../../widgets/price_change_indicator.dart';
 
 class TradeDialog extends StatefulWidget {
   final MarketAssetModel asset;
   final String userId;
+  final int initialTab;
+  final int? maxQuantity;
 
   const TradeDialog({
     super.key,
     required this.asset,
     required this.userId,
+    this.initialTab = 0,
+    this.maxQuantity,
   });
 
   @override
@@ -28,7 +33,7 @@ class _TradeDialogState extends State<TradeDialog> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
     _quantityController.text = _currentQuantity.toString();
   }
 
@@ -138,8 +143,11 @@ class _TradeDialogState extends State<TradeDialog> with TickerProviderStateMixin
                           ),
                           onChanged: (value) {
                             final quantity = int.tryParse(value) ?? 1;
+                            final maxQty = _tabController.index == 1 && widget.maxQuantity != null 
+                                ? widget.maxQuantity! 
+                                : 999999;
                             setState(() {
-                              _currentQuantity = quantity.clamp(1, 999999);
+                              _currentQuantity = quantity.clamp(1, maxQty);
                             });
                           },
                         ),
@@ -256,10 +264,15 @@ class _TradeDialogState extends State<TradeDialog> with TickerProviderStateMixin
   }
 
   void _increaseQuantity() {
-    setState(() {
-      _currentQuantity++;
-      _quantityController.text = _currentQuantity.toString();
-    });
+    final maxQty = _tabController.index == 1 && widget.maxQuantity != null 
+        ? widget.maxQuantity! 
+        : 999999;
+    if (_currentQuantity < maxQty) {
+      setState(() {
+        _currentQuantity++;
+        _quantityController.text = _currentQuantity.toString();
+      });
+    }
   }
 
   void _decreaseQuantity() {
@@ -278,6 +291,7 @@ class _TradeDialogState extends State<TradeDialog> with TickerProviderStateMixin
 
     try {
       final portfolioProvider = Provider.of<PortfolioProvider>(context, listen: false);
+      final achievementProvider = Provider.of<AchievementProvider>(context, listen: false);
       final tradeType = _tabController.index == 0 ? 'buy' : 'sell';
 
       final success = await portfolioProvider.executeTrade(
@@ -286,6 +300,7 @@ class _TradeDialogState extends State<TradeDialog> with TickerProviderStateMixin
         type: tradeType,
         quantity: _currentQuantity,
         price: widget.asset.price,
+        achievementProvider: achievementProvider,
       );
 
       if (mounted) {
