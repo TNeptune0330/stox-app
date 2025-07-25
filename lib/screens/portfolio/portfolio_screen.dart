@@ -4,6 +4,7 @@ import '../../providers/portfolio_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/achievement_provider.dart';
 import '../../providers/market_data_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/portfolio_summary_card.dart';
 import '../../widgets/price_change_indicator.dart';
 import '../../widgets/achievement_banner_widget.dart';
@@ -25,66 +26,98 @@ class PortfolioScreen extends StatefulWidget {
 class _PortfolioScreenState extends State<PortfolioScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1a1a2e),
-              Color(0xFF0f1419),
-            ],
-          ),
-        ),
-        child: CustomScrollView(
-          slivers: [
-            // Game-like Header
-            SliverAppBar(
-              expandedHeight: ResponsiveUtils.isTablet(context) ? 160 : 120,
-              floating: false,
-              pinned: true,
-              backgroundColor: Colors.transparent,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF533483), Color(0xFF7209b7)],
-                    ),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.account_balance_wallet,
-                          size: ResponsiveUtils.getIconSize(context, 48),
-                          color: const Color(0xFFf39c12),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'TRADING EMPIRE',
-                          style: TextStyle(
-                            fontSize: ResponsiveUtils.getFontSize(context, 24),
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 2,
-                          ),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Scaffold(
+          backgroundColor: themeProvider.background,
+          body: CustomScrollView(
+            slivers: [
+              // Header with 5-color theme
+              SliverAppBar(
+                expandedHeight: ResponsiveUtils.isTablet(context) ? 160 : 120,
+                floating: false,
+                pinned: true,
+                backgroundColor: themeProvider.backgroundHigh,
+                foregroundColor: themeProvider.isDark ? Colors.white : Colors.black,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          themeProvider.themeHigh,
+                          themeProvider.theme,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: themeProvider.themeHigh.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.account_balance_wallet,
+                              size: ResponsiveUtils.getIconSize(context, 36),
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'PORTFOLIO',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Consumer<PortfolioProvider>(
+                            builder: (context, portfolioProvider, child) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Net Worth: \$${portfolioProvider.portfolioSummary?.netWorth.toStringAsFixed(2) ?? '0.00'}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.history, color: Colors.white),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TransactionHistoryScreen(),
-                      ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.history, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TransactionHistoryScreen(),
+                        ),
                     );
                   },
                 ),

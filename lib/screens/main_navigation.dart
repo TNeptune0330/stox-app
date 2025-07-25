@@ -143,13 +143,43 @@ class AppBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SliverAppBar(
-      title: Text(title),
-      actions: actions,
-      pinned: true,
-      expandedHeight: 60,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      foregroundColor: Theme.of(context).colorScheme.onSurface,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return SliverAppBar(
+          title: Text(
+            title,
+            style: TextStyle(
+              color: themeProvider.isDark ? Colors.white : Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: actions,
+          pinned: true,
+          expandedHeight: 60,
+          backgroundColor: themeProvider.backgroundHigh,
+          foregroundColor: themeProvider.isDark ? Colors.white : Colors.black,
+          elevation: 0,
+          shadowColor: themeProvider.contrast.withOpacity(0.1),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  themeProvider.backgroundHigh,
+                  themeProvider.backgroundHigh.withOpacity(0.8),
+                ],
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: themeProvider.theme.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -159,8 +189,29 @@ class LoadingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+                backgroundColor: themeProvider.backgroundHigh,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Loading...',
+                style: TextStyle(
+                  color: themeProvider.themeHigh,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -177,30 +228,70 @@ class ErrorStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          if (onRetry != null) ...[
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: themeProvider.backgroundHigh,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: themeProvider.contrast.withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: themeProvider.contrast.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ],
-      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: themeProvider.contrast,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error',
+                  style: TextStyle(
+                    color: themeProvider.contrast,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: themeProvider.isDark ? Colors.white70 : Colors.black87,
+                    fontSize: 16,
+                  ),
+                ),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: onRetry,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: themeProvider.theme,
+                      foregroundColor: themeProvider.isDark ? Colors.white : Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -221,33 +312,70 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: themeProvider.backgroundHigh,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: themeProvider.themeHigh.withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: themeProvider.theme.withOpacity(0.1),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: themeProvider.themeHigh.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 48,
+                    color: themeProvider.themeHigh,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: themeProvider.isDark ? Colors.white : Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: themeProvider.isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 16,
+                  ),
+                ),
+                if (action != null) ...[
+                  const SizedBox(height: 24),
+                  action!,
+                ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.headlineSmall,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-          if (action != null) ...[
-            const SizedBox(height: 16),
-            action!,
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }

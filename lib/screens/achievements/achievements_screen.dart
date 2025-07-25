@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/achievement_model.dart';
 import '../../providers/achievement_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -30,71 +31,90 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1a1a2e),
-              Color(0xFF0f1419),
-            ],
-          ),
-        ),
-        child: Consumer<AchievementProvider>(
-          builder: (context, achievementProvider, child) {
-            final filteredAchievements = _getFilteredAchievements(achievementProvider.achievements);
-            
-            return CustomScrollView(
-              slivers: [
-                // Header
-                SliverAppBar(
-                  expandedHeight: 120,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: Colors.transparent,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFFf39c12), Color(0xFFe74c3c)],
-                        ),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.emoji_events,
-                              size: 48,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'ACHIEVEMENTS',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${achievementProvider.getUnlockedCount()} / ${achievementProvider.getTotalCount()} Unlocked',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w500,
-                              ),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Scaffold(
+          backgroundColor: themeProvider.background,
+          body: Consumer<AchievementProvider>(
+            builder: (context, achievementProvider, child) {
+              final filteredAchievements = _getFilteredAchievements(achievementProvider.achievements);
+              
+              return CustomScrollView(
+                slivers: [
+                  // Header with 5-color theme
+                  SliverAppBar(
+                    expandedHeight: 120,
+                    floating: false,
+                    pinned: true,
+                    backgroundColor: themeProvider.backgroundHigh,
+                    foregroundColor: themeProvider.isDark ? Colors.white : Colors.black,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              themeProvider.theme,
+                              themeProvider.themeHigh,
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: themeProvider.theme.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
                           ],
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.emoji_events,
+                                  size: 36,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'ACHIEVEMENTS',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${achievementProvider.getUnlockedCount()} / ${achievementProvider.getTotalCount()} Unlocked',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
                 // Category Filter
                 SliverToBoxAdapter(
