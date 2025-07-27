@@ -7,8 +7,8 @@ import '../models/five_color_theme.dart';
 
 class ThemeProvider with ChangeNotifier {
   final UserSettingsService _settingsService = UserSettingsService();
-  String _selectedTheme = 'darkBlue';
-  AppThemeModel _currentTheme = AppThemeModel.darkBlue;
+  String _selectedTheme = 'deepOcean';
+  AppThemeModel _currentTheme = FiveColorTheme.darkBlue.toAppThemeModel();
   FiveColorTheme _fiveColorTheme = FiveColorTheme.darkBlue;
   String? _currentUserId;
   
@@ -37,8 +37,8 @@ class ThemeProvider with ChangeNotifier {
         _selectedTheme = await _settingsService.getSetting<String>(
           userId: userId,
           key: 'selected_theme',
-          defaultValue: 'darkBlue',
-        ) ?? 'darkBlue';
+          defaultValue: 'deepOcean',
+        ) ?? 'deepOcean';
         
         // Load full theme customization
         final savedThemeJson = await _settingsService.getSetting<String>(
@@ -71,7 +71,7 @@ class ThemeProvider with ChangeNotifier {
         }
       } else {
         // Fallback to local storage
-        _selectedTheme = LocalDatabaseService.getSetting<String>('selected_theme') ?? 'darkBlue';
+        _selectedTheme = LocalDatabaseService.getSetting<String>('selected_theme') ?? 'deepOcean';
         final savedThemeJson = LocalDatabaseService.getSetting<String>('custom_theme_json');
         
         if (savedThemeJson != null && _selectedTheme == 'custom') {
@@ -103,7 +103,7 @@ class ThemeProvider with ChangeNotifier {
     } catch (e) {
       print('Error initializing theme: $e');
       // Use default values if everything fails
-      _selectedTheme = 'darkBlue';
+      _selectedTheme = 'deepOcean';
       _fiveColorTheme = FiveColorTheme.darkBlue;
       _currentTheme = _fiveColorTheme.toAppThemeModel();
       notifyListeners();
@@ -618,54 +618,59 @@ class ThemeProvider with ChangeNotifier {
     };
   }
 
-  static const List<Map<String, dynamic>> themes = [
-    {
-      'name': 'Dark Blue (Default)',
-      'value': 'darkBlue',
-      'icon': Icons.palette,
-      'color': Color(0xFF2196F3),
-    },
-    {
-      'name': 'Blue & Black',
-      'value': 'blue_black',
-      'icon': Icons.dark_mode,
-      'color': Colors.blue,
-    },
-    {
-      'name': 'Classic Light',
-      'value': 'light',
-      'icon': Icons.light_mode,
-      'color': Colors.white,
-    },
-    {
-      'name': 'Trading Green',
-      'value': 'green',
-      'icon': Icons.trending_up,
-      'color': Colors.green,
-    },
-    {
-      'name': 'Ocean Blue',
-      'value': 'blue',
-      'icon': Icons.water_drop,
-      'color': Colors.indigo,
-    },
-    {
-      'name': 'Dark Mode',
-      'value': 'dark',
-      'icon': Icons.brightness_3,
-      'color': Color(0xFF1565c0),
-    },
-    {
-      'name': 'Business Empire',
-      'value': 'game',
-      'icon': Icons.videogame_asset,
-      'color': Color(0xFFf39c12),
-    },
-    {
+  /// Get all available themes for UI selection
+  static List<Map<String, dynamic>> get themes {
+    final allThemes = FiveColorTheme.getAllThemes();
+    return allThemes.map((theme) => {
+      'name': theme.name,
+      'value': _getThemeKey(theme.name),
+      'icon': _getThemeIcon(theme.name),
+      'color': theme.theme,
+      'previewColors': [
+        theme.background,
+        theme.backgroundHigh, 
+        theme.theme,
+        theme.themeHigh,
+        theme.contrast,
+      ],
+    }).toList()..add({
       'name': 'Custom Colors',
       'value': 'custom',
       'icon': Icons.color_lens,
       'color': Colors.purple,
-    },
-  ];
+      'previewColors': [Colors.purple, Colors.deepPurple, Colors.indigo, Colors.blue, Colors.orange],
+    });
+  }
+  
+  static String _getThemeKey(String name) {
+    switch (name) {
+      case 'Deep Ocean': return 'deepOcean';
+      case 'Forest Twilight': return 'forestTwilight';  
+      case 'Royal Purple': return 'royalPurple';
+      case 'Sunset Warmth': return 'sunsetWarmth';
+      case 'Arctic Blue': return 'arcticBlue';
+      case 'Light Professional': return 'lightProfessional';
+      case 'Light Mint': return 'lightMint';
+      case 'Light Lavender': return 'lightLavender';
+      case 'Monochrome Dark': return 'monochromeDark';
+      case 'Monochrome Light': return 'monochromeLight';
+      default: return 'deepOcean';
+    }
+  }
+  
+  static IconData _getThemeIcon(String name) {
+    switch (name) {
+      case 'Deep Ocean': return Icons.water;
+      case 'Forest Twilight': return Icons.forest;
+      case 'Royal Purple': return Icons.diamond;
+      case 'Sunset Warmth': return Icons.wb_sunny;
+      case 'Arctic Blue': return Icons.ac_unit;
+      case 'Light Professional': return Icons.business;
+      case 'Light Mint': return Icons.eco;
+      case 'Light Lavender': return Icons.palette;
+      case 'Monochrome Dark': return Icons.brightness_3;
+      case 'Monochrome Light': return Icons.brightness_7;
+      default: return Icons.palette;
+    }
+  }
 }

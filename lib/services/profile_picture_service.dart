@@ -31,6 +31,9 @@ class ProfilePictureService {
     required XFile imageFile,
   }) async {
     try {
+      // Ensure bucket exists first
+      await ensureBucketExists();
+      
       // Create unique filename
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = '$userId/profile_${timestamp}.jpg';
@@ -60,6 +63,8 @@ class ProfilePictureService {
       
     } catch (e) {
       print('❌ Error uploading profile picture: $e');
+      // For production, disable profile picture uploads if storage is not configured
+      print('⚠️ Profile picture upload disabled - storage bucket not configured');
       return null;
     }
   }

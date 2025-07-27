@@ -38,7 +38,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 floating: false,
                 pinned: true,
                 backgroundColor: themeProvider.backgroundHigh,
-                foregroundColor: themeProvider.isDark ? Colors.white : Colors.black,
+                foregroundColor: themeProvider.contrast,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
@@ -65,22 +65,22 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: themeProvider.background.withOpacity(0.3),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.account_balance_wallet,
                               size: ResponsiveUtils.getIconSize(context, 36),
-                              color: Colors.white,
+                              color: themeProvider.contrast,
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'PORTFOLIO',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: themeProvider.contrast,
                               letterSpacing: 2,
                             ),
                           ),
@@ -90,14 +90,14 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: themeProvider.background.withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   'Net Worth: \$${portfolioProvider.netWorth.toStringAsFixed(2)}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.white,
+                                    color: themeProvider.contrast,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -111,7 +111,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 ),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.history, color: Colors.white),
+                    icon: Icon(Icons.history, color: themeProvider.contrast),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -122,7 +122,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                     },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  icon: Icon(Icons.refresh, color: themeProvider.contrast),
                   onPressed: () {
                     final authProvider = Provider.of<AuthProvider>(context, listen: false);
                     if (authProvider.user != null) {
@@ -180,22 +180,30 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         margin: const EdgeInsets.all(16),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1a1a2e),
+                          color: themeProvider.backgroundHigh,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFf39c12), width: 2),
+                          border: Border.all(color: themeProvider.themeHigh, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: themeProvider.themeHigh.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.emoji_events, color: Color(0xFFf39c12), size: 20),
+                                Icon(Icons.emoji_events, color: themeProvider.themeHigh, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Recent Achievements',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFf39c12),
+                                    color: themeProvider.contrast,
+                                    fontSize: 16,
                                   ),
                                 ),
                               ],
@@ -209,7 +217,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                   const SizedBox(width: 8),
                                   Text(
                                     achievement.title,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                    style: TextStyle(color: themeProvider.contrast, fontSize: 12),
                                   ),
                                 ],
                               ),

@@ -1,18 +1,18 @@
-import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import '../services/auth_service_ios.dart';
-import '../services/ios_signin_test_service.dart';
 import '../services/storage_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
-  // final AuthServiceIOS _authServiceIOS = AuthServiceIOS(); // Disabled - using main AuthService now
   
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
+  
+  // Session refresh timer for persistent login
+  Timer? _sessionRefreshTimer;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
@@ -23,38 +23,51 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     
     try {
-      print('AuthProvider: Initializing...');
+      print('AuthProvider: Initializing with persistent session support...');
       
-      // Check for existing Supabase session first
-      if (_authService.isSignedIn) {
-        print('AuthProvider: Found existing Supabase session');
-        _user = await _authService.getCurrentUserData();
-        if (_user != null) {
-          await StorageService.cacheUser(_user!);
-          print('AuthProvider: Restored user from Supabase: ${_user!.email}');
-        }
-      } else {
-        // Try to restore from cache
-        _user = StorageService.getCachedUser();
-        if (_user != null) {
-          print('AuthProvider: Restored user from cache: ${_user!.email}');
-          print('AuthProvider: User ID: ${_user!.id}');
-        } else {
-          print('AuthProvider: No existing session found');
-        }
+      // Step 1: Try to restore session from Supabase with automatic refresh
+      final restoredUser = await _authService.restoreSession();
+      if (restoredUser != null) {
+        _user = restoredUser;
+        print('AuthProvider: Session restored successfully: ${_user!.email}');
+        print('AuthProvider: User will stay logged in indefinitely');
+        
+        // Set up automatic session refresh timer
+        _startSessionRefreshTimer();
+        
+        notifyListeners();
+        return;
       }
+      
+      // Step 2: If no session, try cached user (offline mode)
+      final cachedUser = StorageService.getCachedUser();
+      if (cachedUser != null) {
+        _user = cachedUser;
+        print('AuthProvider: Using cached user (offline mode): ${_user!.email}');
+        notifyListeners();
+        return;
+      }
+      
+      print('AuthProvider: No session or cached user found - user needs to sign in');
+      
     } catch (e) {
       print('AuthProvider: Error during initialization: $e');
-      _setError('Failed to initialize auth: $e');
+      // Try cached user as fallback
+      try {
+        final cachedUser = StorageService.getCachedUser();
+        if (cachedUser != null) {
+          _user = cachedUser;
+          print('AuthProvider: Using cached user as fallback: ${_user!.email}');
+        }
+      } catch (cacheError) {
+        print('AuthProvider: Cache fallback failed: $cacheError');
+        _setError('Failed to initialize auth: $e');
+      }
     } finally {
       _setLoading(false);
     }
   }
 
-  // Helper method to notify achievement provider of user changes
-  void _notifyUserChange() {
-    notifyListeners();
-  }
 
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
@@ -81,6 +94,9 @@ class AuthProvider with ChangeNotifier {
           print('AuthProvider: Failed to cache user: $cacheError');
           // Don't fail the sign in process if caching fails
         }
+        
+        // Start session refresh timer for persistent login
+        _startSessionRefreshTimer();
         
         _clearError();
         notifyListeners();
@@ -124,6 +140,10 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     
     try {
+      // Cancel session refresh timer
+      _sessionRefreshTimer?.cancel();
+      _sessionRefreshTimer = null;
+      
       // Use standard auth service for all platforms to avoid crashes
       await _authService.signOut();
       
@@ -222,5 +242,54 @@ class AuthProvider with ChangeNotifier {
   void _clearError() {
     _error = null;
     notifyListeners();
+  }
+  
+  // Start automatic session refresh for persistent login
+  void _startSessionRefreshTimer() {
+    // Cancel existing timer if any
+    _sessionRefreshTimer?.cancel();
+    
+    // Refresh session every 50 minutes (tokens expire in 60 minutes)
+    _sessionRefreshTimer = Timer.periodic(const Duration(minutes: 50), (timer) async {
+      try {
+        print('AuthProvider: Auto-refreshing session for persistent login...');
+        
+        if (_authService.isSignedIn) {
+          // Check if session needs refresh
+          final isValid = await _authService.isSessionValid();
+          if (!isValid) {
+            print('AuthProvider: Session needs refresh');
+            await _authService.refreshSession();
+            
+            // Update cached user data
+            final userData = await _authService.getCurrentUserData();
+            if (userData != null) {
+              _user = userData;
+              await StorageService.cacheUser(userData);
+              notifyListeners();
+            }
+            
+            print('AuthProvider: Session auto-refreshed successfully');
+          } else {
+            print('AuthProvider: Session still valid, no refresh needed');
+          }
+        } else {
+          print('AuthProvider: No active session, stopping refresh timer');
+          timer.cancel();
+          _sessionRefreshTimer = null;
+        }
+      } catch (e) {
+        print('AuthProvider: Auto-refresh failed: $e');
+        // Don't stop the timer on single failures
+      }
+    });
+    
+    print('AuthProvider: Session auto-refresh timer started (50min intervals)');
+  }
+  
+  @override
+  void dispose() {
+    _sessionRefreshTimer?.cancel();
+    super.dispose();
   }
 }

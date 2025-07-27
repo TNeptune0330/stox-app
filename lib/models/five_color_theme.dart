@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_theme_model.dart';
+import 'harmonious_palettes.dart';
 
 /// A simplified 5-color design system for consistent UI
 class FiveColorTheme {
@@ -25,9 +26,9 @@ class FiveColorTheme {
 
   /// Convert to the existing AppThemeModel system
   AppThemeModel toAppThemeModel() {
-    // Text colors based on contrast
+    // Text colors are ALWAYS white or black - no theme colors
     final textColor = isDark ? Colors.white : Colors.black;
-    final subtitleColor = isDark ? Colors.white70 : Colors.black54;
+    final subtitleColor = isDark ? Colors.white.withOpacity(0.7) : Colors.black.withOpacity(0.6);
     
     return AppThemeModel(
       name: name,
@@ -79,103 +80,41 @@ class FiveColorTheme {
     );
   }
 
-  // Predefined 5-color themes
-  
-  /// Dark Blue theme - professional and modern
-  static const FiveColorTheme darkBlue = FiveColorTheme(
-    background: Color(0xFF0f1419),      // Dark navy background
-    backgroundHigh: Color(0xFF1a1a2e),  // Lighter navy for cards/surfaces
-    theme: Color(0xFF2196F3),           // Bright blue primary
-    themeHigh: Color(0xFF42A5F5),       // Lighter blue for highlights
-    contrast: Color(0xFFf44336),        // Red for contrast/errors
-    name: 'Dark Blue',
-    isDark: true,
-  );
-  
-  /// Light Blue theme - clean and bright
-  static const FiveColorTheme lightBlue = FiveColorTheme(
-    background: Color(0xFFF8F9FA),      // Light grey background
-    backgroundHigh: Color(0xFFFFFFFF),  // White for cards/surfaces
-    theme: Color(0xFF1976D2),           // Deep blue primary
-    themeHigh: Color(0xFF42A5F5),       // Light blue for highlights
-    contrast: Color(0xFFD32F2F),        // Red for contrast/errors
-    name: 'Light Blue',
-    isDark: false,
-  );
-  
-  /// Dark Green theme - financial/money focused
-  static const FiveColorTheme darkGreen = FiveColorTheme(
-    background: Color(0xFF0D1F0D),      // Dark forest background
-    backgroundHigh: Color(0xFF1B2E1B),  // Lighter forest for cards
-    theme: Color(0xFF4CAF50),           // Green primary
-    themeHigh: Color(0xFF66BB6A),       // Light green for highlights
-    contrast: Color(0xFFf44336),        // Red for contrast/losses
-    name: 'Dark Green',
-    isDark: true,
-  );
-  
-  /// Light Green theme - fresh and natural
-  static const FiveColorTheme lightGreen = FiveColorTheme(
-    background: Color(0xFFF1F8E9),      // Very light green background
-    backgroundHigh: Color(0xFFFFFFFF),  // White for cards/surfaces
-    theme: Color(0xFF2E7D32),           // Deep green primary
-    themeHigh: Color(0xFF4CAF50),       // Medium green for highlights
-    contrast: Color(0xFFD32F2F),        // Red for contrast/losses
-    name: 'Light Green',
-    isDark: false,
-  );
-  
-  /// Dark Purple theme - premium and elegant
-  static const FiveColorTheme darkPurple = FiveColorTheme(
-    background: Color(0xFF1A0E2E),      // Dark purple background
-    backgroundHigh: Color(0xFF2D1B42),  // Lighter purple for cards
-    theme: Color(0xFF9C27B0),           // Purple primary
-    themeHigh: Color(0xFFBA68C8),       // Light purple for highlights
-    contrast: Color(0xFFFF5722),        // Orange for contrast
-    name: 'Dark Purple',
-    isDark: true,
-  );
-  
-  /// Light Purple theme - creative and modern
-  static const FiveColorTheme lightPurple = FiveColorTheme(
-    background: Color(0xFFF8F5FF),      // Very light purple background
-    backgroundHigh: Color(0xFFFFFFFF),  // White for cards/surfaces
-    theme: Color(0xFF7B1FA2),           // Deep purple primary
-    themeHigh: Color(0xFF9C27B0),       // Medium purple for highlights
-    contrast: Color(0xFFFF5722),        // Orange for contrast
-    name: 'Light Purple',
-    isDark: false,
-  );
+  // Use harmonious palettes from the new system
+  static FiveColorTheme get darkBlue => HarmoniousPalettes.deepOcean;
+  static FiveColorTheme get lightBlue => HarmoniousPalettes.lightProfessional;
+  static FiveColorTheme get darkGreen => HarmoniousPalettes.forestTwilight;
+  static FiveColorTheme get lightGreen => HarmoniousPalettes.lightMint;
+  static FiveColorTheme get darkPurple => HarmoniousPalettes.royalPurple;
+  static FiveColorTheme get lightPurple => HarmoniousPalettes.lightLavender;
 
   /// Get all available themes
   static List<FiveColorTheme> getAllThemes() {
-    return [
-      darkBlue,
-      lightBlue,
-      darkGreen,
-      lightGreen,
-      darkPurple,
-      lightPurple,
-    ];
+    return HarmoniousPalettes.getAllThemes();
   }
   
   /// Get theme by name
   static FiveColorTheme getThemeByName(String name) {
+    // Try harmonious palettes first
+    final theme = HarmoniousPalettes.getThemeByName(name);
+    if (theme != null) return theme;
+    
+    // Fallback to legacy names
     switch (name) {
       case 'darkBlue':
-        return darkBlue;
+        return HarmoniousPalettes.deepOcean;
       case 'lightBlue':
-        return lightBlue;
+        return HarmoniousPalettes.lightProfessional;
       case 'darkGreen':
-        return darkGreen;
+        return HarmoniousPalettes.forestTwilight;
       case 'lightGreen':
-        return lightGreen;
+        return HarmoniousPalettes.lightMint;
       case 'darkPurple':
-        return darkPurple;
+        return HarmoniousPalettes.royalPurple;
       case 'lightPurple':
-        return lightPurple;
+        return HarmoniousPalettes.lightLavender;
       default:
-        return darkBlue;
+        return HarmoniousPalettes.deepOcean;
     }
   }
   

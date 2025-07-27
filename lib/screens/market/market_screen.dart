@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/market_data_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../models/market_asset_model.dart';
 import '../../widgets/asset_list_tile.dart';
 import '../main_navigation.dart';
@@ -50,55 +51,130 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          AppBarTitle(
-            title: 'Market',
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  Provider.of<MarketDataProvider>(context, listen: false).refreshMarketData();
-                },
-              ),
-            ],
+  bool _isWeekend() {
+    final now = DateTime.now();
+    return now.weekday == DateTime.saturday || now.weekday == DateTime.sunday;
+  }
+
+  Widget _buildWeekendBanner(ThemeProvider themeProvider) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundHigh,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: themeProvider.theme.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: themeProvider.theme.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          
-          // Search Bar
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search assets...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            Provider.of<MarketDataProvider>(context, listen: false)
-                                .setSearchQuery('');
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onChanged: (value) {
-                  Provider.of<MarketDataProvider>(context, listen: false)
-                      .setSearchQuery(value);
-                },
-              ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: themeProvider.theme.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.schedule,
+              color: themeProvider.theme,
+              size: 20,
             ),
           ),
-          
-          // Asset Type Tabs
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Markets Closed',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.contrast,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Stock markets are closed on weekends. Trading will resume Monday.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: themeProvider.contrast,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              AppBarTitle(
+                title: 'Market',
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () {
+                      Provider.of<MarketDataProvider>(context, listen: false).refreshMarketData();
+                    },
+                  ),
+                ],
+              ),
+              
+              // Search Bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search assets...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                Provider.of<MarketDataProvider>(context, listen: false)
+                                    .setSearchQuery('');
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      Provider.of<MarketDataProvider>(context, listen: false)
+                          .setSearchQuery(value);
+                    },
+                  ),
+                ),
+              ),
+              
+              // Weekend Banner (only show on weekends)
+              if (_isWeekend())
+                SliverToBoxAdapter(
+                  child: _buildWeekendBanner(themeProvider),
+                ),
+              
+              // Asset Type Tabs
           SliverToBoxAdapter(
             child: TabBar(
               controller: _tabController,
@@ -194,6 +270,8 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
           ),
         ],
       ),
+    );
+      },
     );
   }
 

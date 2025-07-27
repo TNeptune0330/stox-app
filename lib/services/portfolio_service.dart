@@ -5,6 +5,7 @@ import '../services/storage_service.dart';
 import '../services/local_database_service.dart';
 import '../services/connection_manager.dart';
 import '../services/local_trading_service.dart';
+import '../services/enhanced_market_data_service.dart';
 import '../utils/uuid_utils.dart';
 
 class PortfolioService {
@@ -121,6 +122,7 @@ class PortfolioService {
 
   Future<double> _getCurrentPrice(String symbol) async {
     try {
+      // First try to get current market price from Supabase
       final response = await _supabase
           .from('market_prices')
           .select('price')
@@ -130,12 +132,38 @@ class PortfolioService {
       if (response != null) {
         return (response['price'] as num).toDouble();
       }
-      print('⚠️ No price data found for $symbol, using fallback');
-      return 0.0;
+      
+      // Fallback to enhanced market data service
+      try {
+        final assetData = await EnhancedMarketDataService.getAsset(symbol);
+        if (assetData != null && assetData.price > 0) {
+          print('✅ Using market data service price for $symbol: \$${assetData.price}');
+          return assetData.price;
+        }
+      } catch (e) {
+        print('⚠️ Market data service failed for $symbol: $e');
+      }
+      
+      // Last resort: get average purchase price from portfolio holdings
+      try {
+        final userId = await _getCurrentUserId();
+        final portfolio = await getUserPortfolio(userId);
+        final holding = portfolio.firstWhere((h) => h.symbol == symbol);
+        print('⚠️ Using avg purchase price for $symbol: \$${holding.avgPrice}');
+        return holding.avgPrice;
+      } catch (e) {
+        print('❌ All price sources failed for $symbol, using 0.0');
+        return 0.0;
+      }
     } catch (e) {
       print('❌ Error fetching current price for $symbol: $e');
       return 0.0;
     }
+  }
+
+  Future<String> _getCurrentUserId() async {
+    final user = StorageService.getCachedUser();
+    return user?.id ?? '';
   }
 
   Future<Map<String, dynamic>> _getMarketAssetInfo(String symbol) async {
@@ -219,7 +247,7 @@ class PortfolioService {
   }
 
   Future<bool> canAffordTrade(String userId, double totalCost) async {
-    final user = await StorageService.getCachedUser();
+    final user = StorageService.getCachedUser();
     if (user != null) {
       final canAfford = user.cashBalance >= totalCost;
       print('✅ Checking affordability: \$${user.cashBalance.toStringAsFixed(2)} vs \$${totalCost.toStringAsFixed(2)} = $canAfford');

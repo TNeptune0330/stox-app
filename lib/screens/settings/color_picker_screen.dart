@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../models/harmonious_palettes.dart';
+import '../../models/five_color_theme.dart';
+import '../../widgets/simple_color_wheel.dart';
 
 class ColorPickerScreen extends StatefulWidget {
   const ColorPickerScreen({super.key});
@@ -11,28 +14,44 @@ class ColorPickerScreen extends StatefulWidget {
 }
 
 class _ColorPickerScreenState extends State<ColorPickerScreen> {
-  Color _selectedPrimaryColor = Colors.blue;
-  Color _selectedBackgroundColor = Colors.black;
+  Color _selectedPrimaryColor = const Color(0xFF2196F3);
+  bool _isDarkMode = true;
+  String _harmonyType = 'complementary';
   
   @override
   void initState() {
     super.initState();
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    _selectedPrimaryColor = themeProvider.customPrimaryColor;
-    _selectedBackgroundColor = themeProvider.customBackgroundColor;
+    _selectedPrimaryColor = themeProvider.theme;
+    _isDarkMode = themeProvider.isDark;
   }
   
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
+    // Generate preview palette based on current settings
+    final previewPalette = _generatePreviewPalette();
+    
     return Scaffold(
+      backgroundColor: themeProvider.background,
       appBar: AppBar(
-        title: const Text('Custom Colors'),
+        title: Text(
+          'Custom Theme Creator',
+          style: TextStyle(color: themeProvider.contrast),
+        ),
+        backgroundColor: themeProvider.backgroundHigh,
+        iconTheme: IconThemeData(color: themeProvider.contrast),
         actions: [
           TextButton(
-            onPressed: _saveColors,
-            child: const Text(
+            onPressed: _saveCustomTheme,
+            child: Text(
               'Save',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -42,252 +61,229 @@ class _ColorPickerScreenState extends State<ColorPickerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Customize your app colors',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Primary Color Section
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: _selectedPrimaryColor,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white54),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Primary Color',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Used for buttons, app bar, and accents',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _showColorPicker(
-                        context,
-                        _selectedPrimaryColor,
-                        'Primary Color',
-                        (color) => setState(() => _selectedPrimaryColor = color),
-                      ),
-                      child: const Text('Choose Primary Color'),
-                    ),
-                  ],
+            // Instructions
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: themeProvider.backgroundHigh,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: themeProvider.theme.withOpacity(0.3),
+                  width: 1,
                 ),
               ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '🎨 Custom Theme Creator',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Pick a primary color and we\'ll automatically generate a harmonious 5-color palette using color theory principles.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Color Wheel
+            const Text(
+              'Primary Color',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            Center(
+              child: SimpleColorWheel(
+                initialColor: _selectedPrimaryColor,
+                size: 220,
+                onColorChanged: (color) {
+                  setState(() {
+                    _selectedPrimaryColor = color;
+                  });
+                },
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Theme Options
+            const Text(
+              'Theme Style',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: _buildOptionTile(
+                    title: 'Dark Mode',
+                    subtitle: 'Dark backgrounds',
+                    isSelected: _isDarkMode,
+                    onTap: () => setState(() => _isDarkMode = true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildOptionTile(
+                    title: 'Light Mode',
+                    subtitle: 'Light backgrounds',
+                    isSelected: !_isDarkMode,
+                    onTap: () => setState(() => _isDarkMode = false),
+                  ),
+                ),
+              ],
             ),
             
             const SizedBox(height: 16),
             
-            // Background Color Section
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: _selectedBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white54),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Background Color',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Main background color for screens',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _showColorPicker(
-                        context,
-                        _selectedBackgroundColor,
-                        'Background Color',
-                        (color) => setState(() => _selectedBackgroundColor = color),
-                      ),
-                      child: const Text('Choose Background Color'),
-                    ),
-                  ],
-                ),
+            // Harmony Type
+            const Text(
+              'Color Harmony',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
+            ),
+            const SizedBox(height: 12),
+            
+            Column(
+              children: [
+                _buildHarmonyOption(
+                  'complementary',
+                  'Complementary',
+                  'Opposite colors for high contrast',
+                ),
+                _buildHarmonyOption(
+                  'triadic',
+                  'Triadic',
+                  'Three colors evenly spaced',
+                ),
+                _buildHarmonyOption(
+                  'analogous',
+                  'Analogous',
+                  'Adjacent colors for harmony',
+                ),
+              ],
             ),
             
             const SizedBox(height: 24),
             
-            // Preview Section
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Preview',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: _selectedBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white30),
-                      ),
-                      child: Column(
-                        children: [
-                          // Mock App Bar
-                          Container(
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: _selectedPrimaryColor,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                topRight: Radius.circular(12),
-                              ),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'App Preview',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Mock Content
-                          Expanded(
-                            child: Center(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _selectedPrimaryColor,
-                                  foregroundColor: Colors.white,
-                                ),
-                                onPressed: null,
-                                child: const Text('Sample Button'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+            // Color Preview
+            const Text(
+              'Color Preview',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: themeProvider.backgroundHigh,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: themeProvider.theme.withOpacity(0.3),
+                  width: 1,
                 ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Generated Palette',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Color swatches
+                  Row(
+                    children: [
+                      _buildColorSwatch('Background', previewPalette.background),
+                      _buildColorSwatch('Surface', previewPalette.backgroundHigh),
+                      _buildColorSwatch('Primary', previewPalette.theme),
+                      _buildColorSwatch('Accent', previewPalette.themeHigh),
+                      _buildColorSwatch('Contrast', previewPalette.contrast),
+                    ],
+                  ),
+                ],
               ),
             ),
             
-            const SizedBox(height: 24),
-            
-            // Quick Presets
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Quick Presets',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildPresetChip('Blue & Black', Colors.blue, Colors.black),
-                        _buildPresetChip('Green & Dark', Colors.green, const Color(0xFF1a1a1a)),
-                        _buildPresetChip('Purple & Dark', Colors.purple, const Color(0xFF0f1419)),
-                        _buildPresetChip('Orange & Dark', Colors.orange, const Color(0xFF1a1a1a)),
-                        _buildPresetChip('Red & Dark', Colors.red, const Color(0xFF1a1a1a)),
-                        _buildPresetChip('Teal & Dark', Colors.teal, const Color(0xFF1a1a1a)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
   
-  Widget _buildPresetChip(String name, Color primary, Color background) {
+  Widget _buildOptionTile({
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedPrimaryColor = primary;
-          _selectedBackgroundColor = background;
-        });
-      },
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected 
+              ? themeProvider.theme.withOpacity(0.2)
+              : themeProvider.backgroundHigh,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: primary.withOpacity(0.3),
+            color: isSelected 
+                ? themeProvider.theme
+                : Colors.grey.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                color: primary,
-                borderRadius: BorderRadius.circular(8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(height: 4),
             Text(
-              name,
-              style: const TextStyle(
+              subtitle,
+              style: TextStyle(
                 fontSize: 12,
                 color: Colors.white,
               ),
@@ -298,110 +294,123 @@ class _ColorPickerScreenState extends State<ColorPickerScreen> {
     );
   }
   
-  void _showColorPicker(
-    BuildContext context,
-    Color currentColor,
-    String title,
-    Function(Color) onColorChanged,
-  ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ColorPicker(
-                  pickerColor: currentColor,
-                  onColorChanged: onColorChanged,
-                  pickerAreaHeightPercent: 0.8,
-                  enableAlpha: false,
-                  displayThumbColor: true,
-                  paletteType: PaletteType.hsvWithHue,
-                ),
-                const SizedBox(height: 16),
-                // Material Color Palette
-                const Text(
-                  'Material Colors',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    Colors.red,
-                    Colors.pink,
-                    Colors.purple,
-                    Colors.deepPurple,
-                    Colors.indigo,
-                    Colors.blue,
-                    Colors.lightBlue,
-                    Colors.cyan,
-                    Colors.teal,
-                    Colors.green,
-                    Colors.lightGreen,
-                    Colors.lime,
-                    Colors.yellow,
-                    Colors.amber,
-                    Colors.orange,
-                    Colors.deepOrange,
-                    Colors.brown,
-                    Colors.grey,
-                    Colors.blueGrey,
-                    Colors.black,
-                  ].map((color) => GestureDetector(
-                    onTap: () {
-                      onColorChanged(color);
-                      Navigator.of(context).pop();
-                    },
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white30,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                  )).toList(),
-                ),
-              ],
-            ),
+  Widget _buildHarmonyOption(String value, String title, String description) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isSelected = _harmonyType == value;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: RadioListTile<String>(
+        value: value,
+        groupValue: _harmonyType,
+        onChanged: (newValue) {
+          if (newValue != null) {
+            setState(() {
+              _harmonyType = newValue;
+            });
+          }
+        },
+        activeColor: themeProvider.theme,
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
+        ),
+        subtitle: Text(
+          description,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+          ),
+        ),
+        tileColor: isSelected 
+            ? themeProvider.theme.withOpacity(0.1)
+            : themeProvider.backgroundHigh,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(
+            color: isSelected 
+                ? themeProvider.theme.withOpacity(0.5)
+                : Colors.grey.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+      ),
     );
   }
   
-  void _saveColors() {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    themeProvider.setCustomColors(_selectedPrimaryColor, _selectedBackgroundColor);
-    Navigator.of(context).pop();
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Custom colors saved successfully!'),
-        duration: Duration(seconds: 2),
+  Widget _buildColorSwatch(String label, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white24, width: 1),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.white,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
+  }
+  
+  FiveColorTheme _generatePreviewPalette() {
+    switch (_harmonyType) {
+      case 'triadic':
+        return HarmoniousPalettes.generateTriadic(
+          _selectedPrimaryColor,
+          isDark: _isDarkMode,
+          name: 'Custom Triadic',
+        );
+      case 'analogous':
+        return HarmoniousPalettes.generateAnalogous(
+          _selectedPrimaryColor,
+          isDark: _isDarkMode,
+          name: 'Custom Analogous',
+        );
+      default:
+        return HarmoniousPalettes.generateFromPrimary(
+          _selectedPrimaryColor,
+          isDark: _isDarkMode,
+          name: 'Custom Theme',
+        );
+    }
+  }
+  
+  void _saveCustomTheme() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final customPalette = _generatePreviewPalette();
+    
+    // Save the custom theme
+    themeProvider.setFiveColorTheme(customPalette);
+    
+    // Update user profile with custom theme
+    authProvider.updateProfile(colorTheme: 'custom');
+    
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Custom theme saved successfully!'),
+        backgroundColor: themeProvider.themeHigh,
+      ),
+    );
+    
+    // Navigate back
+    Navigator.of(context).pop();
   }
 }

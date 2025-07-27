@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -7,7 +6,6 @@ import '../main_navigation.dart';
 import '../legal/legal_document_screen.dart';
 import 'profile_edit_screen.dart';
 import 'color_picker_screen.dart';
-import 'five_color_demo_screen.dart';
 import '../../widgets/profile_picture_widget.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -33,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
                           margin: const EdgeInsets.all(16),
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: themeProvider.backgroundHigh,
+                            color: themeProvider.theme.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: themeProvider.theme.withOpacity(0.2),
@@ -59,7 +57,7 @@ class SettingsScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: themeProvider.isDark ? Colors.white : Colors.black,
+                                      color: themeProvider.contrast,
                                     ),
                                   ),
                                   Text(
@@ -81,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
                           margin: const EdgeInsets.all(16),
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: themeProvider.backgroundHigh,
+                            color: themeProvider.theme.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: themeProvider.contrast.withOpacity(0.3),
@@ -124,13 +122,13 @@ class SettingsScreen extends StatelessWidget {
                                         style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
-                                          color: themeProvider.isDark ? Colors.white : Colors.black,
+                                          color: themeProvider.contrast,
                                         ),
                                       ),
                                       Text(
                                         'Sign in to save your progress',
                                         style: TextStyle(
-                                          color: themeProvider.isDark ? Colors.white70 : Colors.black54,
+                                          color: themeProvider.contrast.withOpacity(0.7),
                                           fontSize: 14,
                                         ),
                                       ),
@@ -152,7 +150,7 @@ class SettingsScreen extends StatelessWidget {
                         margin: const EdgeInsets.all(16),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: themeProvider.backgroundHigh,
+                          color: themeProvider.theme.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: themeProvider.theme.withOpacity(0.2),
@@ -195,14 +193,14 @@ class SettingsScreen extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: themeProvider.isDark ? Colors.white : Colors.black,
+                                        color: themeProvider.contrast,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       authProvider.user!.email,
                                       style: TextStyle(
-                                        color: themeProvider.isDark ? Colors.white70 : Colors.black54,
+                                        color: themeProvider.contrast.withOpacity(0.7),
                                         fontSize: 14,
                                       ),
                                     ),
@@ -245,7 +243,7 @@ class SettingsScreen extends StatelessWidget {
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: themeProvider.backgroundHigh,
+                      color: themeProvider.theme.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: themeProvider.theme.withOpacity(0.2),
@@ -285,7 +283,7 @@ class SettingsScreen extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: themeProvider.isDark ? Colors.white : Colors.black,
+                                  color: themeProvider.contrast,
                                 ),
                               ),
                             ],
@@ -297,53 +295,72 @@ class SettingsScreen extends StatelessWidget {
                               children: ThemeProvider.themes.map((theme) {
                                 final isSelected = themeProvider.selectedTheme == theme['value'];
                                 return Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: isSelected 
                                         ? themeProvider.theme.withOpacity(0.1)
                                         : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: isSelected
                                         ? Border.all(
-                                            color: themeProvider.theme.withOpacity(0.5),
-                                            width: 1,
+                                            color: themeProvider.theme,
+                                            width: 2,
                                           )
-                                        : null,
+                                        : Border.all(
+                                            color: Colors.grey.withOpacity(0.3),
+                                            width: 1,
+                                          ),
                                   ),
-                                  child: RadioListTile<String>(
-                                    value: theme['value'],
-                                    groupValue: themeProvider.selectedTheme,
-                                    activeColor: themeProvider.theme,
-                                    onChanged: (value) {
-                                      if (value != null) {
-                                        if (value == 'custom') {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => const ColorPickerScreen(),
-                                            ),
-                                          );
-                                        } else {
-                                          themeProvider.setTheme(value);
-                                          
-                                          // Update user theme in database
-                                          final authProvider = Provider.of<AuthProvider>(
-                                            context, 
-                                            listen: false,
-                                          );
-                                          authProvider.updateProfile(colorTheme: value);
-                                        }
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.all(12),
+                                    onTap: () {
+                                      if (theme['value'] == 'custom') {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const ColorPickerScreen(),
+                                          ),
+                                        );
+                                      } else {
+                                        themeProvider.setTheme(theme['value']);
+                                        
+                                        // Update user theme in database
+                                        final authProvider = Provider.of<AuthProvider>(
+                                          context, 
+                                          listen: false,
+                                        );
+                                        authProvider.updateProfile(colorTheme: theme['value']);
                                       }
                                     },
                                     title: Text(
                                       theme['name'],
                                       style: TextStyle(
-                                        color: themeProvider.isDark ? Colors.white : Colors.black,
-                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                        fontSize: 16,
                                       ),
                                     ),
-                                    secondary: Container(
-                                      padding: const EdgeInsets.all(8),
+                                    subtitle: theme['previewColors'] != null
+                                        ? Container(
+                                            margin: const EdgeInsets.only(top: 8),
+                                            height: 20,
+                                            child: Row(
+                                              children: (theme['previewColors'] as List<Color>).map((color) => 
+                                                Expanded(
+                                                  child: Container(
+                                                    margin: const EdgeInsets.only(right: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: color,
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ).toList(),
+                                            ),
+                                          )
+                                        : null,
+                                    leading: Container(
+                                      padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
                                         color: (theme['color'] as Color).withOpacity(0.2),
                                         shape: BoxShape.circle,
@@ -354,6 +371,17 @@ class SettingsScreen extends StatelessWidget {
                                         size: 20,
                                       ),
                                     ),
+                                    trailing: isSelected
+                                        ? Icon(
+                                            Icons.check_circle,
+                                            color: themeProvider.theme,
+                                            size: 24,
+                                          )
+                                        : const Icon(
+                                            Icons.circle_outlined,
+                                            color: Colors.grey,
+                                            size: 24,
+                                          ),
                                   ),
                                 );
                               }).toList(),
@@ -364,103 +392,12 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // 5-Color Design System Demo
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: themeProvider.backgroundHigh,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: themeProvider.themeHigh.withOpacity(0.3),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeProvider.themeHigh.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const FiveColorDemoScreen(),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    themeProvider.themeHigh,
-                                    themeProvider.theme,
-                                  ],
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: themeProvider.themeHigh.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.color_lens,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '5-Color Design System',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: themeProvider.isDark ? Colors.white : Colors.black,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'See the new simplified color palette in action',
-                                    style: TextStyle(
-                                      color: themeProvider.isDark ? Colors.white70 : Colors.black54,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: themeProvider.theme,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
 
                   // App Info Section
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: themeProvider.backgroundHigh,
+                      color: themeProvider.theme.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: themeProvider.contrast.withOpacity(0.2),
@@ -490,7 +427,7 @@ class SettingsScreen extends StatelessWidget {
                                   'A stock trading simulator with real market data. '
                                   'Practice trading without risking real money.',
                                   style: TextStyle(
-                                    color: themeProvider.isDark ? Colors.white70 : Colors.black87,
+                                    color: themeProvider.contrast.withOpacity(0.8),
                                   ),
                                 ),
                               ],
@@ -574,55 +511,12 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Debug Section (only show in debug mode)
-                  if (kDebugMode)
-                    Container(
-                      margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: themeProvider.backgroundHigh,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.orange.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildInfoTile(
-                            icon: Icons.bug_report,
-                            title: 'Auth Test Screen',
-                            subtitle: 'Test authentication flow',
-                            color: Colors.orange,
-                            themeProvider: themeProvider,
-                            onTap: () {
-                              Navigator.pushNamed(context, '/auth-test');
-                            },
-                          ),
-                          Divider(
-                            color: Colors.orange.withOpacity(0.2),
-                            height: 1,
-                            indent: 16,
-                            endIndent: 16,
-                          ),
-                          _buildInfoTile(
-                            icon: Icons.login,
-                            title: 'Auth Flow Test',
-                            subtitle: 'Complete sign-in/sign-out flow test',
-                            color: Colors.blue,
-                            themeProvider: themeProvider,
-                            onTap: () {
-                              Navigator.pushNamed(context, '/auth-flow-test');
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
 
                   // Sign Out Section
                   Container(
                     margin: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: themeProvider.backgroundHigh,
+                      color: themeProvider.theme.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: themeProvider.contrast.withOpacity(0.3),
@@ -720,7 +614,7 @@ class SettingsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: themeProvider.isDark ? Colors.white : Colors.black,
+                      color: themeProvider.contrast,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -728,7 +622,7 @@ class SettingsScreen extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 14,
-                      color: themeProvider.isDark ? Colors.white70 : Colors.black54,
+                      color: themeProvider.contrast.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -749,7 +643,7 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.backgroundHigh,
+        backgroundColor: themeProvider.theme.withOpacity(0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
@@ -760,14 +654,14 @@ class SettingsScreen extends StatelessWidget {
         title: Text(
           'Sign Out',
           style: TextStyle(
-            color: themeProvider.isDark ? Colors.white : Colors.black,
+            color: themeProvider.contrast,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           'Are you sure you want to sign out?',
           style: TextStyle(
-            color: themeProvider.isDark ? Colors.white70 : Colors.black87,
+            color: themeProvider.contrast.withOpacity(0.8),
           ),
         ),
         actions: [
@@ -795,7 +689,7 @@ class SettingsScreen extends StatelessWidget {
                   }
                 },
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.white,
+                  foregroundColor: themeProvider.contrast,
                   backgroundColor: themeProvider.contrast,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -807,7 +701,7 @@ class SettingsScreen extends StatelessWidget {
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(themeProvider.background),
                         ),
                       )
                     : const Text('Sign Out'),

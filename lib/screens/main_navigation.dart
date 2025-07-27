@@ -77,35 +77,20 @@ class _MainNavigationState extends State<MainNavigation> {
               const BannerAdWidget(), // Temporarily disabled for iOS build (returns empty container)
             ],
           ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              color: themeProvider.backgroundHigh,
-              boxShadow: [
-                BoxShadow(
-                  color: themeProvider.isDark ? Colors.black26 : Colors.grey.shade300,
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: BottomNavigationBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              type: BottomNavigationBarType.fixed,
-              selectedItemColor: themeProvider.theme,
-              unselectedItemColor: themeProvider.isDark 
-                ? Colors.white54 
-                : Colors.black54,
-              iconSize: ResponsiveUtils.getIconSize(context, 20),
-              selectedFontSize: ResponsiveUtils.getFontSize(context, 10),
-              unselectedFontSize: ResponsiveUtils.getFontSize(context, 9),
-        items: const [
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: themeProvider.theme,
+            unselectedItemColor: Colors.grey,
+            iconSize: ResponsiveUtils.getIconSize(context, 20),
+            selectedFontSize: ResponsiveUtils.getFontSize(context, 10),
+            unselectedFontSize: ResponsiveUtils.getFontSize(context, 9),
+            items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.trending_up),
             label: 'Market',
@@ -122,8 +107,7 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.settings),
             label: 'Settings',
           ),
-              ],
-            ),
+            ],
           ),
         );
       },
@@ -149,7 +133,7 @@ class AppBarTitle extends StatelessWidget {
           title: Text(
             title,
             style: TextStyle(
-              color: themeProvider.isDark ? Colors.white : Colors.black,
+              color: themeProvider.contrast,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -157,7 +141,7 @@ class AppBarTitle extends StatelessWidget {
           pinned: true,
           expandedHeight: 60,
           backgroundColor: themeProvider.backgroundHigh,
-          foregroundColor: themeProvider.isDark ? Colors.white : Colors.black,
+          foregroundColor: themeProvider.contrast,
           elevation: 0,
           shadowColor: themeProvider.contrast.withOpacity(0.1),
           flexibleSpace: Container(
@@ -196,8 +180,8 @@ class LoadingWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
-                backgroundColor: themeProvider.backgroundHigh,
+                valueColor: AlwaysStoppedAnimation<Color>(themeProvider.themeHigh),
+                backgroundColor: themeProvider.theme.withOpacity(0.2),
               ),
               const SizedBox(height: 16),
               Text(
@@ -205,7 +189,7 @@ class LoadingWidget extends StatelessWidget {
                 style: TextStyle(
                   color: themeProvider.themeHigh,
                   fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
@@ -235,17 +219,17 @@ class ErrorStateWidget extends StatelessWidget {
             margin: const EdgeInsets.all(24),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: themeProvider.backgroundHigh,
+              color: themeProvider.theme.withOpacity(0.05),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: themeProvider.contrast.withOpacity(0.3),
-                width: 1,
+                color: themeProvider.themeHigh.withOpacity(0.4),
+                width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: themeProvider.contrast.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+                  color: themeProvider.themeHigh.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -271,7 +255,7 @@ class ErrorStateWidget extends StatelessWidget {
                   message,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: themeProvider.isDark ? Colors.white70 : Colors.black87,
+                    color: themeProvider.contrast.withOpacity(0.8),
                     fontSize: 16,
                   ),
                 ),
@@ -281,7 +265,7 @@ class ErrorStateWidget extends StatelessWidget {
                     onPressed: onRetry,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: themeProvider.theme,
-                      foregroundColor: themeProvider.isDark ? Colors.white : Colors.black,
+                      foregroundColor: themeProvider.contrast,
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                     child: const Text('Retry'),
@@ -319,17 +303,17 @@ class EmptyStateWidget extends StatelessWidget {
             margin: const EdgeInsets.all(24),
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: themeProvider.backgroundHigh,
+              color: themeProvider.theme.withOpacity(0.05),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: themeProvider.themeHigh.withOpacity(0.3),
-                width: 1,
+                color: themeProvider.themeHigh.withOpacity(0.5),
+                width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: themeProvider.theme.withOpacity(0.1),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
+                  color: themeProvider.themeHigh.withOpacity(0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
@@ -353,7 +337,7 @@ class EmptyStateWidget extends StatelessWidget {
                   title,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: themeProvider.isDark ? Colors.white : Colors.black,
+                    color: themeProvider.contrast,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -363,7 +347,7 @@ class EmptyStateWidget extends StatelessWidget {
                   message,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: themeProvider.isDark ? Colors.white70 : Colors.black54,
+                    color: themeProvider.contrast.withOpacity(0.7),
                     fontSize: 16,
                   ),
                 ),

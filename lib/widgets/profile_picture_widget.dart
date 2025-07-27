@@ -130,7 +130,7 @@ class _ProfilePictureWidgetState extends State<ProfilePictureWidget> with Single
                               child: Icon(
                                 Icons.camera_alt,
                                 size: widget.size * 0.15,
-                                color: themeProvider.isDark ? Colors.white : Colors.black,
+                                color: themeProvider.contrast,
                               ),
                             ),
                           ),
@@ -275,7 +275,7 @@ class _ProfilePictureWidgetState extends State<ProfilePictureWidget> with Single
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: themeProvider.isDark ? Colors.white : Colors.black,
+                color: themeProvider.contrast,
               ),
             ),
             const SizedBox(height: 20),
@@ -335,7 +335,7 @@ class _ProfilePictureWidgetState extends State<ProfilePictureWidget> with Single
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: themeProvider.isDark ? Colors.white : Colors.black,
+                color: themeProvider.contrast,
               ),
             ),
           ],

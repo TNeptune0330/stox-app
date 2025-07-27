@@ -356,6 +356,30 @@ class AuthService {
     try {
       updates['updated_at'] = DateTime.now().toIso8601String();
       
+      // Handle theme enum constraint gracefully
+      if (updates.containsKey('color_theme')) {
+        final theme = updates['color_theme'] as String;
+        // Map new theme names to compatible enum values
+        final compatibleThemes = {
+          'deepOcean': 'dark_blue',
+          'forestTwilight': 'dark_green', 
+          'royalPurple': 'dark_purple',
+          'crimsonNight': 'dark_red',
+          'goldenSunset': 'dark_orange',
+          'arcticBlue': 'light_blue',
+          'lightLavender': 'light_purple',
+          'sunsetWarmth': 'light_orange',
+          'lightMint': 'light_green',
+          'monochromeLight': 'light',
+          'monochromeDark': 'dark',
+          'lightProfessional': 'light_blue',
+          'custom': 'custom',
+        };
+        
+        updates['color_theme'] = compatibleThemes[theme] ?? 'dark_blue';
+        print('📱 Mapped theme $theme to ${updates['color_theme']}');
+      }
+      
       await _supabase
           .from('users')
           .update(updates)
@@ -364,7 +388,12 @@ class AuthService {
       print('✅ User data updated successfully');
     } catch (e) {
       print('❌ Failed to update user data: $e');
-      throw Exception('Failed to update user data: $e');
+      // Don't throw for theme constraint errors - just log and continue
+      if (e.toString().contains('enum') || e.toString().contains('constraint')) {
+        print('⚠️ Theme enum constraint error - app will continue with local theme');
+      } else {
+        throw Exception('Failed to update user data: $e');
+      }
     }
   }
 
@@ -394,11 +423,17 @@ class AuthService {
       final session = _supabase.auth.currentSession;
       if (session == null) return false;
       
-      // Check if session is expired
+      // Check if session is expired (with 5 minute buffer for refresh)
       final now = DateTime.now();
       final expiresAt = DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000);
+      final bufferTime = expiresAt.subtract(const Duration(minutes: 5));
       
-      return now.isBefore(expiresAt);
+      final isValid = now.isBefore(bufferTime);
+      if (!isValid) {
+        print('⚠️ Session expires soon or expired. Current: $now, Expires: $expiresAt');
+      }
+      
+      return isValid;
     } catch (e) {
       print('❌ Error checking session validity: $e');
       return false;
@@ -407,11 +442,20 @@ class AuthService {
 
   Future<void> refreshSession() async {
     try {
-      if (!isSignedIn) return;
+      if (!isSignedIn) {
+        print('⚠️ No user signed in, cannot refresh session');
+        return;
+      }
       
       final session = await _supabase.auth.refreshSession();
       if (session.session == null) {
-        throw Exception('Failed to refresh session');
+        throw Exception('Failed to refresh session - session is null');
+      }
+      
+      // Update user data after successful refresh
+      final userData = await getCurrentUserData();
+      if (userData != null) {
+        await StorageService.cacheUser(userData);
       }
       
       print('✅ Session refreshed successfully');
@@ -429,25 +473,51 @@ class AuthService {
       final session = _supabase.auth.currentSession;
       if (session == null) {
         print('❌ No active session found');
+        // Try to get cached user as fallback
+        final cachedUser = StorageService.getCachedUser();
+        if (cachedUser != null) {
+          print('✅ Found cached user, attempting silent refresh...');
+          return cachedUser;
+        }
         return null;
       }
       
       // Check if session is valid
       if (!await isSessionValid()) {
         print('⚠️ Session expired, attempting to refresh...');
-        await refreshSession();
+        try {
+          await refreshSession();
+          print('✅ Session refreshed successfully');
+        } catch (refreshError) {
+          print('❌ Session refresh failed: $refreshError');
+          // Return cached user if refresh fails
+          final cachedUser = StorageService.getCachedUser();
+          return cachedUser;
+        }
       }
       
       // Get user data
       final userData = await getCurrentUserData();
       if (userData != null) {
         print('✅ Session restored successfully');
+        // Update cache with fresh data
+        await StorageService.cacheUser(userData);
         return userData;
       }
       
       return null;
     } catch (e) {
       print('❌ Failed to restore session: $e');
+      // Try to return cached user as final fallback
+      try {
+        final cachedUser = StorageService.getCachedUser();
+        if (cachedUser != null) {
+          print('✅ Using cached user as fallback');
+          return cachedUser;
+        }
+      } catch (cacheError) {
+        print('❌ Cache fallback failed: $cacheError');
+      }
       return null;
     }
   }

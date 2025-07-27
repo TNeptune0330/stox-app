@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +10,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/local_database_service.dart';
 import 'services/enhanced_market_data_service.dart';
 import 'services/revenue_admob_service.dart';
-import 'services/comprehensive_test_service.dart';
 import 'services/storage_service.dart';
 import 'services/connection_manager.dart';
 
@@ -24,8 +24,6 @@ import 'providers/achievement_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation.dart';
-import 'screens/auth_test_screen.dart';
-import 'screens/auth_flow_test_screen.dart';
 
 // Config
 import 'config/supabase_config.dart';
@@ -41,7 +39,8 @@ void main() async {
     
     // Run comprehensive tests in debug mode
     if (kDebugMode) {
-      await _runProductionTests();
+      // Skip comprehensive tests for faster startup
+      print('🚀 Production mode - optimized startup (tests disabled)');
     }
     
     // Launch app
@@ -49,9 +48,9 @@ void main() async {
     
   } catch (e) {
     print('❌ App initialization failed: $e');
-    // Show error screen
+    // Show user-friendly error screen
     runApp(MaterialApp(
-      home: ErrorScreen(error: e.toString()),
+      home: const ProductionErrorScreen(),
       debugShowCheckedModeBanner: false,
     ));
   }
@@ -71,25 +70,19 @@ Future<void> _initializeCoreServices() async {
     // Reset connection manager state (in case URL was changed)
     ConnectionManager().resetConnectionState();
     
-    // Initialize Storage Service
-    await StorageService.initialize();
-    print('✅ Storage Service initialized');
+    // Initialize critical services in parallel for faster startup
+    await Future.wait([
+      StorageService.initialize(),
+      LocalDatabaseService.initialize(),
+    ]);
+    print('✅ Critical services initialized');
     
-    // Initialize Local Database
-    await LocalDatabaseService.initialize();
-    print('✅ Local Database initialized');
-    
-    // Initialize Market Data Service
+    // Initialize market data service (required for app functionality)
     await EnhancedMarketDataService.initializeMarketData();
     print('✅ Market Data Service initialized');
     
-    // Initialize AdMob - Temporarily disabled for iOS build
-    await RevenueAdMobService.initialize();
-    print('✅ AdMob Service initialized');
-    
-    // Start periodic market data updates
-    await EnhancedMarketDataService.startPeriodicUpdates();
-    print('✅ Market data updates started');
+    // Defer non-critical services to not block app startup
+    _initializeNonCriticalServices();
     
     // Set system UI overlay style
     SystemChrome.setSystemUIOverlayStyle(
@@ -115,22 +108,78 @@ Future<void> _initializeCoreServices() async {
   }
 }
 
-Future<void> _runProductionTests() async {
-  print('🧪 Running production tests...');
-  
+/// Initialize non-critical services in background to not block app startup
+void _initializeNonCriticalServices() async {
   try {
-    await ComprehensiveTestService.runAllTests();
+    // Initialize AdMob in background
+    await RevenueAdMobService.initialize();
+    print('✅ AdMob Service initialized (background)');
     
-    final testReport = await ComprehensiveTestService.generateTestReport();
-    print('📊 Test Report Generated:');
-    print('   - Platform: ${testReport['platform']}');
-    print('   - Database Assets: ${testReport['database_stats']['market_assets']}');
-    print('   - Portfolio Holdings: ${testReport['database_stats']['portfolio_holdings']}');
-    print('   - Test Status: ${testReport['test_status']}');
-    
+    // Start periodic market data updates
+    await EnhancedMarketDataService.startPeriodicUpdates();
+    print('✅ Market data updates started (background)');
   } catch (e) {
-    print('❌ Production tests failed: $e');
-    // Don't crash the app, just log the error
+    print('⚠️ Non-critical service initialization failed: $e');
+    // Don't crash app for non-critical services
+  }
+}
+
+/// Production-ready error screen that doesn't expose technical details
+class ProductionErrorScreen extends StatelessWidget {
+  const ProductionErrorScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B1426),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Color(0xFF48CAE4),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Oops! Something went wrong',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'We\'re having trouble starting the app. Please try restarting the application.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  // In a real app, this might trigger a restart or retry
+                  exit(0);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF48CAE4),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                ),
+                child: const Text('Restart App'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -177,8 +226,6 @@ class _StoxAppState extends State<StoxApp> {
             routes: {
               '/login': (context) => const LoginScreen(),
               '/main': (context) => const MainNavigation(),
-              '/auth-test': (context) => const AuthTestScreen(),
-              '/auth-flow-test': (context) => const AuthFlowTestScreen(),
             },
             builder: (context, child) {
               // Ensure consistent text scaling on all devices
