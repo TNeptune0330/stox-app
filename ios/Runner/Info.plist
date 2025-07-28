@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -20,9 +22,64 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.example.stox</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.264305191086-ruelf34qlbnngfubd7m52418hta9c3oh</string>
+				<string>com.googleusercontent.apps.264305191086-jr22tsn1j8gl9ihv3heragdk310os4pe</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>GIDClientID</key>
+	<string>264305191086-jr22tsn1j8gl9ihv3heragdk310os4pe.apps.googleusercontent.com</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.finance</string>
 	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>MinimumOSVersion</key>
+	<string>12.0</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>coingecko.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+			</dict>
+			<key>finnhub.io</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+			</dict>
+			<key>supabase.co</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to your camera to allow you to take a new profile picture.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your photo library to allow you to select a profile picture from your photos.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -40,76 +97,6 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	
-	<!-- Privacy Usage Descriptions - Required for App Store -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs access to your photo library to allow you to select a profile picture from your photos.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>This app needs access to your camera to allow you to take a new profile picture.</string>
-	
-	<!-- App Category -->
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.finance</string>
-	
-	<!-- Minimum iOS Version -->
-	<key>MinimumOSVersion</key>
-	<string>12.0</string>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	
-	<!-- AdMob App ID -->
-	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
-	
-	<!-- App Transport Security - Required for production -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>finnhub.io</key>
-			<dict>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<false/>
-			</dict>
-			<key>supabase.co</key>
-			<dict>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<false/>
-			</dict>
-			<key>coingecko.com</key>
-			<dict>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<false/>
-			</dict>
-		</dict>
-	</dict>
-	
-	<!-- Google Sign-In Configuration -->
-	<key>GIDClientID</key>
-	<string>264305191086-jr22tsn1j8gl9ihv3heragdk310os4pe.apps.googleusercontent.com</string>
-	
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.example.stox</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.264305191086-ruelf34qlbnngfubd7m52418hta9c3oh</string>
-				<string>com.googleusercontent.apps.264305191086-jr22tsn1j8gl9ihv3heragdk310os4pe</string>
-			</array>
-		</dict>
 	</array>
 </dict>
 </plist>

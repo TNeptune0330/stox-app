@@ -8,10 +8,11 @@ import '../services/local_database_service.dart';
 import '../services/enhanced_market_data_service.dart';
 import '../services/revenue_admob_service.dart';
 import '../utils/responsive_utils.dart';
-import '../utils/legal_utils.dart';
+import '../services/storage_service.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/main_navigation.dart';
-import '../screens/legal/terms_acceptance_screen.dart';
+import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/tutorial/tutorial_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -136,16 +137,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
   
   Future<void> _checkAuthentication() async {
-    // First check if user has accepted terms and privacy policy
-    await _updateStatus('Checking legal agreements...', 0.7);
+    // First check if user has completed onboarding
+    await _updateStatus('Checking onboarding status...', 0.7);
     await Future.delayed(const Duration(milliseconds: 300));
     
-    final hasAcceptedTerms = await LegalUtils.hasAcceptedTerms();
-    final needsReAcceptance = await LegalUtils.needsReAcceptance();
+    final hasCompletedOnboarding = StorageService.isOnboardingCompleted();
     
-    if (!hasAcceptedTerms || needsReAcceptance) {
-      // User needs to accept terms first
-      await _navigateToTermsAcceptance();
+    if (!hasCompletedOnboarding) {
+      // User needs to complete onboarding first
+      await _navigateToOnboarding();
       return;
     }
     
@@ -156,8 +156,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     final currentUser = LocalDatabaseService.getCurrentUser();
     
     if (currentUser != null) {
-      // User is logged in, go to main app
-      await _navigateToMain();
+      // User is logged in, check if tutorial is completed
+      final hasTutorial = StorageService.isTutorialCompleted();
+      if (hasTutorial) {
+        await _navigateToMain();
+      } else {
+        await _navigateToTutorial();
+      }
     } else {
       // No user, go to login
       await _navigateToLogin();
@@ -186,12 +191,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     }
   }
 
-  Future<void> _navigateToTermsAcceptance() async {
+  Future<void> _navigateToOnboarding() async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const TermsAcceptanceScreen(),
+          builder: (context) => const OnboardingScreen(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _navigateToTutorial() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const TutorialScreen(),
         ),
       );
     }

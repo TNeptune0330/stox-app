@@ -11,6 +11,7 @@ class TradeDialog extends StatefulWidget {
   final String userId;
   final int initialTab;
   final int? maxQuantity;
+  final String? initialAction;
 
   const TradeDialog({
     super.key,
@@ -18,6 +19,7 @@ class TradeDialog extends StatefulWidget {
     required this.userId,
     this.initialTab = 0,
     this.maxQuantity,
+    this.initialAction,
   });
 
   @override
@@ -33,7 +35,16 @@ class _TradeDialogState extends State<TradeDialog> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
+    
+    // Determine initial tab based on action
+    int initialTab = widget.initialTab;
+    if (widget.initialAction == 'buy') {
+      initialTab = 0;
+    } else if (widget.initialAction == 'sell') {
+      initialTab = 1;
+    }
+    
+    _tabController = TabController(length: 2, vsync: this, initialIndex: initialTab);
     _quantityController.text = _currentQuantity.toString();
   }
 

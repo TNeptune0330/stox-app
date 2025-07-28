@@ -4,6 +4,7 @@ class UserModel {
   final String? username;
   final String? avatarUrl;
   final String colorTheme;
+  final bool isAdmin;
   final double cashBalance;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -14,6 +15,7 @@ class UserModel {
     this.username,
     this.avatarUrl,
     required this.colorTheme,
+    required this.isAdmin,
     required this.cashBalance,
     required this.createdAt,
     required this.updatedAt,
@@ -25,7 +27,8 @@ class UserModel {
       email: json['email'],
       username: json['username'],
       avatarUrl: json['avatar_url'],
-      colorTheme: json['color_theme'] ?? 'light',
+      colorTheme: json['color_theme'] ?? 'default',
+      isAdmin: json['is_admin'] ?? false,
       cashBalance: (json['cash_balance'] as num).toDouble(),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
@@ -39,6 +42,7 @@ class UserModel {
       'username': username,
       'avatar_url': avatarUrl,
       'color_theme': colorTheme,
+      'is_admin': isAdmin,
       'cash_balance': cashBalance,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -51,6 +55,7 @@ class UserModel {
     String? username,
     String? avatarUrl,
     String? colorTheme,
+    bool? isAdmin,
     double? cashBalance,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -61,6 +66,7 @@ class UserModel {
       username: username ?? this.username,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       colorTheme: colorTheme ?? this.colorTheme,
+      isAdmin: isAdmin ?? this.isAdmin,
       cashBalance: cashBalance ?? this.cashBalance,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/achievement_model.dart';
 import '../../providers/achievement_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 
 class AchievementsScreen extends StatefulWidget {
@@ -35,11 +37,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       builder: (context, themeProvider, child) {
         return Scaffold(
           backgroundColor: themeProvider.background,
-          body: Consumer<AchievementProvider>(
-            builder: (context, achievementProvider, child) {
+          body: Consumer2<AchievementProvider, AuthProvider>(
+            builder: (context, achievementProvider, authProvider, child) {
               final filteredAchievements = _getFilteredAchievements(achievementProvider.achievements);
+              final isAuthenticated = authProvider.isAuthenticated;
               
-              return CustomScrollView(
+              Widget content = CustomScrollView(
                 slivers: [
                   // Header with 5-color theme
                   SliverAppBar(
@@ -146,7 +149,93 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   ),
                 ),
               ],
-            );
+              );
+              
+              // If user is not authenticated, blur the content and show sign-in prompt
+              if (!isAuthenticated) {
+                return Stack(
+                  children: [
+                    // Blurred content
+                    ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: content,
+                    ),
+                    // Sign-in overlay
+                    Container(
+                      color: themeProvider.background.withOpacity(0.7),
+                      child: Center(
+                        child: Container(
+                          margin: const EdgeInsets.all(32),
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: themeProvider.backgroundHigh,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: themeProvider.theme.withOpacity(0.3),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: themeProvider.theme.withOpacity(0.2),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.lock_outline,
+                                size: 64,
+                                color: themeProvider.theme,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Sign In Required',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: themeProvider.contrast,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Sign in to view your achievements\nand track your trading progress',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: themeProvider.contrast.withOpacity(0.8),
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.of(context).pushNamed('/login');
+                                },
+                                icon: const Icon(Icons.login),
+                                label: const Text('Sign In'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: themeProvider.theme,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              
+              return content;
             },
           ),
         );

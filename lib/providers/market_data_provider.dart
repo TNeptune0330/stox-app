@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/market_asset_model.dart';
 import '../services/enhanced_market_data_service.dart';
@@ -10,6 +11,7 @@ class MarketDataProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   Map<String, dynamic> _marketStats = {};
+  Timer? _searchTimer;
   
   // Getters
   List<MarketAssetModel> get allAssets => _allAssets;
@@ -87,8 +89,63 @@ class MarketDataProvider with ChangeNotifier {
   void setSearchQuery(String query) {
     if (_searchQuery != query) {
       _searchQuery = query;
+      
+      // Cancel previous search timer
+      _searchTimer?.cancel();
+      
+      // Immediately apply local filter for instant feedback
       _applyFilter();
+      
+      // Debounce API search to avoid overwhelming the API
+      if (query.isNotEmpty && query.length >= 2) {
+        _searchTimer = Timer(const Duration(milliseconds: 500), () {
+          _performSmartSearch(query);
+        });
+      }
+      
       print('🔍 MarketDataProvider: Search query changed to "$query"');
+    }
+  }
+
+  Future<void> _performSmartSearch(String query) async {
+    if (query.isEmpty || query != _searchQuery) {
+      return; // Query changed while we were waiting
+    }
+
+    // If local search yields few results, search API
+    if (_filteredAssets.length < 3) {
+      _setLoading(true);
+      await _searchFromAPI(query);
+      _setLoading(false);
+    }
+  }
+
+  Future<void> _searchFromAPI(String query) async {
+    try {
+      print('🔍 MarketDataProvider: Searching API for "$query"...');
+      
+      // Use the enhanced market data service search function
+      final apiResults = await EnhancedMarketDataService.searchAssets(query);
+      
+      if (apiResults.isNotEmpty) {
+        print('✅ MarketDataProvider: Found ${apiResults.length} API results for "$query"');
+        
+        // Add new assets to our local cache
+        for (final asset in apiResults) {
+          if (!_allAssets.any((existing) => existing.symbol == asset.symbol)) {
+            _allAssets.add(asset);
+            print('➕ MarketDataProvider: Added new asset ${asset.symbol} to local cache');
+          }
+        }
+        
+        // Re-apply filter to include new results
+        _applyFilter();
+      } else {
+        print('🔍 MarketDataProvider: No API results found for "$query"');
+      }
+    } catch (e) {
+      print('❌ MarketDataProvider: API search failed for "$query": $e');
+      // Don't set error state, just continue with local results
     }
   }
   
@@ -277,6 +334,13 @@ class MarketDataProvider with ChangeNotifier {
     _searchQuery = '';
     _error = null;
     _isLoading = false;
+    _searchTimer?.cancel();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _searchTimer?.cancel();
+    super.dispose();
   }
 }

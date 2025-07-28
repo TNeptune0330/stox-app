@@ -12,6 +12,7 @@ import 'services/enhanced_market_data_service.dart';
 import 'services/revenue_admob_service.dart';
 import 'services/storage_service.dart';
 import 'services/connection_manager.dart';
+import 'services/financial_news_service.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -24,6 +25,8 @@ import 'providers/achievement_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation.dart';
+import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/tutorial/tutorial_screen.dart';
 
 // Config
 import 'config/supabase_config.dart';
@@ -114,6 +117,10 @@ void _initializeNonCriticalServices() async {
     // Initialize AdMob in background
     await RevenueAdMobService.initialize();
     print('✅ AdMob Service initialized (background)');
+    
+    // Initialize daily news cache in background
+    FinancialNewsService.updateDailyNews();
+    print('✅ Daily news update initiated (background)');
     
     // Start periodic market data updates
     await EnhancedMarketDataService.startPeriodicUpdates();
@@ -226,6 +233,8 @@ class _StoxAppState extends State<StoxApp> {
             routes: {
               '/login': (context) => const LoginScreen(),
               '/main': (context) => const MainNavigation(),
+              '/onboarding': (context) => const OnboardingScreen(),
+              '/tutorial': (context) => const TutorialScreen(),
             },
             builder: (context, child) {
               // Ensure consistent text scaling on all devices

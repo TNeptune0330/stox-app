@@ -60,6 +60,7 @@ class LocalDatabaseService {
         username: 'Demo Trader',
         avatarUrl: null,
         colorTheme: 'dark',
+        isAdmin: false,
         cashBalance: 10000.0,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

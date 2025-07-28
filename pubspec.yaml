@@ -64,6 +64,12 @@ dependencies:
   
   # Color Picker
   flutter_colorpicker: ^1.0.3
+  
+  # Charts
+  fl_chart: ^0.69.0
+  
+  # URL Launcher for opening news articles
+  url_launcher: ^6.2.4
 
 dev_dependencies:
   flutter_test:

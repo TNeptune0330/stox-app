@@ -7,6 +7,7 @@ import '../../models/market_asset_model.dart';
 import '../../widgets/asset_list_tile.dart';
 import '../main_navigation.dart';
 import 'trade_dialog.dart';
+import 'asset_detail_screen.dart';
 
 class MarketScreen extends StatefulWidget {
   const MarketScreen({super.key});
@@ -118,6 +119,7 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
@@ -141,28 +143,75 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search assets...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                Provider.of<MarketDataProvider>(context, listen: false)
-                                    .setSearchQuery('');
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onChanged: (value) {
-                      Provider.of<MarketDataProvider>(context, listen: false)
-                          .setSearchQuery(value);
+                  child: Consumer<MarketDataProvider>(
+                    builder: (context, marketProvider, child) {
+                      return TextField(
+                        controller: _searchController,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText: 'Search any stock, ETF, or crypto...',
+                          hintStyle: TextStyle(
+                            color: themeProvider.contrast.withOpacity(0.6),
+                          ),
+                          prefixIcon: marketProvider.isLoading && _searchController.text.isNotEmpty
+                              ? Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.search,
+                                  color: themeProvider.theme,
+                                ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    color: themeProvider.contrast.withOpacity(0.7),
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    marketProvider.setSearchQuery('');
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: themeProvider.theme.withOpacity(0.3),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: themeProvider.theme.withOpacity(0.3),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: themeProvider.theme,
+                              width: 2,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: themeProvider.backgroundHigh,
+                        ),
+                        style: TextStyle(
+                          color: themeProvider.contrast,
+                        ),
+                        onChanged: (value) {
+                          marketProvider.setSearchQuery(value);
+                        },
+                      );
                     },
                   ),
                 ),
@@ -173,6 +222,7 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
                 SliverToBoxAdapter(
                   child: _buildWeekendBanner(themeProvider),
                 ),
+
               
               // Asset Type Tabs
           SliverToBoxAdapter(
@@ -235,19 +285,81 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.search_off, size: 64, color: Colors.grey),
+                        Icon(
+                          marketProvider.isLoading 
+                              ? Icons.search 
+                              : Icons.search_off, 
+                          size: 64, 
+                          color: marketProvider.isLoading 
+                              ? themeProvider.theme 
+                              : Colors.grey,
+                        ),
                         const SizedBox(height: 16),
                         Text(
-                          'No Assets Found',
-                          style: Theme.of(context).textTheme.headlineSmall,
+                          marketProvider.isLoading 
+                              ? 'Searching...' 
+                              : _searchController.text.isNotEmpty 
+                                  ? 'No Results Found'
+                                  : 'No Assets Found',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.contrast,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Try adjusting your search or filters',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white70,
+                          marketProvider.isLoading 
+                              ? 'Looking for "${_searchController.text}" in global markets...'
+                              : _searchController.text.isNotEmpty
+                                  ? 'We searched global markets but couldn\'t find "${_searchController.text}". Try checking the spelling or symbol.'
+                                  : 'Use the search above to find any stock, ETF, or cryptocurrency',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: themeProvider.contrast.withOpacity(0.7),
                           ),
+                          textAlign: TextAlign.center,
                         ),
+                        if (!marketProvider.isLoading && _searchController.text.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.symmetric(horizontal: 32),
+                            decoration: BoxDecoration(
+                              color: themeProvider.theme.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: themeProvider.theme.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.lightbulb_outline,
+                                  color: themeProvider.theme,
+                                  size: 24,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Try searching for:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: themeProvider.contrast,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '• Company names: "Apple", "Tesla"\n• Stock symbols: "AAPL", "TSLA"\n• ETFs: "SPY", "QQQ", "SOXL"\n• Crypto: "Bitcoin", "Ethereum"',
+                                  style: TextStyle(
+                                    color: themeProvider.contrast.withOpacity(0.8),
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.left,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -260,7 +372,7 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
                     final asset = marketProvider.filteredAssets[index];
                     return AssetListTile(
                       asset: asset,
-                      onTap: () => _showTradeDialog(context, asset),
+                      onTap: () => _showAssetDetail(context, asset),
                     );
                   },
                   childCount: marketProvider.filteredAssets.length,
@@ -272,6 +384,14 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
       ),
     );
       },
+    );
+  }
+
+  void _showAssetDetail(BuildContext context, MarketAssetModel asset) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AssetDetailScreen(asset: asset),
+      ),
     );
   }
 

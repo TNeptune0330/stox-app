@@ -34,28 +34,35 @@ class AssetListTile extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
-        ),
-        subtitle: Text(
-          asset.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              asset.formattedPrice,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+        subtitle: Text(
+          asset.name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: SizedBox(
+          width: 80,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                asset.formattedPrice,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            PriceChangeIndicator(
-              change: asset.changePercent,
-              showIcon: true,
-            ),
-          ],
+              PriceChangeIndicator(
+                change: asset.changePercent,
+                showIcon: true,
+              ),
+            ],
+          ),
         ),
         onTap: onTap,
       ),

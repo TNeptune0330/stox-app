@@ -12,6 +12,8 @@ class StorageService {
   static const String _pricesBoxName = 'prices_cache';
   static const String _unlockedAchievementsKey = 'unlocked_achievements';
   static const String _userProgressKey = 'user_progress';
+  static const String _onboardingCompletedKey = 'onboarding_completed';
+  static const String _tutorialCompletedKey = 'tutorial_completed';
 
   static SharedPreferences? _prefs;
   static Box<Map>? _assetsBox;
@@ -169,5 +171,23 @@ class StorageService {
       }
     }
     return progress;
+  }
+
+  // Onboarding methods
+  static Future<void> setOnboardingCompleted(bool completed) async {
+    await _prefs?.setBool(_onboardingCompletedKey, completed);
+  }
+
+  static bool isOnboardingCompleted() {
+    return _prefs?.getBool(_onboardingCompletedKey) ?? false;
+  }
+
+  // Tutorial methods
+  static Future<void> setTutorialCompleted(bool completed) async {
+    await _prefs?.setBool(_tutorialCompletedKey, completed);
+  }
+
+  static bool isTutorialCompleted() {
+    return _prefs?.getBool(_tutorialCompletedKey) ?? false;
   }
 }

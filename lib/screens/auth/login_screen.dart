@@ -484,6 +484,7 @@ class _LoginScreenState extends State<LoginScreen> {
         username: 'Demo Trader',
         avatarUrl: null,
         colorTheme: 'light',
+        isAdmin: false,
         cashBalance: 10000.0,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

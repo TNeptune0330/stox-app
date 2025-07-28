@@ -31,12 +31,16 @@ class ProfilePictureService {
     required XFile imageFile,
   }) async {
     try {
+      print('🔄 Starting profile picture upload for user: $userId');
+      
       // Ensure bucket exists first
       await ensureBucketExists();
       
       // Create unique filename
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = '$userId/profile_${timestamp}.jpg';
+      final fileName = '$userId/profile_$timestamp.jpg';
+      
+      print('📁 Uploading as: $fileName');
       
       Uint8List imageBytes;
       if (kIsWeb) {
@@ -44,6 +48,8 @@ class ProfilePictureService {
       } else {
         imageBytes = await File(imageFile.path).readAsBytes();
       }
+      
+      print('📊 Image size: ${imageBytes.length} bytes');
       
       // Upload to Supabase storage
       final String path = await _supabase.storage
@@ -58,13 +64,23 @@ class ProfilePictureService {
           .from(_bucketName)
           .getPublicUrl(fileName);
       
-      print('✅ Profile picture uploaded: $publicUrl');
+      print('✅ Profile picture uploaded successfully');
+      print('🔗 Public URL: $publicUrl');
       return publicUrl;
       
     } catch (e) {
       print('❌ Error uploading profile picture: $e');
-      // For production, disable profile picture uploads if storage is not configured
-      print('⚠️ Profile picture upload disabled - storage bucket not configured');
+      print('📝 Error details: ${e.toString()}');
+      
+      // Try to provide more specific error information
+      if (e.toString().contains('RLS')) {
+        print('🔒 RLS (Row Level Security) error - check Supabase policies');
+      } else if (e.toString().contains('bucket')) {
+        print('🪣 Bucket error - check bucket exists and permissions');
+      } else if (e.toString().contains('auth')) {
+        print('🔐 Authentication error - check user is signed in');
+      }
+      
       return null;
     }
   }
