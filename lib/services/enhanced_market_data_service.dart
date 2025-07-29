@@ -1806,12 +1806,23 @@ class EnhancedMarketDataService {
         final data = json.decode(response.body);
         final chart = data['chart'];
         
+        print('$_logPrefix 🔍 Chart data exists: ${chart != null}');
+        if (chart != null) {
+          print('$_logPrefix 🔍 Chart result exists: ${chart['result'] != null}');
+          print('$_logPrefix 🔍 Chart result length: ${chart['result']?.length ?? 0}');
+        }
+        
         if (chart != null && chart['result'] != null && chart['result'].isNotEmpty) {
           final result = chart['result'][0];
           final meta = result['meta'];
           
+          print('$_logPrefix 🔍 Meta data exists: ${meta != null}');
           if (meta != null) {
-            return {
+            print('$_logPrefix 🔍 Available meta keys: ${meta.keys.toList()}');
+          }
+          
+          if (meta != null) {
+            final fundamentalData = {
               'marketCap': meta['regularMarketPrice'] != null ? 
                 (meta['regularMarketPrice'] as num).toDouble() * 1000000000.0 : 0.0,
               'volume': meta['regularMarketVolume']?.toDouble() ?? 0.0,
@@ -1822,6 +1833,9 @@ class EnhancedMarketDataService {
               'weekHigh52': meta['fiftyTwoWeekHigh']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
               'weekLow52': meta['fiftyTwoWeekLow']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
             };
+            
+            print('$_logPrefix ✅ Fundamental data loaded for $symbol: ${fundamentalData.keys.join(', ')}');
+            return fundamentalData;
           }
         } else {
           print('$_logPrefix ⚠️ No chart data in Yahoo Finance response for $symbol');

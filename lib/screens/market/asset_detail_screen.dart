@@ -30,6 +30,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
   String _selectedTimeframe = '1D';
   List<FlSpot> _priceData = [];
   Map<String, dynamic>? _fundamentals;
+  bool _isLoadingFundamentals = true;
   List<NewsArticle> _newsArticles = [];
   bool _isLoadingNews = false;
 
@@ -81,21 +82,37 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
   // REMOVED: _generateRealisticMockData - We only use real data from APIs
 
   Future<void> _loadFundamentals() async {
+    setState(() {
+      _isLoadingFundamentals = true;
+    });
+    
     // Use real market data for fundamentals - no mock data
     try {
+      print('📊 Loading fundamental data for ${widget.asset.symbol}...');
       // Get real fundamental data from Yahoo Finance or other APIs
       final fundamentalData = await EnhancedMarketDataService.getFundamentalData(widget.asset.symbol);
       
       if (fundamentalData.isNotEmpty) {
-        _fundamentals = fundamentalData;
+        setState(() {
+          _fundamentals = fundamentalData;
+          _isLoadingFundamentals = false;
+        });
+        print('📊 Fundamental data loaded for ${widget.asset.symbol}: ${fundamentalData.keys.join(', ')}');
       } else {
         // No fundamental data available - leave as null to show "no data" state
-        _fundamentals = null;
+        setState(() {
+          _fundamentals = null;
+          _isLoadingFundamentals = false;
+        });
+        print('📊 No fundamental data available for ${widget.asset.symbol}');
       }
     } catch (e) {
       print('Error loading fundamentals for ${widget.asset.symbol}: $e');
       // No data available on error - show "no data" state
-      _fundamentals = null;
+      setState(() {
+        _fundamentals = null;
+        _isLoadingFundamentals = false;
+      });
     }
   }
 
@@ -444,6 +461,36 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
   }
 
   Widget _buildStatsTab(ThemeProvider themeProvider) {
+    if (_isLoadingFundamentals) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading Market Data...',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: themeProvider.contrast,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Fetching detailed information for ${widget.asset.symbol}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: themeProvider.contrast.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
     if (_fundamentals == null) {
       return Center(
         child: Column(
@@ -470,6 +517,15 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
               style: TextStyle(
                 color: themeProvider.contrast.withOpacity(0.7),
               ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadFundamentals,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeProvider.theme,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
             ),
           ],
         ),
