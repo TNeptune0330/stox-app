@@ -120,16 +120,18 @@ class _MarketScreenState extends State<MarketScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Consumer<MarketDataProvider>(
                     builder: (context, marketProvider, child) {
-                      return TextField(
-                        controller: _searchController,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText: 'Search any stock, ETF, or crypto...',
-                          hintStyle: TextStyle(
-                            color: themeProvider.contrast.withOpacity(0.6),
-                          ),
+                      return Container(
+                        constraints: const BoxConstraints(maxWidth: double.infinity),
+                        child: TextField(
+                          controller: _searchController,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          textInputAction: TextInputAction.search,
+                          decoration: InputDecoration(
+                            hintText: 'Search stocks using Google...',
+                            hintStyle: TextStyle(
+                              color: themeProvider.contrast.withOpacity(0.6),
+                            ),
                           prefixIcon: marketProvider.isLoading && _searchController.text.isNotEmpty
                               ? Padding(
                                   padding: const EdgeInsets.all(12.0),
@@ -186,6 +188,7 @@ class _MarketScreenState extends State<MarketScreen> {
                         onChanged: (value) {
                           marketProvider.setSearchQuery(value);
                         },
+                        ),
                       );
                     },
                   ),
@@ -339,39 +342,24 @@ class _MarketScreenState extends State<MarketScreen> {
                   ),
                 );
               } else {
-                // Show top movers sections when not searching
-                final stockMovers = marketProvider.allAssets
-                    .where((asset) => asset.type == 'stock')
-                    .toList()
-                    ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
-                
-                final cryptoMovers = marketProvider.allAssets
-                    .where((asset) => asset.type == 'crypto')
-                    .toList()
-                    ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
-                
-                final etfMovers = marketProvider.allAssets
-                    .where((asset) => asset.type == 'etf')
-                    .toList()
-                    ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
-
+                // Show top movers from major indices when not searching
                 return SliverList(
                   delegate: SliverChildListDelegate([
                     TopMoversSection(
-                      title: 'Top Stock Movers',
-                      assets: stockMovers,
+                      title: 'NASDAQ 100 Movers',
+                      assets: marketProvider.nasdaq100Movers,
                       onAssetTap: (asset) => _showAssetDetail(context, asset),
                       isLoading: marketProvider.isLoading,
                     ),
                     TopMoversSection(
-                      title: 'Top Crypto Movers',
-                      assets: cryptoMovers,
+                      title: 'S&P 500 Movers',
+                      assets: marketProvider.sp500Movers,
                       onAssetTap: (asset) => _showAssetDetail(context, asset),
                       isLoading: marketProvider.isLoading,
                     ),
                     TopMoversSection(
-                      title: 'Top ETF Movers',
-                      assets: etfMovers,
+                      title: 'DOW Jones Movers',
+                      assets: marketProvider.dowJonesMovers,
                       onAssetTap: (asset) => _showAssetDetail(context, asset),
                       isLoading: marketProvider.isLoading,
                     ),

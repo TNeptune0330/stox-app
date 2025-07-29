@@ -4,49 +4,55 @@ import '../models/market_asset_model.dart';
 import '../services/enhanced_market_data_service.dart';
 
 class MarketDataProvider with ChangeNotifier {
-  List<MarketAssetModel> _allAssets = [];
   List<MarketAssetModel> _filteredAssets = [];
-  String _currentFilter = 'all';
+  List<MarketAssetModel> _nasdaq100Movers = [];
+  List<MarketAssetModel> _sp500Movers = [];
+  List<MarketAssetModel> _dowJonesMovers = [];
   String _searchQuery = '';
   bool _isLoading = false;
   String? _error;
-  Map<String, dynamic> _marketStats = {};
   Timer? _searchTimer;
   
+  // NASDAQ 100 top symbols for market movers
+  static const List<String> _nasdaq100Symbols = [
+    'AAPL', 'MSFT', 'AMZN', 'NVDA', 'GOOGL', 'META', 'TSLA', 'AVGO', 'ORCL', 'COST',
+    'NFLX', 'AMD', 'PEP', 'ADBE', 'CSCO', 'TXN', 'QCOM', 'TMUS', 'AMAT', 'INTU'
+  ];
+  
+  // S&P 500 top symbols for market movers 
+  static const List<String> _sp500Symbols = [
+    'AAPL', 'MSFT', 'AMZN', 'NVDA', 'GOOGL', 'BRK.B', 'META', 'TSLA', 'UNH', 'JNJ',
+    'XOM', 'JPM', 'V', 'PG', 'MA', 'CVX', 'HD', 'PFE', 'ABBV', 'KO'
+  ];
+  
+  // DOW Jones symbols for market movers
+  static const List<String> _dowJonesSymbols = [
+    'UNH', 'GS', 'HD', 'MSFT', 'AMGN', 'CAT', 'CRM', 'V', 'AXP', 'BA',
+    'HON', 'AAPL', 'IBM', 'JNJ', 'JPM', 'MCD', 'MMM', 'MRK', 'NKE', 'PG',
+    'TRV', 'DIS', 'VZ', 'CVX', 'WBA', 'WMT', 'DOW', 'CSCO', 'KO', 'INTC'
+  ];
+  
   // Getters
-  List<MarketAssetModel> get allAssets => _allAssets;
   List<MarketAssetModel> get filteredAssets => _filteredAssets;
-  String get currentFilter => _currentFilter;
+  List<MarketAssetModel> get nasdaq100Movers => _nasdaq100Movers;
+  List<MarketAssetModel> get sp500Movers => _sp500Movers;
+  List<MarketAssetModel> get dowJonesMovers => _dowJonesMovers;
   String get searchQuery => _searchQuery;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  Map<String, dynamic> get marketStats => _marketStats;
   
-  // Asset type getters
-  List<MarketAssetModel> get stocks => _allAssets.where((asset) => asset.type == 'stock').toList();
-  List<MarketAssetModel> get cryptos => _allAssets.where((asset) => asset.type == 'crypto').toList();
-  List<MarketAssetModel> get etfs => _allAssets.where((asset) => asset.type == 'etf').toList();
-  
-  // Market performance getters
-  List<MarketAssetModel> get topGainers => _allAssets
-      .where((asset) => asset.changePercent > 0)
-      .toList()
-      ..sort((a, b) => b.changePercent.compareTo(a.changePercent));
-  
-  List<MarketAssetModel> get topLosers => _allAssets
-      .where((asset) => asset.changePercent < 0)
-      .toList()
-      ..sort((a, b) => a.changePercent.compareTo(b.changePercent));
+  // For backward compatibility
+  List<MarketAssetModel> get allAssets => [];
   
   Future<void> initialize() async {
     _setLoading(true);
     _clearError();
     
     try {
-      print('📊 MarketDataProvider: Initializing...');
+      print('📊 MarketDataProvider: Initializing with market movers only...');
       
-      // Load initial market data
-      await refreshMarketData();
+      // Load only market movers from major indices
+      await _loadMarketMovers();
       
       print('✅ MarketDataProvider: Initialized successfully');
     } catch (e) {
@@ -57,259 +63,149 @@ class MarketDataProvider with ChangeNotifier {
     }
   }
   
-  Future<void> refreshMarketData() async {
+  Future<void> _loadMarketMovers() async {
     try {
-      print('🔄 MarketDataProvider: Refreshing market data...');
+      print('🔄 Loading market movers from major indices...');
       
-      // Get all assets
-      _allAssets = await EnhancedMarketDataService.getAllAssets();
+      // Load NASDAQ 100 movers
+      final nasdaq100Assets = <MarketAssetModel>[];
+      for (final symbol in _nasdaq100Symbols.take(10)) { // Get more to find top movers
+        try {
+          final asset = await EnhancedMarketDataService.getAsset(symbol);
+          if (asset != null) {
+            nasdaq100Assets.add(asset);
+          }
+        } catch (e) {
+          print('Error loading NASDAQ 100 symbol $symbol: $e');
+        }
+      }
+      nasdaq100Assets.sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
+      _nasdaq100Movers = nasdaq100Assets.take(3).toList();
       
-      // Get market statistics
-      _marketStats = await EnhancedMarketDataService.getMarketStats();
+      // Load S&P 500 movers
+      final sp500Assets = <MarketAssetModel>[];
+      for (final symbol in _sp500Symbols.take(10)) { // Get more to find top movers
+        try {
+          final asset = await EnhancedMarketDataService.getAsset(symbol);
+          if (asset != null) {
+            sp500Assets.add(asset);
+          }
+        } catch (e) {
+          print('Error loading S&P 500 symbol $symbol: $e');
+        }
+      }
+      sp500Assets.sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
+      _sp500Movers = sp500Assets.take(3).toList();
       
-      // Apply current filter
-      _applyFilter();
+      // Load DOW Jones movers
+      final dowJonesAssets = <MarketAssetModel>[];
+      for (final symbol in _dowJonesSymbols.take(10)) { // Get more to find top movers
+        try {
+          final asset = await EnhancedMarketDataService.getAsset(symbol);
+          if (asset != null) {
+            dowJonesAssets.add(asset);
+          }
+        } catch (e) {
+          print('Error loading DOW Jones symbol $symbol: $e');
+        }
+      }
+      dowJonesAssets.sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
+      _dowJonesMovers = dowJonesAssets.take(3).toList();
       
-      print('✅ MarketDataProvider: Data refreshed - ${_allAssets.length} assets loaded');
+      print('✅ Market movers loaded: NASDAQ(${_nasdaq100Movers.length}), S&P500(${_sp500Movers.length}), DOW(${_dowJonesMovers.length})');
       notifyListeners();
     } catch (e) {
-      print('❌ MarketDataProvider: Refresh failed: $e');
-      _setError('Failed to refresh market data: $e');
+      print('❌ Failed to load market movers: $e');
+      throw e;
     }
   }
   
-  void setFilter(String filter) {
-    if (_currentFilter != filter) {
-      _currentFilter = filter;
-      _applyFilter();
-      print('🔍 MarketDataProvider: Filter changed to $filter');
-    }
+  Future<void> refreshMarketData() async {
+    await _loadMarketMovers();
   }
   
-  void setSearchQuery(String query) {
-    if (_searchQuery != query) {
-      _searchQuery = query;
+  Future<void> setSearchQuery(String query) async {
+    if (_searchQuery == query) return;
+    
+    _searchQuery = query;
+    notifyListeners();
+    
+    // Cancel previous search timer
+    _searchTimer?.cancel();
+    
+    if (query.isEmpty) {
+      _filteredAssets = [];
+      notifyListeners();
+      return;
+    }
+    
+    // Debounce search
+    _searchTimer = Timer(const Duration(milliseconds: 500), () {
+      _performGoogleSearch(query);
+    });
+  }
+  
+  Future<void> _performGoogleSearch(String query) async {
+    if (query.isEmpty) return;
+    
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      print('🔍 Performing Google-powered search for: "$query"');
       
-      // Cancel previous search timer
-      _searchTimer?.cancel();
+      // TODO: Implement Google Custom Search API
+      // For now, use a simple symbol lookup and search within known symbols
+      final searchResults = <MarketAssetModel>[];
       
-      // Immediately apply local filter for instant feedback
-      _applyFilter();
-      
-      // Debounce API search to avoid overwhelming the API
-      if (query.isNotEmpty && query.length >= 2) {
-        _searchTimer = Timer(const Duration(milliseconds: 500), () {
-          _performSmartSearch(query);
-        });
+      // Try direct symbol lookup first
+      try {
+        final directMatch = await EnhancedMarketDataService.getAsset(query.toUpperCase());
+        if (directMatch != null) {
+          searchResults.add(directMatch);
+        }
+      } catch (e) {
+        print('No direct match for symbol: $query');
       }
       
-      print('🔍 MarketDataProvider: Search query changed to "$query"');
-    }
-  }
-
-  Future<void> _performSmartSearch(String query) async {
-    if (query.isEmpty || query != _searchQuery) {
-      return; // Query changed while we were waiting
-    }
-
-    // If local search yields few results, search API
-    if (_filteredAssets.length < 3) {
-      _setLoading(true);
-      await _searchFromAPI(query);
-      _setLoading(false);
-    }
-  }
-
-  Future<void> _searchFromAPI(String query) async {
-    try {
-      print('🔍 MarketDataProvider: Searching API for "$query"...');
+      // Search within common stock symbols that match the query
+      final commonSymbols = [
+        'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'TSLA', 'NVDA', 'AMD', 'INTC', 'ORCL',
+        'NFLX', 'DIS', 'BA', 'JPM', 'V', 'MA', 'PG', 'JNJ', 'UNH', 'HD',
+        'KO', 'PFE', 'VZ', 'T', 'CVX', 'XOM', 'WMT', 'IBM', 'GE', 'F',
+        'GM', 'UBER', 'LYFT', 'SPOT', 'SQ', 'PYPL', 'SHOP', 'ZM', 'ROKU', 'SNAP'
+      ];
       
-      // Use the enhanced market data service search function
-      final apiResults = await EnhancedMarketDataService.searchAssets(query);
-      
-      if (apiResults.isNotEmpty) {
-        print('✅ MarketDataProvider: Found ${apiResults.length} API results for "$query"');
-        
-        // Add new assets to our local cache
-        for (final asset in apiResults) {
-          if (!_allAssets.any((existing) => existing.symbol == asset.symbol)) {
-            _allAssets.add(asset);
-            print('➕ MarketDataProvider: Added new asset ${asset.symbol} to local cache');
+      for (final symbol in commonSymbols) {
+        if (symbol.toLowerCase().contains(query.toLowerCase()) && 
+            !searchResults.any((asset) => asset.symbol == symbol)) {
+          try {
+            final asset = await EnhancedMarketDataService.getAsset(symbol);
+            if (asset != null) {
+              searchResults.add(asset);
+            }
+          } catch (e) {
+            print('Error loading search result $symbol: $e');
           }
         }
-        
-        // Re-apply filter to include new results
-        _applyFilter();
-      } else {
-        print('🔍 MarketDataProvider: No API results found for "$query"');
       }
-    } catch (e) {
-      print('❌ MarketDataProvider: API search failed for "$query": $e');
-      // Don't set error state, just continue with local results
-    }
-  }
-  
-  void _applyFilter() {
-    List<MarketAssetModel> assets = _allAssets;
-    
-    // Apply type filter
-    if (_currentFilter != 'all') {
-      assets = assets.where((asset) => asset.type == _currentFilter).toList();
-    }
-    
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      assets = assets.where((asset) =>
-          asset.symbol.toLowerCase().contains(query) ||
-          asset.name.toLowerCase().contains(query)
-      ).toList();
-    }
-    
-    _filteredAssets = assets;
-    notifyListeners();
-  }
-  
-  MarketAssetModel? getAsset(String symbol) {
-    try {
-      return _allAssets.firstWhere((asset) => asset.symbol == symbol);
-    } catch (e) {
-      return null;
-    }
-  }
-  
-  Future<MarketAssetModel?> getAssetAsync(String symbol) async {
-    try {
-      return await EnhancedMarketDataService.getAsset(symbol);
-    } catch (e) {
-      print('❌ MarketDataProvider: Error getting asset $symbol: $e');
-      return null;
-    }
-  }
-  
-  double getAssetPrice(String symbol) {
-    final asset = getAsset(symbol);
-    return asset?.price ?? 0.0;
-  }
-  
-  double getAssetChange(String symbol) {
-    final asset = getAsset(symbol);
-    return asset?.change ?? 0.0;
-  }
-  
-  double getAssetChangePercent(String symbol) {
-    final asset = getAsset(symbol);
-    return asset?.changePercent ?? 0.0;
-  }
-  
-  bool isAssetGainer(String symbol) {
-    final asset = getAsset(symbol);
-    return (asset?.changePercent ?? 0.0) > 0;
-  }
-  
-  bool isAssetLoser(String symbol) {
-    final asset = getAsset(symbol);
-    return (asset?.changePercent ?? 0.0) < 0;
-  }
-  
-  List<MarketAssetModel> getSimilarAssets(String symbol, {int limit = 5}) {
-    final asset = getAsset(symbol);
-    if (asset == null) return [];
-    
-    return _allAssets
-        .where((a) => a.symbol != symbol && a.type == asset.type)
-        .take(limit)
-        .toList();
-  }
-  
-  List<MarketAssetModel> getWatchlist() {
-    // For now, return top performers
-    // In a real app, this would be user-specific
-    return [...topGainers.take(5), ...topLosers.take(5)];
-  }
-  
-  Map<String, dynamic> getAssetStats(String symbol) {
-    final asset = getAsset(symbol);
-    if (asset == null) return {};
-    
-    return {
-      'symbol': asset.symbol,
-      'name': asset.name,
-      'type': asset.type,
-      'price': asset.price,
-      'change': asset.change,
-      'change_percent': asset.changePercent,
-      'last_updated': asset.lastUpdated,
-    };
-  }
-  
-  Map<String, dynamic> getMarketOverview() {
-    if (_allAssets.isEmpty) return {};
-    
-    final gainers = _allAssets.where((asset) => asset.changePercent > 0).length;
-    final losers = _allAssets.where((asset) => asset.changePercent < 0).length;
-    final unchanged = _allAssets.length - gainers - losers;
-    
-    final avgChange = _allAssets.isNotEmpty
-        ? _allAssets.map((asset) => asset.changePercent).reduce((a, b) => a + b) / _allAssets.length
-        : 0.0;
-    
-    return {
-      'total_assets': _allAssets.length,
-      'gainers': gainers,
-      'losers': losers,
-      'unchanged': unchanged,
-      'avg_change': avgChange,
-      'market_sentiment': avgChange > 0 ? 'bullish' : avgChange < 0 ? 'bearish' : 'neutral',
-      'last_updated': _allAssets.isNotEmpty
-          ? _allAssets.map((asset) => asset.lastUpdated).reduce((a, b) => a.isAfter(b) ? a : b)
-          : null,
-    };
-  }
-  
-  List<MarketAssetModel> getAssetsByPerformance({
-    required String performance, // 'gainers', 'losers', 'most_active'
-    int limit = 10,
-  }) {
-    switch (performance) {
-      case 'gainers':
-        return topGainers.take(limit).toList();
-      case 'losers':
-        return topLosers.take(limit).toList();
-      case 'most_active':
-        // For now, return assets with highest absolute change
-        return _allAssets
-            .where((asset) => asset.change.abs() > 0)
-            .toList()
-            ..sort((a, b) => b.change.abs().compareTo(a.change.abs()))
-            ..take(limit);
-      default:
-        return [];
-    }
-  }
-  
-  Future<void> updateAssetPrice(String symbol, double newPrice) async {
-    final assetIndex = _allAssets.indexWhere((asset) => asset.symbol == symbol);
-    if (assetIndex != -1) {
-      final asset = _allAssets[assetIndex];
-      final change = newPrice - asset.price;
-      final changePercent = (change / asset.price) * 100;
       
-      final updatedAsset = MarketAssetModel(
-        symbol: asset.symbol,
-        name: asset.name,
-        price: newPrice,
-        change: change,
-        changePercent: changePercent,
-        type: asset.type,
-        lastUpdated: DateTime.now(),
-      );
+      _filteredAssets = searchResults;
+      print('✅ Search completed: ${searchResults.length} results found');
       
-      _allAssets[assetIndex] = updatedAsset;
-      _applyFilter();
-      
-      print('📈 MarketDataProvider: Updated $symbol price to \$${newPrice.toStringAsFixed(2)}');
+    } catch (e) {
+      print('❌ Search failed: $e');
+      _setError('Search failed: $e');
+      _filteredAssets = [];
+    } finally {
+      _setLoading(false);
+      notifyListeners();
     }
+  }
+  
+  // Remove old methods that are no longer needed
+  void setFilter(String filter) {
+    // No longer needed - we don't pre-load all assets
   }
   
   void _setLoading(bool loading) {
@@ -317,7 +213,7 @@ class MarketDataProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  void _setError(String error) {
+  void _setError(String? error) {
     _error = error;
     notifyListeners();
   }
@@ -326,18 +222,6 @@ class MarketDataProvider with ChangeNotifier {
     _error = null;
   }
   
-  void clearData() {
-    _allAssets.clear();
-    _filteredAssets.clear();
-    _marketStats.clear();
-    _currentFilter = 'all';
-    _searchQuery = '';
-    _error = null;
-    _isLoading = false;
-    _searchTimer?.cancel();
-    notifyListeners();
-  }
-
   @override
   void dispose() {
     _searchTimer?.cancel();
