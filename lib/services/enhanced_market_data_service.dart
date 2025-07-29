@@ -16,9 +16,10 @@ class EnhancedMarketDataService {
   static const String _coinGeckoBaseUrl = 'https://api.coingecko.com/api/v3';
   static const String _alphaVantageBaseUrl = 'https://www.alphavantage.co/query';
   
-  // Rate limiting
-  static DateTime _lastApiCall = DateTime.now().subtract(Duration(seconds: 2));
-  static const Duration _apiCallDelay = Duration(milliseconds: 1200);
+  // Rate limiting - increased for free API tiers
+  static DateTime _lastApiCall = DateTime.now().subtract(Duration(seconds: 5));
+  static const Duration _apiCallDelay = Duration(seconds: 3); // 3 seconds between calls
+  static const Duration _retryDelay = Duration(seconds: 30); // Wait 30s after 429 errors
   
   // Comprehensive market assets for trading simulation
   // NASDAQ 100 + S&P 500 Top Stocks + Popular ETFs
@@ -822,12 +823,13 @@ class EnhancedMarketDataService {
       
       for (final symbol in _essentialStocks) {
         try {
+          // Rate limit before each stock update to avoid overwhelming APIs
+          await _waitForRateLimit();
+          
           // Try Yahoo Finance first (unlimited, fast, reliable)
           if (await _updateStockFromYahoo(symbol)) {
             continue;
           }
-          
-          await _waitForRateLimit();
           
           // Try Finnhub as backup
           if (await _updateStockFromFinnhub(symbol)) {
@@ -969,6 +971,9 @@ class EnhancedMarketDataService {
         } else {
           print('$_logPrefix ⚠️ Invalid price data in Finnhub response for $symbol');
         }
+      } else if (response.statusCode == 429) {
+        await _handleRateLimit('Finnhub', symbol);
+        return false; // Skip this symbol for now
       } else {
         print('$_logPrefix ❌ Finnhub HTTP ${response.statusCode} error for $symbol');
         if (response.body.isNotEmpty) {
@@ -1015,6 +1020,9 @@ class EnhancedMarketDataService {
         } else {
           print('$_logPrefix ⚠️ No Global Quote data in Alpha Vantage response for $symbol');
         }
+      } else if (response.statusCode == 429) {
+        await _handleRateLimit('Alpha Vantage', symbol);
+        return false; // Skip this symbol for now
       } else {
         print('$_logPrefix ❌ Alpha Vantage HTTP ${response.statusCode} error for $symbol');
         if (response.body.isNotEmpty) {
@@ -1331,10 +1339,17 @@ class EnhancedMarketDataService {
     
     if (timeSinceLastCall < _apiCallDelay) {
       final waitTime = _apiCallDelay - timeSinceLastCall;
+      print('$_logPrefix ⏳ Rate limiting: waiting ${waitTime.inMilliseconds}ms');
       await Future.delayed(waitTime);
     }
     
     _lastApiCall = DateTime.now();
+  }
+
+  // Handle 429 errors with exponential backoff
+  static Future<void> _handleRateLimit(String apiName, String symbol) async {
+    print('$_logPrefix 🚫 Rate limited by $apiName for $symbol - waiting ${_retryDelay.inSeconds}s');
+    await Future.delayed(_retryDelay);
   }
   
   // Public API methods
@@ -1549,6 +1564,9 @@ class EnhancedMarketDataService {
         } else {
           print('$_logPrefix ⚠️ No chart data in Yahoo Finance response for $symbol quote');
         }
+      } else if (response.statusCode == 429) {
+        await _handleRateLimit('Yahoo Finance', symbol);
+        return null; // Skip this symbol for now
       } else {
         print('$_logPrefix ❌ HTTP ${response.statusCode} error for $symbol quote');
         if (response.body.isNotEmpty) {
@@ -1568,8 +1586,8 @@ class EnhancedMarketDataService {
     // Update immediately
     await updateAllMarketData();
     
-    // Schedule periodic updates every 2 minutes with realistic price simulation
-    Stream.periodic(const Duration(minutes: 2)).listen((_) async {
+    // Schedule periodic updates every 10 minutes to respect API rate limits
+    Stream.periodic(const Duration(minutes: 10)).listen((_) async {
       try {
         // Use realistic price simulation first
         await RealisticPriceSimulator.simulateRealisticPriceUpdates();
@@ -1809,6 +1827,9 @@ class EnhancedMarketDataService {
           print('$_logPrefix ⚠️ No chart data in Yahoo Finance response for $symbol');
           print('$_logPrefix 📄 Response body: ${response.body.substring(0, 200)}...');
         }
+      } else if (response.statusCode == 429) {
+        await _handleRateLimit('Yahoo Finance', symbol);
+        return {}; // Return empty map when rate limited
       } else {
         print('$_logPrefix ❌ HTTP ${response.statusCode} error for $symbol fundamental data');
         print('$_logPrefix 📄 Error response: ${response.body.substring(0, 200)}...');
