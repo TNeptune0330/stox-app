@@ -942,6 +942,8 @@ class EnhancedMarketDataService {
       final url = '$_finnhubBaseUrl/quote?symbol=$symbol&token=${ApiKeys.finnhubApiKey}';
       final response = await http.get(Uri.parse(url));
       
+      print('$_logPrefix 🌐 Finnhub HTTP ${response.statusCode} for $symbol');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         
@@ -964,12 +966,19 @@ class EnhancedMarketDataService {
           await LocalDatabaseService.saveMarketAsset(asset);
           print('$_logPrefix ✅ [Finnhub] Updated $symbol: \$${price.toStringAsFixed(2)} (${changePercent.toStringAsFixed(2)}%)');
           return true;
+        } else {
+          print('$_logPrefix ⚠️ Invalid price data in Finnhub response for $symbol');
+        }
+      } else {
+        print('$_logPrefix ❌ Finnhub HTTP ${response.statusCode} error for $symbol');
+        if (response.body.isNotEmpty) {
+          print('$_logPrefix 📄 Finnhub error response: ${response.body.substring(0, 200)}...');
         }
       }
       
       return false;
     } catch (e) {
-      print('$_logPrefix ❌ Finnhub error for $symbol: $e');
+      print('$_logPrefix ❌ Finnhub exception for $symbol: $e');
       return false;
     }
   }
@@ -978,6 +987,8 @@ class EnhancedMarketDataService {
     try {
       final url = '$_alphaVantageBaseUrl?function=GLOBAL_QUOTE&symbol=$symbol&apikey=${ApiKeys.alphaVantageApiKey}';
       final response = await http.get(Uri.parse(url));
+      
+      print('$_logPrefix 🌐 Alpha Vantage HTTP ${response.statusCode} for $symbol');
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -1001,12 +1012,19 @@ class EnhancedMarketDataService {
           await LocalDatabaseService.saveMarketAsset(asset);
           print('$_logPrefix ✅ [Alpha Vantage] Updated $symbol: \$${price.toStringAsFixed(2)} (${changePercent.toStringAsFixed(2)}%)');
           return true;
+        } else {
+          print('$_logPrefix ⚠️ No Global Quote data in Alpha Vantage response for $symbol');
+        }
+      } else {
+        print('$_logPrefix ❌ Alpha Vantage HTTP ${response.statusCode} error for $symbol');
+        if (response.body.isNotEmpty) {
+          print('$_logPrefix 📄 Alpha Vantage error response: ${response.body.substring(0, 200)}...');
         }
       }
       
       return false;
     } catch (e) {
-      print('$_logPrefix ❌ Alpha Vantage error for $symbol: $e');
+      print('$_logPrefix ❌ Alpha Vantage exception for $symbol: $e');
       return false;
     }
   }
@@ -1499,6 +1517,8 @@ class EnhancedMarketDataService {
         },
       );
       
+      print('$_logPrefix 🌐 HTTP ${response.statusCode} for $symbol quote');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final result = data['chart']?['result']?[0];
@@ -1526,10 +1546,17 @@ class EnhancedMarketDataService {
               );
             }
           }
+        } else {
+          print('$_logPrefix ⚠️ No chart data in Yahoo Finance response for $symbol quote');
+        }
+      } else {
+        print('$_logPrefix ❌ HTTP ${response.statusCode} error for $symbol quote');
+        if (response.body.isNotEmpty) {
+          print('$_logPrefix 📄 Error response: ${response.body.substring(0, 200)}...');
         }
       }
     } catch (e) {
-      print('$_logPrefix ❌ Yahoo quote error for $symbol: $e');
+      print('$_logPrefix ❌ Yahoo quote exception for $symbol: $e');
     }
     
     return null;
@@ -1755,6 +1782,8 @@ class EnhancedMarketDataService {
         },
       ).timeout(const Duration(seconds: 10));
       
+      print('$_logPrefix 🌐 HTTP ${response.statusCode} for $symbol fundamental data');
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final chart = data['chart'];
@@ -1776,10 +1805,16 @@ class EnhancedMarketDataService {
               'weekLow52': meta['fiftyTwoWeekLow']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
             };
           }
+        } else {
+          print('$_logPrefix ⚠️ No chart data in Yahoo Finance response for $symbol');
+          print('$_logPrefix 📄 Response body: ${response.body.substring(0, 200)}...');
         }
+      } else {
+        print('$_logPrefix ❌ HTTP ${response.statusCode} error for $symbol fundamental data');
+        print('$_logPrefix 📄 Error response: ${response.body.substring(0, 200)}...');
       }
     } catch (e) {
-      print('$_logPrefix ❌ Error getting fundamental data for $symbol: $e');
+      print('$_logPrefix ❌ Exception getting fundamental data for $symbol: $e');
     }
     
     return {}; // Return empty map if no data available - never mock data
