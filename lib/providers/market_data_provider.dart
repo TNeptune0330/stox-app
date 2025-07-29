@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/market_asset_model.dart';
 import '../services/enhanced_market_data_service.dart';
+import '../services/google_stock_search_service.dart';
 
 class MarketDataProvider with ChangeNotifier {
   List<MarketAssetModel> _filteredAssets = [];
@@ -154,41 +155,8 @@ class MarketDataProvider with ChangeNotifier {
     try {
       print('🔍 Performing Google-powered search for: "$query"');
       
-      // TODO: Implement Google Custom Search API
-      // For now, use a simple symbol lookup and search within known symbols
-      final searchResults = <MarketAssetModel>[];
-      
-      // Try direct symbol lookup first
-      try {
-        final directMatch = await EnhancedMarketDataService.getAsset(query.toUpperCase());
-        if (directMatch != null) {
-          searchResults.add(directMatch);
-        }
-      } catch (e) {
-        print('No direct match for symbol: $query');
-      }
-      
-      // Search within common stock symbols that match the query
-      final commonSymbols = [
-        'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'TSLA', 'NVDA', 'AMD', 'INTC', 'ORCL',
-        'NFLX', 'DIS', 'BA', 'JPM', 'V', 'MA', 'PG', 'JNJ', 'UNH', 'HD',
-        'KO', 'PFE', 'VZ', 'T', 'CVX', 'XOM', 'WMT', 'IBM', 'GE', 'F',
-        'GM', 'UBER', 'LYFT', 'SPOT', 'SQ', 'PYPL', 'SHOP', 'ZM', 'ROKU', 'SNAP'
-      ];
-      
-      for (final symbol in commonSymbols) {
-        if (symbol.toLowerCase().contains(query.toLowerCase()) && 
-            !searchResults.any((asset) => asset.symbol == symbol)) {
-          try {
-            final asset = await EnhancedMarketDataService.getAsset(symbol);
-            if (asset != null) {
-              searchResults.add(asset);
-            }
-          } catch (e) {
-            print('Error loading search result $symbol: $e');
-          }
-        }
-      }
+      // Use Google Stock Search Service
+      final searchResults = await GoogleStockSearchService.searchStocks(query);
       
       _filteredAssets = searchResults;
       print('✅ Search completed: ${searchResults.length} results found');
