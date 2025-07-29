@@ -114,6 +114,8 @@ class _LegalDocumentScreenState extends State<LegalDocumentScreen> {
                           height: 1.6,
                           fontFamily: 'monospace',
                         ),
+                        textAlign: TextAlign.left,
+                        maxLines: null,
                       ),
                     ),
                   ),

@@ -5,6 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/market_asset_model.dart';
 import '../../widgets/asset_list_tile.dart';
+import '../../widgets/market_indices_banner.dart';
+import '../../widgets/top_movers_section.dart';
 import '../main_navigation.dart';
 import 'trade_dialog.dart';
 import 'asset_detail_screen.dart';
@@ -16,40 +18,13 @@ class MarketScreen extends StatefulWidget {
   State<MarketScreen> createState() => _MarketScreenState();
 }
 
-class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMixin {
-  late TabController _tabController;
+class _MarketScreenState extends State<MarketScreen> {
   final TextEditingController _searchController = TextEditingController();
   
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(_onTabChanged);
-  }
-
-  @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _onTabChanged() {
-    final marketProvider = Provider.of<MarketDataProvider>(context, listen: false);
-    switch (_tabController.index) {
-      case 0:
-        marketProvider.setFilter('all');
-        break;
-      case 1:
-        marketProvider.setFilter('stock');
-        break;
-      case 2:
-        marketProvider.setFilter('crypto');
-        break;
-      case 3:
-        marketProvider.setFilter('etf');
-        break;
-    }
   }
 
   bool _isWeekend() {
@@ -217,167 +192,193 @@ class _MarketScreenState extends State<MarketScreen> with TickerProviderStateMix
                 ),
               ),
               
+              // Market Indices Banner
+              const SliverToBoxAdapter(
+                child: MarketIndicesBanner(),
+              ),
+
               // Weekend Banner (only show on weekends)
               if (_isWeekend())
                 SliverToBoxAdapter(
                   child: _buildWeekendBanner(themeProvider),
                 ),
-
-              
-              // Asset Type Tabs
-          SliverToBoxAdapter(
-            child: TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(text: 'All'),
-                Tab(text: 'Stocks'),
-                Tab(text: 'Crypto'),
-                Tab(text: 'ETFs'),
-              ],
-            ),
-          ),
           
-          // Asset List
+          // Content - either search results or top movers
           Consumer<MarketDataProvider>(
             builder: (context, marketProvider, child) {
-              if (marketProvider.isLoading && marketProvider.filteredAssets.isEmpty) {
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
-
-              if (marketProvider.error != null) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          marketProvider.error!,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white70,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => marketProvider.refreshMarketData(),
-                          child: const Text('Retry'),
-                        ),
-                      ],
+              final isSearching = _searchController.text.isNotEmpty;
+              
+              if (isSearching) {
+                // Show search results
+                if (marketProvider.isLoading && marketProvider.filteredAssets.isEmpty) {
+                  return const SliverFillRemaining(
+                    child: Center(
+                      child: CircularProgressIndicator(),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              if (marketProvider.filteredAssets.isEmpty) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          marketProvider.isLoading 
-                              ? Icons.search 
-                              : Icons.search_off, 
-                          size: 64, 
-                          color: marketProvider.isLoading 
-                              ? themeProvider.theme 
-                              : Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          marketProvider.isLoading 
-                              ? 'Searching...' 
-                              : _searchController.text.isNotEmpty 
-                                  ? 'No Results Found'
-                                  : 'No Assets Found',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: themeProvider.contrast,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          marketProvider.isLoading 
-                              ? 'Looking for "${_searchController.text}" in global markets...'
-                              : _searchController.text.isNotEmpty
-                                  ? 'We searched global markets but couldn\'t find "${_searchController.text}". Try checking the spelling or symbol.'
-                                  : 'Use the search above to find any stock, ETF, or cryptocurrency',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: themeProvider.contrast.withOpacity(0.7),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (!marketProvider.isLoading && _searchController.text.isNotEmpty) ...[
+                if (marketProvider.error != null) {
+                  return SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline, size: 64, color: Colors.red),
                           const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            margin: const EdgeInsets.symmetric(horizontal: 32),
-                            decoration: BoxDecoration(
-                              color: themeProvider.theme.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: themeProvider.theme.withOpacity(0.3),
-                              ),
+                          Text(
+                            'Error',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            marketProvider.error!,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white70,
                             ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.lightbulb_outline,
-                                  color: themeProvider.theme,
-                                  size: 24,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Try searching for:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: themeProvider.contrast,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '• Company names: "Apple", "Tesla"\n• Stock symbols: "AAPL", "TSLA"\n• ETFs: "SPY", "QQQ", "SOXL"\n• Crypto: "Bitcoin", "Ethereum"',
-                                  style: TextStyle(
-                                    color: themeProvider.contrast.withOpacity(0.8),
-                                    fontSize: 14,
-                                  ),
-                                  textAlign: TextAlign.left,
-                                ),
-                              ],
-                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => marketProvider.refreshMarketData(),
+                            child: const Text('Retry'),
                           ),
                         ],
-                      ],
+                      ),
                     ),
+                  );
+                }
+
+                if (marketProvider.filteredAssets.isEmpty) {
+                  return SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            marketProvider.isLoading ? Icons.search : Icons.search_off, 
+                            size: 64, 
+                            color: marketProvider.isLoading ? themeProvider.theme : Colors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            marketProvider.isLoading ? 'Searching...' : 'No Results Found',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: themeProvider.contrast,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            marketProvider.isLoading 
+                                ? 'Looking for "${_searchController.text}" in global markets...'
+                                : 'We searched global markets but couldn\'t find "${_searchController.text}". Try checking the spelling or symbol.',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: themeProvider.contrast.withOpacity(0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (!marketProvider.isLoading) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              margin: const EdgeInsets.symmetric(horizontal: 32),
+                              decoration: BoxDecoration(
+                                color: themeProvider.theme.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: themeProvider.theme.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.lightbulb_outline,
+                                    color: themeProvider.theme,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Try searching for:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: themeProvider.contrast,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '• Company names: "Apple", "Tesla"\n• Stock symbols: "AAPL", "TSLA"\n• ETFs: "SPY", "QQQ", "SOXL"\n• Crypto: "Bitcoin", "Ethereum"',
+                                    style: TextStyle(
+                                      color: themeProvider.contrast.withOpacity(0.8),
+                                      fontSize: 14,
+                                    ),
+                                    textAlign: TextAlign.left,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final asset = marketProvider.filteredAssets[index];
+                      return AssetListTile(
+                        asset: asset,
+                        onTap: () => _showAssetDetail(context, asset),
+                      );
+                    },
+                    childCount: marketProvider.filteredAssets.length,
                   ),
                 );
-              }
+              } else {
+                // Show top movers sections when not searching
+                final stockMovers = marketProvider.assets
+                    .where((asset) => asset.type == 'stock')
+                    .toList()
+                    ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
+                
+                final cryptoMovers = marketProvider.assets
+                    .where((asset) => asset.type == 'crypto')
+                    .toList()
+                    ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
+                
+                final etfMovers = marketProvider.assets
+                    .where((asset) => asset.type == 'etf')
+                    .toList()
+                    ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
 
-              return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final asset = marketProvider.filteredAssets[index];
-                    return AssetListTile(
-                      asset: asset,
-                      onTap: () => _showAssetDetail(context, asset),
-                    );
-                  },
-                  childCount: marketProvider.filteredAssets.length,
-                ),
-              );
+                return SliverList(
+                  delegate: SliverChildListDelegate([
+                    TopMoversSection(
+                      title: 'Top Stock Movers',
+                      assets: stockMovers,
+                      onAssetTap: (asset) => _showAssetDetail(context, asset),
+                      isLoading: marketProvider.isLoading,
+                    ),
+                    TopMoversSection(
+                      title: 'Top Crypto Movers',
+                      assets: cryptoMovers,
+                      onAssetTap: (asset) => _showAssetDetail(context, asset),
+                      isLoading: marketProvider.isLoading,
+                    ),
+                    TopMoversSection(
+                      title: 'Top ETF Movers',
+                      assets: etfMovers,
+                      onAssetTap: (asset) => _showAssetDetail(context, asset),
+                      isLoading: marketProvider.isLoading,
+                    ),
+                    const SizedBox(height: 16),
+                  ]),
+                );
+              }
             },
           ),
         ],

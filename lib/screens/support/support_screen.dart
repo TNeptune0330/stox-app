@@ -187,12 +187,15 @@ class _SupportScreenState extends State<SupportScreen> {
                               size: 16,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Responses sent to: pradhancode@gmail.com',
-                              style: TextStyle(
-                                color: Colors.blue[700],
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                            Flexible(
+                              child: Text(
+                                'Responses sent to: pradhancode@gmail.com',
+                                style: TextStyle(
+                                  color: Colors.blue[700],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -457,6 +460,8 @@ class _SupportScreenState extends State<SupportScreen> {
                                 fontSize: 12,
                                 color: themeProvider.contrast.withOpacity(0.7),
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                             ),
                           ],
                         ),
