@@ -22,94 +22,42 @@ class EnhancedMarketDataService {
   static DateTime _lastApiCall = DateTime.now().subtract(Duration(seconds: 2));
   static const Duration _apiCallDelay = Duration(milliseconds: 1200);
   
-  // Comprehensive market assets for trading simulation
-  // NASDAQ 100 + S&P 500 Top Stocks + Popular ETFs
+  // Essential market assets for trading simulation (verified working symbols)
   static const List<String> _essentialStocks = [
-    // FAANG + Major Tech
-    'AAPL', 'GOOGL', 'GOOG', 'MSFT', 'AMZN', 'META', 'TSLA', 'NVDA', 'NFLX', 'ORCL',
-    'CRM', 'ADBE', 'NOW', 'INTU', 'AMD', 'QCOM', 'AVGO', 'TXN', 'INTC', 'CSCO',
-    'IBM', 'UBER', 'LYFT', 'SNAP', 'PINS', 'PYPL', 'SHOP', 'SPOT',
+    // FAANG + Major Tech (verified working)
+    'AAPL', 'GOOGL', 'GOOG', 'MSFT', 'AMZN', 'META', 'TSLA', 'NVDA', 'NFLX',
+    'UBER', 'PYPL', 'SHOP',
     
-    // Financial Services
-    'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'AXP', 'V', 'MA', 'COF', 'USB', 'PNC',
-    'TFC', 'SCHW', 'BLK', 'SPGI', 'ICE', 'CME', 'MCO', 'MSCI', 'AON', 'MMC',
+    // Financial Services (major only)
+    'JPM', 'BAC', 'V', 'MA', 'BLK',
     
-    // Healthcare & Biotech
-    'JNJ', 'PFE', 'ABT', 'MRK', 'ABBV', 'TMO', 'DHR', 'BMY', 'AMGN', 'GILD',
-    'VRTX', 'REGN', 'BIIB', 'MRNA', 'BNTX', 'ZTS', 'LLY', 'UNH', 'CVS', 'ANTM',
+    // Healthcare & Biotech (major only)
+    'JNJ', 'PFE', 'UNH',
     
-    // Consumer & Retail
-    'WMT', 'TGT', 'COST', 'HD', 'LOW', 'NKE', 'SBUX', 'MCD', 'DIS', 'CMCSA',
-    'PEP', 'KO', 'PG', 'UL', 'CL', 'KMB', 'GIS', 'K', 'CPB', 'CAG',
+    // Consumer & Retail (major only)
+    'WMT', 'COST', 'HD', 'NKE', 'SBUX', 'MCD', 'DIS',
+    'PEP', 'KO',
     
-    // Industrial & Materials
-    'BA', 'CAT', 'DE', 'MMM', 'GE', 'HON', 'UPS', 'FDX', 'LMT', 'RTX',
-    'NOC', 'GD', 'EMR', 'ETN', 'ITW', 'ROK', 'PH', 'CMI', 'DOV', 'FTV',
+    // Industrial (major only)
+    'BA', 'CAT', 'GE', 'UPS',
     
-    // Energy
-    'XOM', 'CVX', 'COP', 'EOG', 'SLB', 'MPC', 'VLO', 'PSX', 'OXY', 'BKR',
-    'HAL', 'DVN', 'FANG', 'APA', 'MRO', 'HES', 'KMI', 'EPD', 'ET', 'OKE',
+    // Energy (major only)
+    'XOM', 'CVX',
     
-    // Utilities & REITs
-    'NEE', 'DUK', 'SO', 'AEP', 'EXC', 'XEL', 'SRE', 'PEG', 'ES', 'FE',
-    'AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'EXR', 'AVB', 'EQR', 'MAA', 'ESS',
+    // Communication Services (major only)
+    'T', 'VZ',
     
-    // Communication Services
-    'T', 'VZ', 'TMUS', 'CHTR', 'NFLX', 'DIS', 'CMCSA', 'VIA', 'VIAB', 'FOXA',
+    // Popular ETFs (major only)
+    'SPY', 'QQQ', 'VOO', 'VTI', 'GLD', 'TLT',
     
-    // Popular ETFs
-    'SPY', 'QQQ', 'IWM', 'DIA', 'VOO', 'VTI', 'VXUS', 'VEA', 'VWO', 'AGG',
-    'TLT', 'GLD', 'SLV', 'USO', 'XLF', 'XLK', 'XLE', 'XLV', 'XLI', 'XLP',
-    'XLY', 'XLU', 'XLRE', 'XLB', 'XBI', 'SMH', 'ARKK', 'ARKQ', 'ARKG', 'ARKW',
+    // Leveraged ETFs (verified active only)
+    'TQQQ', 'SQQQ', 'SOXL',
     
-    // Leveraged & Inverse ETFs
-    'TQQQ', 'SQQQ', 'UPRO', 'SPXU', 'TNA', 'TZA', 'FAS', 'FAZ', 'TECL', 'TECS',
-    'SOXL', 'SOXS', 'CURE', 'LABD', 'SPXL', 'SPXS', 'UDOW', 'SDOW', 'USMV', 'EFAV',
+    // Popular Individual Stocks (meme stocks & growth)
+    'GME', 'AMC', 'ROKU', 'ZM', 'COIN',
     
-    // Semiconductor & Tech ETFs (verified symbols only)
-    'SOXX', 'SOXL', 'SOXS', 'SMH', 'TECL', 'TECS', 'QTEC',
-    'HACK', 'ROBO', 'BOTZ', 'CLOU', 'ARKF',
-    
-    // Sector ETFs - Major ones only
-    'XLF', 'XLK', 'XLE', 'XLV', 'XLI', 'XLP', 'XLY', 'XLU', 'XLRE', 'XLB',
-    'VGT', 'VDC', 'VCR', 'VDE', 'VFH', 'VHT', 'VIS', 'VNQ', 'VAW',
-    'FREL', 'RWR', 'SCHH', 'REZ', 'REM', 'MORT', 'PFF',
-    
-    // Growth & Value ETFs
-    'VUG', 'VTV', 'IVW', 'IVE', 'VBK', 'VBR', 'IJH', 'IJR', 'VO', 'VB',
-    'MTUM', 'QUAL', 'USMV', 'VLUE', 'SIZE', 'VMOT', 'SCHG', 'SCHV', 'SCHA', 'SCHB',
-    
-    // International ETFs
-    'EFA', 'EEM', 'IEFA', 'IEMG', 'VEA', 'VWO', 'IXUS', 'FTIHX', 'SWISX', 'VTIAX',
-    'FXI', 'ASHR', 'MCHI', 'GXC', 'INDA', 'MINDX', 'EPP', 'EWJ', 'EWG', 'EWU',
-    
-    // Commodity & Currency ETFs
-    'GLD', 'SLV', 'GDX', 'GDXJ', 'NUGT', 'DUST', 'USO', 'UNG', 'DBA', 'DBC',
-    'PDBC', 'GSG', 'DJP', 'UUP', 'FXE', 'FXY', 'EUO', 'YCS', 'UDN', 'USDU',
-    
-    // Bond ETFs
-    'AGG', 'TLT', 'IEF', 'SHY', 'LQD', 'HYG', 'JNK', 'EMB', 'TIP', 'SCHZ',
-    'BND', 'VGIT', 'VGLT', 'VGSH', 'VTEB', 'MUB', 'TFI', 'SPTL', 'SPTS', 'SPTI',
-    
-    // Dividend ETFs (major ones only)
-    'VYM', 'SCHD', 'DVY', 'VIG', 'DGRO', 'HDV', 'NOBL',
-    
-    // Thematic & Innovation ETFs (verified active symbols only)
-    'ARKK', 'ARKQ', 'ARKG', 'ARKW', 'ARKF', 'ROBO', 'BOTZ', 'ICLN', 'TAN',
-    'JETS', 'PBW', 'QCLN',
-    
-    // Volatility ETFs (verified active symbols only)
-    'VXX', 'UVXY', 'SVXY', 'VIXY',
-    
-    // Emerging & Growth
-    'ROKU', 'ZM', 'PTON', 'DOCU', 'ZS', 'CRWD', 'SNOW', 'PLTR', 'AI', 'C3AI',
-    'UPST', 'AFRM', 'SQ', 'HOOD', 'COIN', 'RBLX', 'U', 'DDOG', 'MDB', 'OKTA',
-    
-    // International ADRs (verified major ones only)
-    'BABA', 'TSM', 'ASML', 'NVO', 'SAP', 'TM', 'SONY',
-    
-    // Popular Retail (verified active symbols only)
-    'GME', 'AMC', 'BB', 'NOK', 'SPCE'
+    // International ADRs (major only)
+    'BABA', 'TSM'
   ];
   
   // Top 100+ Cryptocurrencies by Market Cap
@@ -896,7 +844,7 @@ class EnhancedMarketDataService {
     try {
       print('$_logPrefix 🐍 Fetching $symbol from YFinance backend...');
       
-      final uri = Uri.parse('$MarketDataConfig.yahooFinanceBaseUrl/price').replace(
+      final uri = Uri.parse('${MarketDataConfig.yahooFinanceBaseUrl}$symbol').replace(
         queryParameters: {'ticker': symbol},
       );
       
@@ -967,7 +915,7 @@ class EnhancedMarketDataService {
         final batch = symbols.sublist(i, i + batchSize > symbols.length ? symbols.length : i + batchSize);
         final tickersParam = batch.join(',');
         
-        final uri = Uri.parse('$MarketDataConfig.yahooFinanceBaseUrl/batch').replace(
+        final uri = Uri.parse('${MarketDataConfig.yahooFinanceBaseUrl}batch').replace(
           queryParameters: {'tickers': tickersParam},
         );
         
@@ -1910,13 +1858,7 @@ class EnhancedMarketDataService {
           interval = '1d';
       }
       
-      final uri = Uri.parse('$MarketDataConfig.yahooFinanceBaseUrl/historical').replace(
-        queryParameters: {
-          'ticker': symbol,
-          'period': period,
-          'interval': interval,
-        },
-      );
+      final uri = Uri.parse('https://query1.finance.yahoo.com/v8/finance/chart/$symbol?period=$period&interval=$interval');
       
       final response = await http.get(
         uri,
