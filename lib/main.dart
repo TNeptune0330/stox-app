@@ -119,7 +119,7 @@ void _initializeNonCriticalServices() async {
     print('✅ AdMob Service initialized (background)');
     
     // Initialize daily news cache in background
-    FinancialNewsService.updateNewsInBackground();
+    FinancialNewsService.updateDailyNews();
     print('✅ Daily news update initiated (background)');
     
     // Start periodic market data updates

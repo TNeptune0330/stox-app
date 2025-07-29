@@ -259,6 +259,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
               SliverToBoxAdapter(
                 child: Column(
                   children: [
+                    // Company Overview Section
+                    _buildCompanyOverview(themeProvider),
+                    
                     // Tab Bar
                     Container(
                       color: themeProvider.background,
@@ -421,7 +424,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                             showTitles: true,
                             getTitlesWidget: (value, meta) {
                               return Text(
-                                '\$${value.toStringAsFixed(2)}',
+                                '\$${value.toStringAsFixed(0)}',
                                 style: TextStyle(
                                   color: themeProvider.contrast.withOpacity(0.6),
                                   fontSize: 12,
@@ -460,150 +463,38 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
   }
 
   Widget _buildStatsTab(ThemeProvider themeProvider) {
-    final description = StockDescriptionsService.getDescription(widget.asset.symbol);
-    final companyType = StockDescriptionsService.getCompanyType(widget.asset.symbol);
-    
-    return SingleChildScrollView(
+    if (_fundamentals == null) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+        ),
+      );
+    }
+
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Company Overview Section
           _buildStatCard(
-            'About ${widget.asset.symbol}',
+            'Market Data',
             [
-              StatItem('Company Name', widget.asset.name),
-              StatItem('Asset Type', widget.asset.type.toUpperCase()),
-              StatItem('Symbol', widget.asset.symbol),
-              StatItem('Category', companyType),
+              StatItem('Market Cap', _formatMarketCap(_fundamentals!['marketCap'])),
+              StatItem('Volume', _formatVolume(_fundamentals!['volume'])),
+              StatItem('P/E Ratio', _fundamentals!['peRatio'].toStringAsFixed(2)),
+              StatItem('Dividend Yield', '${_fundamentals!['dividendYield'].toStringAsFixed(2)}%'),
             ],
             themeProvider,
           ),
-          
           const SizedBox(height: 16),
-          
-          // Company Description
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: themeProvider.backgroundHigh,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: themeProvider.theme.withOpacity(0.3),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: themeProvider.theme,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Description',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: themeProvider.contrast,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: themeProvider.contrast.withOpacity(0.85),
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Current Price Info
           _buildStatCard(
-            'Current Price',
+            'Price Range',
             [
-              StatItem('Last Price', widget.asset.formattedPrice),
-              StatItem('Change', widget.asset.formattedChange),
-              StatItem('Change %', widget.asset.formattedChangePercent),
-              StatItem('Last Updated', _getFormattedTime()),
+              StatItem('Day High', '\$${_fundamentals!['dayHigh'].toStringAsFixed(2)}'),
+              StatItem('Day Low', '\$${_fundamentals!['dayLow'].toStringAsFixed(2)}'),
+              StatItem('52W High', '\$${_fundamentals!['weekHigh52'].toStringAsFixed(2)}'),
+              StatItem('52W Low', '\$${_fundamentals!['weekLow52'].toStringAsFixed(2)}'),
             ],
             themeProvider,
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Market Data (if fundamentals are available)
-          _fundamentals != null ? Column(
-            children: [
-              _buildStatCard(
-                'Market Data',
-                [
-                  StatItem('Market Cap', _formatMarketCap(_fundamentals!['marketCap'])),
-                  StatItem('Volume', _formatVolume(_fundamentals!['volume'])),
-                  StatItem('P/E Ratio', _fundamentals!['peRatio'].toStringAsFixed(2)),
-                  StatItem('Dividend Yield', '${_fundamentals!['dividendYield'].toStringAsFixed(2)}%'),
-                ],
-                themeProvider,
-              ),
-              const SizedBox(height: 16),
-              _buildStatCard(
-                'Price Range',
-                [
-                  StatItem('Day High', '\$${_fundamentals!['dayHigh'].toStringAsFixed(2)}'),
-                  StatItem('Day Low', '\$${_fundamentals!['dayLow'].toStringAsFixed(2)}'),
-                  StatItem('52W High', '\$${_fundamentals!['weekHigh52'].toStringAsFixed(2)}'),
-                  StatItem('52W Low', '\$${_fundamentals!['weekLow52'].toStringAsFixed(2)}'),
-                ],
-                themeProvider,
-              ),
-            ],
-          ) : Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: themeProvider.backgroundHigh,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: themeProvider.theme.withOpacity(0.3),
-              ),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.analytics_outlined,
-                  color: themeProvider.theme,
-                  size: 32,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Loading Market Data...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: themeProvider.contrast,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Fetching additional market information',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: themeProvider.contrast.withOpacity(0.7),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -716,7 +607,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
               ),
               const Spacer(),
               Text(
-                article.formattedTimeAgo,
+                article.timeAgo,
                 style: TextStyle(
                   fontSize: 12,
                   color: themeProvider.contrast.withOpacity(0.6),
@@ -877,29 +768,17 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        item.label,
-                        style: TextStyle(
-                          color: themeProvider.contrast.withOpacity(0.7),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      item.label,
+                      style: TextStyle(
+                        color: themeProvider.contrast.withOpacity(0.7),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 1,
-                      child: Text(
-                        item.value,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: themeProvider.contrast,
-                        ),
-                        textAlign: TextAlign.end,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      item.value,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: themeProvider.contrast,
                       ),
                     ),
                   ],
@@ -999,7 +878,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     } else if (value >= 1e6) {
       return '\$${(value / 1e6).toStringAsFixed(2)}M';
     } else {
-      return '\$${value.toStringAsFixed(2)}';
+      return '\$${value.toStringAsFixed(0)}';
     }
   }
 
@@ -1015,12 +894,145 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     }
   }
 
-  String _getFormattedTime() {
-    final now = DateTime.now();
-    final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    return timeStr;
+  Widget _buildCompanyOverview(ThemeProvider themeProvider) {
+    final description = StockDescriptionsService.getDescription(widget.asset.symbol);
+    final companyType = StockDescriptionsService.getCompanyType(widget.asset.symbol);
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundHigh,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: themeProvider.theme.withOpacity(0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: themeProvider.theme.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: themeProvider.theme.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.business,
+                  color: themeProvider.theme,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'About ${widget.asset.symbol}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: themeProvider.contrast,
+                      ),
+                    ),
+                    Text(
+                      companyType,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: themeProvider.theme,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Description
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 15,
+              color: themeProvider.contrast.withOpacity(0.85),
+              height: 1.5,
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Key Stats Row
+          Row(
+            children: [
+              Expanded(
+                child: _buildKeyStatItem(
+                  'Market Cap',
+                  _formatMarketCap(widget.asset.price * 1000000000.0),
+                  themeProvider,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildKeyStatItem(
+                  'Asset Type',
+                  widget.asset.type.toUpperCase(),
+                  themeProvider,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
+  Widget _buildKeyStatItem(String label, String value, ThemeProvider themeProvider) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: themeProvider.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: themeProvider.theme.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: themeProvider.contrast.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: themeProvider.contrast,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class StatItem {
