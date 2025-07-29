@@ -89,32 +89,13 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
       if (fundamentalData.isNotEmpty) {
         _fundamentals = fundamentalData;
       } else {
-        // If no fundamental data available, use basic calculations from current price
-        // This is still based on real price data, not mock
-        _fundamentals = {
-          'marketCap': widget.asset.price * 1000000000.0, // Basic estimate
-          'volume': 1000000.0, // Default volume
-          'peRatio': 15.0, // Market average
-          'dividendYield': 2.0, // Market average
-          'dayHigh': widget.asset.price,
-          'dayLow': widget.asset.price,
-          'weekHigh52': widget.asset.price,
-          'weekLow52': widget.asset.price,
-        };
+        // No fundamental data available - leave as null to show "no data" state
+        _fundamentals = null;
       }
     } catch (e) {
       print('Error loading fundamentals for ${widget.asset.symbol}: $e');
-      // Minimal fallback using real price data
-      _fundamentals = {
-        'marketCap': widget.asset.price * 1000000000.0,
-        'volume': 1000000.0,
-        'peRatio': 15.0,
-        'dividendYield': 2.0,
-        'dayHigh': widget.asset.price,
-        'dayLow': widget.asset.price,
-        'weekHigh52': widget.asset.price,
-        'weekLow52': widget.asset.price,
-      };
+      // No data available on error - show "no data" state
+      _fundamentals = null;
     }
   }
 
@@ -465,8 +446,32 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
   Widget _buildStatsTab(ThemeProvider themeProvider) {
     if (_fundamentals == null) {
       return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 64,
+              color: themeProvider.contrast.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Market Data Unavailable',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: themeProvider.contrast,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Detailed market data for ${widget.asset.symbol} is not available from our data sources.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: themeProvider.contrast.withOpacity(0.7),
+              ),
+            ),
+          ],
         ),
       );
     }
