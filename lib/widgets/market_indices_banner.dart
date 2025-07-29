@@ -35,7 +35,7 @@ class _MarketIndicesBannerState extends State<MarketIndicesBanner> {
       for (final index in _indices) {
         try {
           // Try to get real data for each index
-          final quote = await EnhancedMarketDataService.getQuote(index['symbol']!);
+          final quote = await EnhancedMarketDataService.getAsset(index['symbol']!);
           if (quote != null) {
             newData[index['symbol']!] = {
               'name': index['name']!,

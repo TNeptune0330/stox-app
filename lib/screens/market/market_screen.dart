@@ -340,17 +340,17 @@ class _MarketScreenState extends State<MarketScreen> {
                 );
               } else {
                 // Show top movers sections when not searching
-                final stockMovers = marketProvider.assets
+                final stockMovers = marketProvider.allAssets
                     .where((asset) => asset.type == 'stock')
                     .toList()
                     ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
                 
-                final cryptoMovers = marketProvider.assets
+                final cryptoMovers = marketProvider.allAssets
                     .where((asset) => asset.type == 'crypto')
                     .toList()
                     ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
                 
-                final etfMovers = marketProvider.assets
+                final etfMovers = marketProvider.allAssets
                     .where((asset) => asset.type == 'etf')
                     .toList()
                     ..sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
