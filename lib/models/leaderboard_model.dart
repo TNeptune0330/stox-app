@@ -68,10 +68,10 @@ class LeaderboardEntry {
     }).toList();
   }
 
-  String get formattedNetWorth => '\$${netWorth.toStringAsFixed(0)}';
+  String get formattedNetWorth => '\$${netWorth.toStringAsFixed(2)}';
   String get formattedPnL => totalPnL >= 0 
-      ? '+\$${totalPnL.toStringAsFixed(0)}'
-      : '-\$${totalPnL.abs().toStringAsFixed(0)}';
+      ? '+\$${totalPnL.toStringAsFixed(2)}'
+      : '-\$${totalPnL.abs().toStringAsFixed(2)}';
   String get formattedPnLPercentage => totalPnLPercentage >= 0 
       ? '+${totalPnLPercentage.toStringAsFixed(1)}%'
       : '${totalPnLPercentage.toStringAsFixed(1)}%';

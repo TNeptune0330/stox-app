@@ -64,6 +64,8 @@ class MarketAssetModel {
   bool get isGainer => changePercent > 0;
   bool get isLoser => changePercent < 0;
   bool get isUnchanged => changePercent == 0;
+  bool get isError => type == 'error';
+  bool get hasValidData => price > 0 && !isError;
 
   String get formattedPrice {
     if (price < 1) {
@@ -87,6 +89,13 @@ class MarketAssetModel {
   String get formattedChangePercent {
     final sign = changePercent >= 0 ? '+' : '';
     return '$sign${changePercent.toStringAsFixed(2)}%';
+  }
+  
+  String get errorMessage {
+    if (isError) {
+      return 'Sorry, market data for $symbol could not be loaded. The symbol may not exist or data providers are temporarily unavailable.';
+    }
+    return '';
   }
 
   @override

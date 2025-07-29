@@ -48,27 +48,26 @@ class FinancialNewsService {
       if (cachedNews != null && cachedNews.isNotEmpty) {
         print('$_logPrefix 📱 Using cached news for ${symbol ?? 'general'}');
         _memoryCache[cacheKey] = cachedNews;
-        _lastMemoryCacheUpdate = DateTime.now();
         return cachedNews.take(limit).toList();
       }
       
-      // If no valid cache, generate and cache daily news
+      // Fetch fresh news if cache is empty or expired
       print('$_logPrefix 🆕 Generating fresh daily news');
-      final freshNews = await _generateDailyNews(symbol: symbol, limit: limit);
+      final freshNews = await _fetchFreshNews(symbol: symbol, limit: limit);
       
-      // Cache the news for 24 hours
-      await _saveNewsToCache(symbol, freshNews);
-      
-      // Update memory cache
-      _memoryCache[cacheKey] = freshNews;
+      // Cache the results
+      if (freshNews.isNotEmpty) {
+        await _cacheNews(symbol, freshNews);
+        _memoryCache[cacheKey] = freshNews;
+      }
       _lastMemoryCacheUpdate = DateTime.now();
       
       return freshNews;
       
     } catch (e) {
       print('$_logPrefix ❌ Error fetching news: $e');
-      // Fallback to basic mock news
-      return _getMockNews(symbol: symbol, limit: limit);
+      // Return empty list instead of mock data
+      return [];
     }
   }
   
@@ -76,168 +75,145 @@ class FinancialNewsService {
   static Future<bool> shouldUpdateNews() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final lastUpdateStr = prefs.getString(_lastUpdateKey);
+      final lastUpdateString = prefs.getString(_lastUpdateKey);
       
-      if (lastUpdateStr == null) return true;
+      if (lastUpdateString == null) return true;
       
-      final lastUpdate = DateTime.parse(lastUpdateStr);
+      final lastUpdate = DateTime.parse(lastUpdateString);
       final now = DateTime.now();
       
-      // Update if it's been more than 24 hours OR if it's a new day
-      final daysSinceUpdate = now.difference(lastUpdate).inDays;
-      final isDifferentDay = now.day != lastUpdate.day || 
-                           now.month != lastUpdate.month || 
-                           now.year != lastUpdate.year;
-      
-      return daysSinceUpdate >= 1 || isDifferentDay;
+      // Update if it's been more than 24 hours
+      return now.difference(lastUpdate) > _cacheDuration;
     } catch (e) {
-      print('$_logPrefix ❌ Error checking update status: $e');
-      return true; // Default to updating if we can't determine
+      print('$_logPrefix ❌ Error checking news update: $e');
+      return true; // Default to updating if there's an error
     }
   }
   
-  /// Force update news cache (called at app startup if needed)
-  static Future<void> updateDailyNews() async {
+  /// Update news in background (called periodically)
+  static Future<void> updateNewsInBackground() async {
     try {
       if (await shouldUpdateNews()) {
-        print('$_logPrefix 🔄 Updating daily news cache...');
+        print('$_logPrefix 🔄 Updating news in background...');
         
         // Clear memory cache
         _memoryCache.clear();
-        _lastMemoryCacheUpdate = null;
         
-        // Update general market news first
-        await getNews(limit: 15);
-        
-        // Update news for most popular stocks (within rate limits)
-        final popularStocks = [
-          'AAPL', 'GOOGL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'META', 'NFLX',
-          'SPY', 'QQQ', 'JPM', 'V', 'JNJ', 'PG', 'UNH', 'HD', 'MA', 'DIS'
-        ];
-        
-        // Limit to 15 stocks per day to stay within rate limits (60 calls/minute)
-        final dailyStocks = popularStocks.take(15).toList();
-        
-        for (final stock in dailyStocks) {
-          try {
-            await getNews(symbol: stock, limit: 8);
-            print('$_logPrefix ✅ Updated news for $stock');
-          } catch (e) {
-            print('$_logPrefix ⚠️ Failed to update news for $stock: $e');
-          }
-        }
+        // Fetch fresh general news
+        await getNews(limit: 20);
         
         // Mark as updated
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_lastUpdateKey, DateTime.now().toIso8601String());
         
-        print('$_logPrefix ✅ Daily news cache updated');
+        print('$_logPrefix ✅ Background news update completed');
       } else {
         print('$_logPrefix ℹ️ News cache is still fresh, no update needed');
       }
     } catch (e) {
-      print('$_logPrefix ❌ Error updating daily news: $e');
+      print('$_logPrefix ❌ Error updating news in background: $e');
     }
   }
-  
-  /// Get cached news from persistent storage
+
+  /// Get cached news from SharedPreferences
   static Future<List<NewsArticle>?> _getCachedNews(String? symbol) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = symbol != null 
-          ? '$_stockNewsCachePrefix$symbol' 
-          : _generalNewsCacheKey;
+      final cacheKey = symbol != null ? '$_stockNewsCachePrefix$symbol' : _generalNewsCacheKey;
+      final cachedJson = prefs.getString(cacheKey);
       
-      final cachedData = prefs.getString(cacheKey);
-      if (cachedData == null) return null;
-      
-      final data = json.decode(cachedData);
-      final cacheTime = DateTime.parse(data['timestamp']);
-      
-      // Check if cache is still valid (within 24 hours)
-      if (DateTime.now().difference(cacheTime) > _cacheDuration) {
-        print('$_logPrefix ⏰ Cache expired for ${symbol ?? 'general'}');
-        return null;
+      if (cachedJson != null) {
+        final List<dynamic> cachedList = json.decode(cachedJson);
+        return cachedList.map((json) => NewsArticle.fromJson(json)).toList();
       }
-      
-      final List<dynamic> articlesJson = data['articles'];
-      return articlesJson.map((json) => NewsArticle.fromCachedJson(json)).toList();
     } catch (e) {
       print('$_logPrefix ❌ Error reading cached news: $e');
-      return null;
     }
+    return null;
   }
   
-  /// Save news to persistent cache
-  static Future<void> _saveNewsToCache(String? symbol, List<NewsArticle> articles) async {
+  /// Cache news to SharedPreferences
+  static Future<void> _cacheNews(String? symbol, List<NewsArticle> articles) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = symbol != null 
-          ? '$_stockNewsCachePrefix$symbol' 
-          : _generalNewsCacheKey;
-      
-      final cacheData = {
-        'timestamp': DateTime.now().toIso8601String(),
-        'articles': articles.map((article) => article.toCacheJson()).toList(),
-      };
-      
-      await prefs.setString(cacheKey, json.encode(cacheData));
+      final cacheKey = symbol != null ? '$_stockNewsCachePrefix$symbol' : _generalNewsCacheKey;
+      final jsonList = articles.map((article) => article.toJson()).toList();
+      await prefs.setString(cacheKey, json.encode(jsonList));
       print('$_logPrefix 💾 Cached news for ${symbol ?? 'general'} (${articles.length} articles)');
     } catch (e) {
-      print('$_logPrefix ❌ Error saving news to cache: $e');
+      print('$_logPrefix ❌ Error caching news: $e');
     }
   }
   
-  /// Generate fresh daily news from Finnhub API
-  static Future<List<NewsArticle>> _generateDailyNews({String? symbol, int limit = 10}) async {
-    print('$_logPrefix 🆕 Fetching fresh news from Finnhub API');
-    
+  /// Fetch fresh news from Finnhub API
+  static Future<List<NewsArticle>> _fetchFreshNews({String? symbol, int limit = 10}) async {
     try {
+      print('$_logPrefix 🆕 Fetching fresh news from Finnhub API');
+      
       await _waitForRateLimit();
       
-      String url;
-      Map<String, String> params;
+      final now = DateTime.now();
+      final lastWeek = now.subtract(const Duration(days: 7));
+      
+      final String url;
+      final Map<String, String> queryParams;
       
       if (symbol != null) {
         // Company-specific news
-        final toDate = DateTime.now();
-        final fromDate = toDate.subtract(const Duration(days: 7)); // Last 7 days
-        
-        url = _companyNewsUrl;
-        params = {
+        queryParams = {
           'symbol': symbol,
-          'from': _formatDateForApi(fromDate),
-          'to': _formatDateForApi(toDate),
+          'from': _formatDateForApi(lastWeek),
+          'to': _formatDateForApi(now),
           'token': ApiKeys.finnhubApiKey,
         };
+        url = '$_companyNewsUrl?${Uri(queryParameters: queryParams).query}';
       } else {
         // General market news
-        url = _generalNewsUrl;
-        params = {
+        queryParams = {
           'category': 'general',
           'token': ApiKeys.finnhubApiKey,
         };
+        url = '$_generalNewsUrl?${Uri(queryParameters: queryParams).query}';
       }
       
-      final uri = Uri.parse(url).replace(queryParameters: params);
-      print('$_logPrefix 🌐 API Request: ${uri.toString().replaceAll(ApiKeys.finnhubApiKey, 'API_KEY')}');
+      print('$_logPrefix 🌐 API Request: $url');
       
-      final response = await http.get(uri);
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'X-Finnhub-Token': ApiKeys.finnhubApiKey,
+          'User-Agent': 'StoxApp/1.0',
+        },
+      ).timeout(const Duration(seconds: 15));
       
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> newsData = json.decode(response.body);
+        print('$_logPrefix 📈 Retrieved ${newsData.length} news articles');
         
-        if (data.isNotEmpty) {
-          final articles = data
-              .take(limit)
-              .map((article) => NewsArticle.fromFinnhubJson(article))
-              .where((article) => article.title.isNotEmpty && article.summary.isNotEmpty)
-              .toList();
+        if (newsData.isNotEmpty) {
+          final articles = <NewsArticle>[];
           
-          if (articles.isNotEmpty) {
-            print('$_logPrefix ✅ Retrieved ${articles.length} real news articles from Finnhub');
-            return articles;
+          for (final item in newsData.take(limit)) {
+            try {
+              final article = NewsArticle(
+                title: item['headline'] ?? 'Market News',
+                summary: item['summary'] ?? item['headline'] ?? 'Financial market update',
+                url: item['url'] ?? '',
+                timePublished: DateTime.fromMillisecondsSinceEpoch(
+                  (item['datetime'] ?? 0) * 1000,
+                ),
+                source: item['source'] ?? 'Finnhub',
+                sentiment: _analyzeSentiment(item['headline'] ?? ''),
+              );
+              
+              articles.add(article);
+            } catch (e) {
+              print('$_logPrefix ⚠️ Error parsing news item: $e');
+              continue; // Skip invalid items
+            }
           }
+          
+          return articles;
         }
       } else {
         print('$_logPrefix ❌ Finnhub API error: ${response.statusCode} - ${response.body}');
@@ -246,12 +222,9 @@ class FinancialNewsService {
       print('$_logPrefix ❌ Error fetching from Finnhub: $e');
     }
     
-    // Fallback to deterministic mock news if API fails
-    print('$_logPrefix 🔄 Falling back to deterministic mock news');
-    final today = DateTime.now();
-    final dateString = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    final seed = dateString.hashCode;
-    return _generateDeterministicMockNews(symbol: symbol, limit: limit, seed: seed);
+    // Return empty list if API fails - no mock data
+    print('$_logPrefix ❌ No real news data available - returning empty list');
+    return [];
   }
   
   /// Wait for rate limit to avoid API throttling
@@ -268,224 +241,24 @@ class FinancialNewsService {
     _lastApiCall = DateTime.now();
   }
   
-  /// Format date for Finnhub API (YYYY-MM-DD)
+  /// Format date for API requests
   static String _formatDateForApi(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
   
-  /// Generate consistent mock news based on date seed
-  static List<NewsArticle> _generateDeterministicMockNews({String? symbol, int limit = 10, required int seed}) {
-    final random = seed.abs() % 1000000; // Create deterministic "random" number
-    final today = DateTime.now();
+  /// Simple sentiment analysis based on keywords
+  static String _analyzeSentiment(String text) {
+    final lowerText = text.toLowerCase();
     
-    final newsTemplates = symbol != null ? _getStockNewsTemplates(symbol) : _getGeneralNewsTemplates();
-    final selectedNews = <NewsArticle>[];
+    final bullishKeywords = ['gains', 'up', 'rise', 'growth', 'increase', 'bull', 'positive', 'surge', 'rally', 'strong', 'beat', 'outperform'];
+    final bearishKeywords = ['falls', 'down', 'drop', 'decline', 'decrease', 'bear', 'negative', 'plunge', 'crash', 'weak', 'miss', 'underperform'];
     
-    // Use seed to select which news items to show today
-    for (int i = 0; i < limit && i < newsTemplates.length; i++) {
-      final templateIndex = (random + i * 7) % newsTemplates.length;
-      final template = newsTemplates[templateIndex];
-      
-      // Generate time with some variation but deterministic
-      final hoursAgo = 1 + ((random + i * 3) % 12);
-      final minutesAgo = (random + i * 11) % 60;
-      
-      selectedNews.add(NewsArticle(
-        title: template['title']!,
-        summary: template['summary']!,
-        url: 'https://example.com/news/${random + i}',
-        timePublished: today.subtract(Duration(hours: hoursAgo, minutes: minutesAgo)),
-        source: template['source']!,
-        sentiment: template['sentiment']!,
-      ));
-    }
+    int bullishScore = bullishKeywords.where((keyword) => lowerText.contains(keyword)).length;
+    int bearishScore = bearishKeywords.where((keyword) => lowerText.contains(keyword)).length;
     
-    return selectedNews;
-  }
-  
-  static List<Map<String, String>> _getStockNewsTemplates(String symbol) {
-    return [
-      {
-        'title': '$symbol Reports Strong Q4 Earnings, Beats Expectations',
-        'summary': 'The company reported revenue growth of 15% year-over-year, driven by strong demand across all segments.',
-        'source': 'Financial Times',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': '$symbol Announces New Product Launch',
-        'summary': 'The new product line is expected to drive significant revenue growth in the coming quarters.',
-        'source': 'Reuters',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Analysts Upgrade $symbol Price Target',
-        'summary': 'Multiple analysts have raised their price targets following strong fundamentals and growth prospects.',
-        'source': 'Bloomberg',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': '$symbol CEO to Speak at Industry Conference',
-        'summary': 'The CEO will discuss the company\'s strategic vision and future growth opportunities.',
-        'source': 'CNBC',
-        'sentiment': 'Neutral',
-      },
-      {
-        'title': '$symbol Partners with Major Technology Firm',
-        'summary': 'Strategic partnership expected to accelerate digital transformation initiatives.',
-        'source': 'Wall Street Journal',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': '$symbol Faces Regulatory Scrutiny',
-        'summary': 'New regulations may impact the company\'s operations in key markets.',
-        'source': 'MarketWatch',
-        'sentiment': 'Bearish',
-      },
-      {
-        'title': '$symbol Expands International Operations',
-        'summary': 'Company announces expansion into three new international markets.',
-        'source': 'Business Insider',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': '$symbol Insider Trading Activity Reported',
-        'summary': 'Recent insider buying activity suggests confidence in the company\'s future performance.',
-        'source': 'Yahoo Finance',
-        'sentiment': 'Neutral',
-      },
-    ];
-  }
-  
-  static List<Map<String, String>> _getGeneralNewsTemplates() {
-    return [
-      {
-        'title': 'Market Rallies on Strong Economic Data',
-        'summary': 'Markets closed higher as investors digested positive economic indicators and corporate earnings.',
-        'source': 'Financial Times',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Fed Signals Pause in Rate Hikes',
-        'summary': 'Federal Reserve officials hint at maintaining current interest rates amid stable inflation.',
-        'source': 'Reuters',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Tech Stocks Lead Market Gains',
-        'summary': 'Technology companies continue to outperform broader market indices with strong innovation.',
-        'source': 'Bloomberg',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Global Markets Mixed on Trade Concerns',
-        'summary': 'International markets show mixed performance amid ongoing trade negotiations.',
-        'source': 'CNBC',
-        'sentiment': 'Neutral',
-      },
-      {
-        'title': 'Oil Prices Surge on Supply Concerns',
-        'summary': 'Crude oil prices jump as geopolitical tensions raise supply disruption concerns.',
-        'source': 'MarketWatch',
-        'sentiment': 'Neutral',
-      },
-      {
-        'title': 'Cryptocurrency Market Sees Volatility',
-        'summary': 'Digital assets experience significant price swings amid regulatory developments.',
-        'source': 'Wall Street Journal',
-        'sentiment': 'Neutral',
-      },
-      {
-        'title': 'Inflation Data Shows Continued Moderation',
-        'summary': 'Latest inflation figures suggest continued cooling in price pressures.',
-        'source': 'Business Insider',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Banking Sector Faces New Challenges',
-        'summary': 'Regional banks navigate changing interest rate environment and regulatory landscape.',
-        'source': 'Yahoo Finance',
-        'sentiment': 'Bearish',
-      },
-    ];
-  }
-  
-  static List<NewsArticle> _getMockNews({String? symbol, int limit = 10}) {
-    final mockArticles = [
-      NewsArticle(
-        title: symbol != null 
-            ? '$symbol Reports Strong Q4 Earnings, Beats Expectations'
-            : 'Market Rallies on Strong Economic Data',
-        summary: symbol != null
-            ? 'The company reported revenue growth of 15% year-over-year, driven by strong demand across all segments.'
-            : 'Markets closed higher as investors digested positive economic indicators and corporate earnings.',
-        url: 'https://example.com/news/1',
-        timePublished: DateTime.now().subtract(const Duration(hours: 2)),
-        source: 'Financial Times',
-        sentiment: 'Bullish',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? '$symbol Announces New Product Launch'
-            : 'Fed Signals Pause in Rate Hikes',
-        summary: symbol != null
-            ? 'The new product line is expected to drive significant revenue growth in the coming quarters.'
-            : 'Federal Reserve officials hint at maintaining current interest rates amid stable inflation.',
-        url: 'https://example.com/news/2',
-        timePublished: DateTime.now().subtract(const Duration(hours: 5)),
-        source: 'Reuters',
-        sentiment: 'Bullish',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? 'Analysts Upgrade $symbol Price Target'
-            : 'Tech Stocks Lead Market Gains',
-        summary: symbol != null
-            ? 'Multiple analysts have raised their price targets following strong fundamentals and growth prospects.'
-            : 'Technology companies continue to outperform broader market indices with strong innovation.',
-        url: 'https://example.com/news/3',
-        timePublished: DateTime.now().subtract(const Duration(hours: 8)),
-        source: 'Bloomberg',
-        sentiment: 'Bullish',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? '$symbol CEO to Speak at Industry Conference'
-            : 'Global Markets Mixed on Trade Concerns',
-        summary: symbol != null
-            ? 'The CEO will discuss the company\'s strategic vision and future growth opportunities.'
-            : 'International markets show mixed performance amid ongoing trade negotiations.',
-        url: 'https://example.com/news/4',
-        timePublished: DateTime.now().subtract(const Duration(hours: 12)),
-        source: 'CNBC',
-        sentiment: 'Neutral',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? '$symbol Insider Trading Activity Reported'
-            : 'Oil Prices Surge on Supply Concerns',
-        summary: symbol != null
-            ? 'Recent insider buying activity suggests confidence in the company\'s future performance.'
-            : 'Crude oil prices jump as geopolitical tensions raise supply disruption concerns.',
-        url: 'https://example.com/news/5',
-        timePublished: DateTime.now().subtract(const Duration(days: 1)),
-        source: 'MarketWatch',
-        sentiment: 'Neutral',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? '$symbol Partners with Major Technology Firm'
-            : 'Cryptocurrency Market Sees Volatility',
-        summary: symbol != null
-            ? 'Strategic partnership expected to accelerate digital transformation initiatives.'
-            : 'Digital assets experience significant price swings amid regulatory developments.',
-        url: 'https://example.com/news/6',
-        timePublished: DateTime.now().subtract(const Duration(days: 1, hours: 6)),
-        source: 'Wall Street Journal',
-        sentiment: 'Bullish',
-      ),
-    ];
-    
-    return mockArticles.take(limit).toList();
+    if (bullishScore > bearishScore) return 'Bullish';
+    if (bearishScore > bullishScore) return 'Bearish';
+    return 'Neutral';
   }
 }
 
@@ -505,50 +278,19 @@ class NewsArticle {
     required this.source,
     required this.sentiment,
   });
-  
+
   factory NewsArticle.fromJson(Map<String, dynamic> json) {
     return NewsArticle(
       title: json['title'] ?? '',
       summary: json['summary'] ?? '',
       url: json['url'] ?? '',
-      timePublished: DateTime.tryParse(json['time_published'] ?? '') ?? DateTime.now(),
-      source: json['source'] ?? 'Unknown',
-      sentiment: _getSentimentLabel(json['overall_sentiment_score']?.toDouble() ?? 0.0),
-    );
-  }
-  
-  factory NewsArticle.fromFinnhubJson(Map<String, dynamic> json) {
-    // Parse Finnhub datetime format (Unix timestamp)
-    DateTime publishedTime;
-    try {
-      final timestamp = json['datetime'] as int;
-      publishedTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
-    } catch (e) {
-      publishedTime = DateTime.now();
-    }
-    
-    return NewsArticle(
-      title: json['headline'] ?? '',
-      summary: json['summary'] ?? '',
-      url: json['url'] ?? '',
-      timePublished: publishedTime,
-      source: json['source'] ?? 'Finnhub',
-      sentiment: _inferSentimentFromText(json['headline'] ?? '', json['summary'] ?? ''),
-    );
-  }
-  
-  factory NewsArticle.fromCachedJson(Map<String, dynamic> json) {
-    return NewsArticle(
-      title: json['title'] ?? '',
-      summary: json['summary'] ?? '',
-      url: json['url'] ?? '',
-      timePublished: DateTime.tryParse(json['timePublished'] ?? '') ?? DateTime.now(),
-      source: json['source'] ?? 'Unknown',
+      timePublished: DateTime.parse(json['timePublished']),
+      source: json['source'] ?? '',
       sentiment: json['sentiment'] ?? 'Neutral',
     );
   }
-  
-  Map<String, dynamic> toCacheJson() {
+
+  Map<String, dynamic> toJson() {
     return {
       'title': title,
       'summary': summary,
@@ -558,62 +300,8 @@ class NewsArticle {
       'sentiment': sentiment,
     };
   }
-  
-  static String _getSentimentLabel(double score) {
-    if (score > 0.15) return 'Bullish';
-    if (score < -0.15) return 'Bearish';
-    return 'Neutral';
-  }
-  
-  /// Infer sentiment from headline and summary text
-  static String _inferSentimentFromText(String headline, String summary) {
-    final text = '$headline $summary'.toLowerCase();
-    
-    // Bullish keywords
-    final bullishKeywords = [
-      'beats', 'exceeds', 'surpasses', 'upgrade', 'upgraded', 'raises', 'increased',
-      'growth', 'profit', 'revenue', 'earnings', 'positive', 'strong', 'solid',
-      'gains', 'rally', 'bull', 'bullish', 'optimistic', 'confident', 'partnership',
-      'expansion', 'acquisition', 'merger', 'breakthrough', 'innovation', 'launch',
-      'approval', 'success', 'record', 'highest', 'outperform', 'buy', 'investment'
-    ];
-    
-    // Bearish keywords
-    final bearishKeywords = [
-      'misses', 'falls short', 'disappoints', 'downgrade', 'downgraded', 'cuts', 'reduced',
-      'decline', 'loss', 'losses', 'negative', 'weak', 'poor', 'falls', 'crash',
-      'bear', 'bearish', 'pessimistic', 'concern', 'worried', 'lawsuit', 'investigation',
-      'scandal', 'bankruptcy', 'closure', 'layoffs', 'firing', 'resignation', 'sell',
-      'warning', 'alert', 'risk', 'volatility', 'uncertainty', 'regulatory'
-    ];
-    
-    int bullishCount = 0;
-    int bearishCount = 0;
-    
-    // Count keyword occurrences
-    for (final keyword in bullishKeywords) {
-      if (text.contains(keyword)) {
-        bullishCount++;
-      }
-    }
-    
-    for (final keyword in bearishKeywords) {
-      if (text.contains(keyword)) {
-        bearishCount++;
-      }
-    }
-    
-    // Determine sentiment based on keyword counts
-    if (bullishCount > bearishCount) {
-      return 'Bullish';
-    } else if (bearishCount > bullishCount) {
-      return 'Bearish';
-    } else {
-      return 'Neutral';
-    }
-  }
-  
-  String get timeAgo {
+
+  String get formattedTimeAgo {
     final now = DateTime.now();
     final difference = now.difference(timePublished);
     

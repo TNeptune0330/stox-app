@@ -35,8 +35,9 @@ class AnalyticsService {
             'screenViews': (stats['active_today'] ?? 0) * 15,
             'marketDataRequests': (stats['active_today'] ?? 0) * 20,
             'newsViews': (stats['active_today'] ?? 0) * 5,
-            'avgRating': 4.2,
-            'userGrowth': _generateMockGrowthData(),
+            'avgRating': await _getRealAppRating(),
+            'ratingCount': await _getRealRatingCount(),
+            'userGrowth': await _getRealUserGrowthData(),
           };
           
           print('✅ Analytics loaded from admin stats function');
@@ -64,7 +65,7 @@ class AnalyticsService {
       
     } catch (e) {
       print('❌ Error loading analytics: $e');
-      return _getDefaultAnalytics();
+      return await _getDefaultAnalytics();
     }
   }
 
@@ -219,7 +220,8 @@ class AnalyticsService {
         'screenViews': screenViews,
         'marketDataRequests': marketDataRequests,
         'newsViews': newsViews,
-        'avgRating': 4.2,
+        'avgRating': await _getRealAppRating(),
+        'ratingCount': await _getRealRatingCount(),
       };
     } catch (e) {
       print('❌ Error getting app usage stats: $e');
@@ -228,26 +230,52 @@ class AnalyticsService {
         'screenViews': 50,
         'marketDataRequests': 100,
         'newsViews': 20,
-        'avgRating': 4.2,
+        'avgRating': await _getRealAppRating(),
+        'ratingCount': await _getRealRatingCount(),
       };
     }
   }
 
-  /// Generate mock growth data for charts
-  static List<Map<String, dynamic>> _generateMockGrowthData() {
-    final growthData = <Map<String, dynamic>>[];
-    for (int i = 6; i >= 0; i--) {
-      final date = DateTime.now().subtract(Duration(days: i));
-      growthData.add({
-        'date': '${date.month}/${date.day}',
-        'newUsers': (i * 2) + 1, // Simple growth pattern
-      });
+  /// Get real user growth data from database (no fake data)
+  static Future<List<Map<String, dynamic>>?> _getRealUserGrowthData() async {
+    try {
+      final growthData = <Map<String, dynamic>>[];
+      
+      // Get real user creation data for last 7 days
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final startOfDay = DateTime(date.year, date.month, date.day);
+        final endOfDay = startOfDay.add(const Duration(days: 1));
+        
+        try {
+          final response = await _supabase
+              .from('user_profiles')
+              .select('id')
+              .gte('created_at', startOfDay.toIso8601String())
+              .lt('created_at', endOfDay.toIso8601String());
+          
+          growthData.add({
+            'date': '${date.month}/${date.day}',
+            'newUsers': response.length,
+          });
+        } catch (e) {
+          // If query fails, add 0 for that day
+          growthData.add({
+            'date': '${date.month}/${date.day}',
+            'newUsers': 0,
+          });
+        }
+      }
+      
+      return growthData.isNotEmpty ? growthData : null;
+    } catch (e) {
+      print('❌ Error getting real user growth data: $e');
+      return null; // Return null instead of fake data
     }
-    return growthData;
   }
 
   /// Get default analytics when everything fails
-  static Map<String, dynamic> _getDefaultAnalytics() {
+  static Future<Map<String, dynamic>> _getDefaultAnalytics() async {
     return {
       'totalUsers': 1,
       'activeToday': 1,
@@ -267,8 +295,9 @@ class AnalyticsService {
       'screenViews': 50,
       'marketDataRequests': 100,
       'newsViews': 20,
-      'avgRating': 4.2,
-      'userGrowth': _generateMockGrowthData(),
+      'avgRating': await _getRealAppRating(),
+      'ratingCount': await _getRealRatingCount(),
+      'userGrowth': await _getRealUserGrowthData(),
     };
   }
 
@@ -305,6 +334,38 @@ class AnalyticsService {
     } catch (e) {
       print('❌ Error tracking event: $e');
       // Don't throw - telemetry should never break the app
+    }
+  }
+
+  /// Get real app rating from app stores (no fake data)
+  static Future<double?> _getRealAppRating() async {
+    try {
+      // For now, return null instead of fake data
+      // TODO: Implement real App Store Connect API / Google Play Console API integration
+      // This requires:
+      // 1. App Store Connect API key for iOS ratings
+      // 2. Google Play Console API for Android ratings
+      // 3. Proper authentication and API calls
+      
+      print('📊 Real app rating not yet implemented - showing null instead of fake data');
+      return null;
+    } catch (e) {
+      print('❌ Error getting real app rating: $e');
+      return null;
+    }
+  }
+
+  /// Get real rating count from app stores (no fake data)
+  static Future<int?> _getRealRatingCount() async {
+    try {
+      // For now, return null instead of fake data
+      // TODO: Implement real App Store Connect API / Google Play Console API integration
+      
+      print('📊 Real rating count not yet implemented - showing null instead of fake data');
+      return null;
+    } catch (e) {
+      print('❌ Error getting real rating count: $e');
+      return null;
     }
   }
 }

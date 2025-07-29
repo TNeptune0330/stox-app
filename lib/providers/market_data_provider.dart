@@ -22,19 +22,19 @@ class MarketDataProvider with ChangeNotifier {
   String? get error => _error;
   Map<String, dynamic> get marketStats => _marketStats;
   
-  // Asset type getters
-  List<MarketAssetModel> get stocks => _allAssets.where((asset) => asset.type == 'stock').toList();
-  List<MarketAssetModel> get cryptos => _allAssets.where((asset) => asset.type == 'crypto').toList();
-  List<MarketAssetModel> get etfs => _allAssets.where((asset) => asset.type == 'etf').toList();
+  // Asset type getters (include error assets)
+  List<MarketAssetModel> get stocks => _allAssets.where((asset) => asset.type == 'stock' || (asset.type == 'error' && asset.symbol.length <= 5)).toList();
+  List<MarketAssetModel> get cryptos => _allAssets.where((asset) => asset.type == 'crypto' || (asset.type == 'error' && asset.symbol.contains('USD'))).toList();
+  List<MarketAssetModel> get etfs => _allAssets.where((asset) => asset.type == 'etf' || (asset.type == 'error' && asset.symbol.length > 2)).toList();
   
-  // Market performance getters
+  // Market performance getters (exclude error assets from statistics)
   List<MarketAssetModel> get topGainers => _allAssets
-      .where((asset) => asset.changePercent > 0)
+      .where((asset) => asset.changePercent > 0 && !asset.isError)
       .toList()
       ..sort((a, b) => b.changePercent.compareTo(a.changePercent));
   
   List<MarketAssetModel> get topLosers => _allAssets
-      .where((asset) => asset.changePercent < 0)
+      .where((asset) => asset.changePercent < 0 && !asset.isError)
       .toList()
       ..sort((a, b) => a.changePercent.compareTo(b.changePercent));
   
@@ -61,8 +61,8 @@ class MarketDataProvider with ChangeNotifier {
     try {
       print('🔄 MarketDataProvider: Refreshing market data...');
       
-      // Get all assets
-      _allAssets = await EnhancedMarketDataService.getAllAssets();
+      // Get all assets including error assets for display
+      _allAssets = await EnhancedMarketDataService.getAllAssetsWithErrors();
       
       // Get market statistics
       _marketStats = await EnhancedMarketDataService.getMarketStats();

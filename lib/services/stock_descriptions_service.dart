@@ -114,6 +114,31 @@ class StockDescriptionsService {
     return sentences.isNotEmpty ? '${sentences[0]}.' : fullDescription;
   }
   
+  static String getCompanyName(String symbol) {
+    // Extract company name from description  
+    final description = _stockDescriptions[symbol.toUpperCase()];
+    if (description != null) {
+      // Get the company name from the first part of the description
+      final firstSentence = description.split('.')[0];
+      final parts = firstSentence.split(' ');
+      if (parts.length >= 2) {
+        // Look for "Inc.", "Corporation", "Company", etc.
+        for (int i = 0; i < parts.length; i++) {
+          if (parts[i].contains('Inc') || parts[i].contains('Corp') || 
+              parts[i].contains('Company') || parts[i].contains('LLC') ||
+              parts[i].contains('Ltd')) {
+            return parts.sublist(0, i + 1).join(' ').replaceAll(',', '');
+          }
+        }
+        // If no corporate suffix found, return first 2-3 words
+        return parts.take(parts.length >= 3 ? 3 : 2).join(' ').replaceAll(',', '');
+      }
+    }
+    
+    // Fallback: use symbol as name
+    return symbol.toUpperCase();
+  }
+
   static String getCompanyType(String symbol) {
     if (symbol.endsWith('-USD')) {
       return 'Cryptocurrency';

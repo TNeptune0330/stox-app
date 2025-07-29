@@ -186,6 +186,8 @@ class _LegalDocumentScreenState extends State<LegalDocumentScreen> {
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),

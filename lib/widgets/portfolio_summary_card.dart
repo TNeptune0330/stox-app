@@ -33,14 +33,26 @@ class PortfolioSummaryCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Net Worth',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    'Net Worth',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                Text(
-                  currencyFormatter.format(netWorth),
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                const SizedBox(width: 8),
+                Flexible(
+                  flex: 2,
+                  child: Text(
+                    currencyFormatter.format(netWorth),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -52,27 +64,42 @@ class PortfolioSummaryCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Total P&L',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    'Total P&L',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      currencyFormatter.format(totalPnL),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: isPositivePnL ? Colors.green : const Color(0xFFE74C3C),
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 8),
+                Flexible(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        currencyFormatter.format(totalPnL),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: isPositivePnL ? Colors.green : const Color(0xFFE74C3C),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.end,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Text(
-                      '${isPositivePnL ? '+' : ''}${totalPnLPercentage.toStringAsFixed(2)}%',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isPositivePnL ? Colors.green : const Color(0xFFE74C3C),
+                      Text(
+                        '${isPositivePnL ? '+' : ''}${totalPnLPercentage.toStringAsFixed(2)}%',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isPositivePnL ? Colors.green : const Color(0xFFE74C3C),
+                        ),
+                        textAlign: TextAlign.end,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
