@@ -140,10 +140,14 @@ class MarketDataProvider with ChangeNotifier {
       return;
     }
     
-    // Debounce search
-    _searchTimer = Timer(const Duration(milliseconds: 500), () {
-      _performGoogleSearch(query);
-    });
+    // Don't auto-search, wait for user to hit enter
+    // Search will be triggered by performSearch() method
+  }
+  
+  /// Perform search when user hits enter
+  Future<void> performSearch() async {
+    if (_searchQuery.isEmpty) return;
+    await _performGoogleSearch(_searchQuery);
   }
   
   Future<void> _performGoogleSearch(String query) async {

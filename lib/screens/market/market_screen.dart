@@ -128,7 +128,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           enableSuggestions: false,
                           textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
-                            hintText: 'Search stocks using Google...',
+                            hintText: 'Enter stock ticker and press Enter...',
                             hintStyle: TextStyle(
                               color: themeProvider.contrast.withOpacity(0.6),
                             ),
@@ -187,6 +187,10 @@ class _MarketScreenState extends State<MarketScreen> {
                         ),
                         onChanged: (value) {
                           marketProvider.setSearchQuery(value);
+                        },
+                        onSubmitted: (value) {
+                          // Search when user hits enter
+                          marketProvider.performSearch();
                         },
                         ),
                       );

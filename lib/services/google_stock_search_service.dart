@@ -1,24 +1,46 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/market_asset_model.dart';
-import 'enhanced_market_data_service.dart';
 
 class GoogleStockSearchService {
-  // TODO: Add your Google Custom Search API key here
-  static const String _googleApiKey = 'YOUR_GOOGLE_API_KEY';
-  static const String _searchEngineId = 'YOUR_SEARCH_ENGINE_ID';
   
-  /// Search for stock symbols using Google Custom Search API
-  /// This will search for companies and extract their stock symbols
+  /// Search for stock by ticker using Google Finance scraping
+  /// Waits for user to hit enter, then checks if ticker exists on various exchanges
   static Future<List<MarketAssetModel>> searchStocks(String query) async {
     if (query.trim().isEmpty) return [];
     
+    final ticker = query.trim().toUpperCase();
+    print('🔍 GoogleStockSearchService: Searching for ticker "$ticker"');
+    
     try {
-      print('🔍 GoogleStockSearchService: Searching for "$query"');
+      // Try different exchanges in order of priority
+      final exchanges = ['NASDAQ', 'NYSE', 'AMEX', 'LON', 'TSE', 'HKG'];
+      final results = <MarketAssetModel>[];
       
-      // For now, implement a comprehensive fallback search
-      // In production, this would use Google Custom Search API
-      return await _fallbackSearch(query);
+      for (String exchange in exchanges) {
+        try {
+          final asset = await _checkGoogleFinance(ticker, exchange);
+          if (asset != null) {
+            results.add(asset);
+            print('✅ Found $ticker on $exchange');
+            break; // Stop after finding the first valid match
+          }
+        } catch (e) {
+          print('❌ $ticker not found on $exchange: $e');
+          continue;
+        }
+      }
+      
+      if (results.isEmpty) {
+        // Try company name search as fallback
+        final fallbackResult = await _searchByCompanyName(query);
+        if (fallbackResult.isNotEmpty) {
+          results.addAll(fallbackResult);
+        }
+      }
+      
+      print('✅ Search completed: ${results.length} results found');
+      return results;
       
     } catch (e) {
       print('❌ GoogleStockSearchService error: $e');
@@ -26,177 +48,150 @@ class GoogleStockSearchService {
     }
   }
   
-  /// Fallback search implementation using predefined stock data
-  /// TODO: Replace with actual Google Custom Search API call
-  static Future<List<MarketAssetModel>> _fallbackSearch(String query) async {
-    final searchResults = <MarketAssetModel>[];
-    final queryLower = query.toLowerCase();
-    
-    // Comprehensive stock database for search
-    final stockDatabase = {
-      // Tech giants
-      'apple': 'AAPL', 'aapl': 'AAPL',
-      'microsoft': 'MSFT', 'msft': 'MSFT',
-      'amazon': 'AMZN', 'amzn': 'AMZN',
-      'google': 'GOOGL', 'alphabet': 'GOOGL', 'googl': 'GOOGL',
-      'meta': 'META', 'facebook': 'META',
-      'tesla': 'TSLA', 'tsla': 'TSLA',
-      'nvidia': 'NVDA', 'nvda': 'NVDA',
-      'netflix': 'NFLX', 'nflx': 'NFLX',
-      
-      // Major stocks
-      'disney': 'DIS', 'dis': 'DIS',
-      'boeing': 'BA', 'ba': 'BA',
-      'jpmorgan': 'JPM', 'jp morgan': 'JPM', 'jpmorgan chase': 'JPM',
-      'johnson': 'JNJ', 'johnson & johnson': 'JNJ', 'jnj': 'JNJ',
-      'visa': 'V', 'v': 'V',
-      'mastercard': 'MA', 'ma': 'MA',
-      'procter': 'PG', 'procter & gamble': 'PG', 'pg': 'PG',
-      'coca cola': 'KO', 'coca-cola': 'KO', 'coke': 'KO', 'ko': 'KO',
-      'pepsi': 'PEP', 'pepsico': 'PEP', 'pep': 'PEP',
-      
-      // Financial
-      'berkshire': 'BRK.B', 'berkshire hathaway': 'BRK.B',
-      'goldman': 'GS', 'goldman sachs': 'GS', 'gs': 'GS',
-      'morgan stanley': 'MS', 'ms': 'MS',
-      'bank of america': 'BAC', 'bac': 'BAC',
-      'wells fargo': 'WFC', 'wfc': 'WFC',
-      
-      // Retail & Consumer
-      'walmart': 'WMT', 'wmt': 'WMT',
-      'target': 'TGT', 'tgt': 'TGT',
-      'costco': 'COST', 'cost': 'COST',
-      'home depot': 'HD', 'hd': 'HD',
-      'mcdonalds': 'MCD', "mcdonald's": 'MCD', 'mcd': 'MCD',
-      'starbucks': 'SBUX', 'sbux': 'SBUX',
-      
-      // Automotive
-      'ford': 'F', 'f': 'F',
-      'general motors': 'GM', 'gm': 'GM',
-      'uber': 'UBER',
-      'lyft': 'LYFT',
-      
-      // Energy
-      'exxon': 'XOM', 'exxon mobil': 'XOM', 'xom': 'XOM',
-      'chevron': 'CVX', 'cvx': 'CVX',
-      'conocophillips': 'COP', 'cop': 'COP',
-      
-      // Healthcare
-      'pfizer': 'PFE', 'pfe': 'PFE',
-      'merck': 'MRK', 'mrk': 'MRK',
-      'abbvie': 'ABBV', 'abbv': 'ABBV',
-      'unitedhealth': 'UNH', 'united health': 'UNH', 'unh': 'UNH',
-      
-      // Telecom
-      'verizon': 'VZ', 'vz': 'VZ',
-      'at&t': 'T', 'att': 'T', 't': 'T',
-      't-mobile': 'TMUS', 'tmobile': 'TMUS', 'tmus': 'TMUS',
-      
-      // Tech (more)
-      'intel': 'INTC', 'intc': 'INTC',
-      'amd': 'AMD', 'advanced micro': 'AMD',
-      'oracle': 'ORCL', 'orcl': 'ORCL',
-      'salesforce': 'CRM', 'crm': 'CRM',
-      'adobe': 'ADBE', 'adbe': 'ADBE',
-      'cisco': 'CSCO', 'csco': 'CSCO',
-      'ibm': 'IBM',
-      
-      // Popular growth stocks
-      'spotify': 'SPOT', 'spot': 'SPOT',
-      'zoom': 'ZM', 'zm': 'ZM',
-      'roku': 'ROKU',
-      'snap': 'SNAP', 'snapchat': 'SNAP',
-      'twitter': 'TWTR', 'twtr': 'TWTR',
-      'square': 'SQ', 'sq': 'SQ',
-      'paypal': 'PYPL', 'pypl': 'PYPL',
-      'shopify': 'SHOP', 'shop': 'SHOP',
-      
-      // Airlines
-      'delta': 'DAL', 'delta air': 'DAL', 'dal': 'DAL',
-      'american airlines': 'AAL', 'aal': 'AAL',
-      'united airlines': 'UAL', 'ual': 'UAL',
-      'southwest': 'LUV', 'luv': 'LUV',
-    };
-    
-    // Search for exact matches first
-    if (stockDatabase.containsKey(queryLower)) {
-      final symbol = stockDatabase[queryLower]!;
-      final asset = await EnhancedMarketDataService.getAsset(symbol);
-      if (asset != null) {
-        searchResults.add(asset);
-      }
-    }
-    
-    // Search for partial matches
-    for (final entry in stockDatabase.entries) {
-      if (entry.key.contains(queryLower) && 
-          !searchResults.any((asset) => asset.symbol == entry.value)) {
-        try {
-          final asset = await EnhancedMarketDataService.getAsset(entry.value);
-          if (asset != null) {
-            searchResults.add(asset);
-          }
-        } catch (e) {
-          print('Error loading ${entry.value}: $e');
-        }
-      }
-    }
-    
-    // Also try direct symbol lookup if not found
+  /// Check if ticker exists on Google Finance for a specific exchange
+  static Future<MarketAssetModel?> _checkGoogleFinance(String ticker, String exchange) async {
     try {
-      final directSymbol = query.toUpperCase();
-      if (!searchResults.any((asset) => asset.symbol == directSymbol)) {
-        final asset = await EnhancedMarketDataService.getAsset(directSymbol);
-        if (asset != null) {
-          searchResults.add(asset);
-        }
-      }
-    } catch (e) {
-      // Ignore if direct symbol lookup fails
-    }
-    
-    print('✅ GoogleStockSearchService: Found ${searchResults.length} results for "$query"');
-    return searchResults.take(20).toList(); // Limit to 20 results
-  }
-  
-  /// TODO: Implement actual Google Custom Search API call
-  static Future<List<MarketAssetModel>> _googleCustomSearch(String query) async {
-    if (_googleApiKey == 'YOUR_GOOGLE_API_KEY') {
-      print('⚠️ Google API key not configured, using fallback search');
-      return _fallbackSearch(query);
-    }
-    
-    try {
-      final url = Uri.parse(
-        'https://www.googleapis.com/customsearch/v1'
-        '?key=$_googleApiKey'
-        '&cx=$_searchEngineId'
-        '&q=${Uri.encodeComponent(query)} stock symbol'
-        '&num=10'
+      final url = 'https://www.google.com/finance/quote/$ticker:$exchange';
+      print('🌐 Checking: $url');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'gzip, deflate',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+        },
       );
       
-      final response = await http.get(url);
-      
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final items = data['items'] as List<dynamic>? ?? [];
-        
-        final searchResults = <MarketAssetModel>[];
-        
-        for (final item in items) {
-          // Extract stock symbols from search results
-          // This would require parsing the search results to find stock symbols
-          // Implementation would depend on the specific search engine configuration
-        }
-        
-        return searchResults;
+        return _parseGoogleFinancePage(response.body, ticker, exchange);
       } else {
-        print('❌ Google Custom Search API error: ${response.statusCode}');
-        return _fallbackSearch(query);
+        print('❌ HTTP ${response.statusCode} for $ticker:$exchange');
+        return null;
       }
     } catch (e) {
-      print('❌ Google Custom Search API error: $e');
-      return _fallbackSearch(query);
+      print('❌ Error checking $ticker:$exchange - $e');
+      return null;
     }
+  }
+  
+  /// Parse Google Finance page to extract stock data
+  static MarketAssetModel? _parseGoogleFinancePage(String html, String ticker, String exchange) {
+    try {
+      // Look for the stock data in the HTML
+      if (html.contains('Sorry, we couldn\'t find') || 
+          html.contains('We couldn\'t find') ||
+          html.contains('No results found')) {
+        return null;
+      }
+      
+      // Extract company name
+      String companyName = ticker;
+      final nameRegex = RegExp(r'<title>([^-]+) - ([^|]+)', multiLine: true);
+      final nameMatch = nameRegex.firstMatch(html);
+      if (nameMatch != null) {
+        companyName = nameMatch.group(2)?.trim() ?? ticker;
+        // Remove "Stock Price" or similar suffixes
+        companyName = companyName.replaceAll(RegExp(r'\s*(Stock Price|Quote|Share Price).*', caseSensitive: false), '');
+      }
+      
+      // Extract current price
+      double currentPrice = 0.0;
+      final priceRegex = RegExp(r'data-currency-code="[^"]*"[^>]*>([0-9,]+\.?[0-9]*)', multiLine: true);
+      final priceMatch = priceRegex.firstMatch(html);
+      if (priceMatch != null) {
+        final priceStr = priceMatch.group(1)?.replaceAll(',', '') ?? '0';
+        currentPrice = double.tryParse(priceStr) ?? 0.0;
+      }
+      
+      // If price extraction failed, try alternative patterns
+      if (currentPrice == 0.0) {
+        final altPriceRegex = RegExp(r'\$([0-9,]+\.?[0-9]*)', multiLine: true);
+        final altPriceMatch = altPriceRegex.firstMatch(html);
+        if (altPriceMatch != null) {
+          final priceStr = altPriceMatch.group(1)?.replaceAll(',', '') ?? '0';
+          currentPrice = double.tryParse(priceStr) ?? 0.0;
+        }
+      }
+      
+      // Extract change percentage
+      double changePercent = 0.0;
+      final changeRegex = RegExp(r'(\+|-)?([0-9]+\.?[0-9]*)%', multiLine: true);
+      final changeMatch = changeRegex.firstMatch(html);
+      if (changeMatch != null) {
+        final sign = changeMatch.group(1) ?? '';
+        final percentStr = changeMatch.group(2) ?? '0';
+        final percent = double.tryParse(percentStr) ?? 0.0;
+        changePercent = sign == '-' ? -percent : percent;
+      }
+      
+      if (currentPrice > 0) {
+        print('✅ Parsed: $companyName ($ticker) - \$${currentPrice.toStringAsFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%)');
+        
+        return MarketAssetModel(
+          symbol: ticker,
+          name: companyName,
+          price: currentPrice,
+          changePercent: changePercent,
+          type: 'stock',
+          exchange: exchange,
+        );
+      } else {
+        print('❌ Could not extract valid price for $ticker');
+        return null;
+      }
+      
+    } catch (e) {
+      print('❌ Error parsing Google Finance page for $ticker: $e');
+      return null;
+    }
+  }
+  
+  /// Fallback: Search by company name using predefined database
+  static Future<List<MarketAssetModel>> _searchByCompanyName(String query) async {
+    final queryLower = query.toLowerCase();
+    
+    // Comprehensive company name to ticker mapping
+    final companyDatabase = {
+      'apple': 'AAPL', 'microsoft': 'MSFT', 'amazon': 'AMZN', 'google': 'GOOGL', 
+      'alphabet': 'GOOGL', 'meta': 'META', 'facebook': 'META', 'tesla': 'TSLA',
+      'nvidia': 'NVDA', 'netflix': 'NFLX', 'disney': 'DIS', 'boeing': 'BA',
+      'jpmorgan': 'JPM', 'jp morgan': 'JPM', 'johnson': 'JNJ', 'johnson & johnson': 'JNJ',
+      'visa': 'V', 'mastercard': 'MA', 'procter': 'PG', 'procter & gamble': 'PG',
+      'coca cola': 'KO', 'coca-cola': 'KO', 'coke': 'KO', 'pepsi': 'PEP', 'pepsico': 'PEP',
+      'berkshire': 'BRK.B', 'berkshire hathaway': 'BRK.B', 'goldman': 'GS', 'goldman sachs': 'GS',
+      'walmart': 'WMT', 'target': 'TGT', 'costco': 'COST', 'home depot': 'HD',
+      'mcdonalds': 'MCD', "mcdonald's": 'MCD', 'starbucks': 'SBUX', 'ford': 'F',
+      'general motors': 'GM', 'uber': 'UBER', 'lyft': 'LYFT', 'exxon': 'XOM',
+      'chevron': 'CVX', 'pfizer': 'PFE', 'merck': 'MRK', 'verizon': 'VZ',
+      'at&t': 'T', 'intel': 'INTC', 'amd': 'AMD', 'oracle': 'ORCL', 'salesforce': 'CRM',
+      'adobe': 'ADBE', 'cisco': 'CSCO', 'ibm': 'IBM', 'spotify': 'SPOT',
+      'zoom': 'ZM', 'roku': 'ROKU', 'snap': 'SNAP', 'snapchat': 'SNAP',
+      'paypal': 'PYPL', 'shopify': 'SHOP', 'delta': 'DAL', 'american airlines': 'AAL',
+    };
+    
+    // Look for company name matches
+    for (final entry in companyDatabase.entries) {
+      if (entry.key.contains(queryLower) || queryLower.contains(entry.key)) {
+        try {
+          // Try to get this stock from Google Finance
+          final exchanges = ['NASDAQ', 'NYSE'];
+          for (String exchange in exchanges) {
+            final asset = await _checkGoogleFinance(entry.value, exchange);
+            if (asset != null) {
+              print('✅ Found ${entry.key} -> ${entry.value}');
+              return [asset];
+            }
+          }
+        } catch (e) {
+          print('❌ Error loading ${entry.value}: $e');
+        }
+      }
+    }
+    
+    return [];
   }
 }
