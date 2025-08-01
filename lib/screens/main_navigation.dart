@@ -7,7 +7,6 @@ import '../providers/theme_provider.dart';
 import '../providers/achievement_provider.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/banner_ad_widget.dart';
-import '../widgets/market_indices_banner.dart';
 import 'market/market_screen.dart';
 import 'portfolio/portfolio_screen.dart';
 import 'achievements/achievements_screen.dart';
@@ -74,8 +73,6 @@ class _MainNavigationState extends State<MainNavigation> {
           backgroundColor: themeProvider.background,
           body: Column(
             children: [
-              // Market Indices Banner - Always visible at top
-              const MarketIndicesBanner(),
               Expanded(
                 child: IndexedStack(
                   index: _currentIndex,

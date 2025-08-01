@@ -7,6 +7,7 @@ import '../../providers/market_data_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/portfolio_summary_card.dart';
 import '../../widgets/achievement_banner_widget.dart';
+import '../../widgets/styled_market_indices_widget.dart';
 import '../../utils/responsive_utils.dart';
 import '../../models/portfolio_model.dart';
 import '../../models/market_asset_model.dart';
@@ -196,6 +197,9 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                       totalPnLPercentage: portfolioProvider.totalPnLPercentage,
                     ),
                   ),
+
+                  // Market Indices Widget (styled with bubbles)
+                  const StyledMarketIndicesWidget(),
 
                   // Achievement Banner
                   const AchievementBannerWidget(),

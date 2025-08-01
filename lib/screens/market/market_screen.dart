@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/market_asset_model.dart';
 import '../../widgets/asset_list_tile.dart';
+import '../../widgets/styled_market_indices_widget.dart';
 import '../main_navigation.dart';
 import 'trade_dialog.dart';
 import 'asset_detail_screen.dart';
@@ -198,6 +199,10 @@ class _MarketScreenState extends State<MarketScreen> {
                 ),
               ),
               
+              // Market Indices Widget (styled with bubbles)
+              const SliverToBoxAdapter(
+                child: StyledMarketIndicesWidget(),
+              ),
 
               // Weekend Banner (only show on weekends)
               if (_isWeekend())
