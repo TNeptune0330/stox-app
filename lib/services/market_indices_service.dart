@@ -151,17 +151,20 @@ class MarketIndicesService {
         final change = etfPrice - previousClose;
         final changePercent = (change / previousClose) * 100;
         
-        // Convert ETF price to approximate index value
+        // Convert ETF price to approximate index value using more accurate ratios
         double indexPrice;
         switch (symbol) {
           case 'SPY':
-            indexPrice = etfPrice * 12.0; // SPY is roughly 1/12th of S&P 500
+            // SPY tracks S&P 500 at roughly 1/10th the value
+            indexPrice = etfPrice * 10.0; // More accurate ratio
             break;
           case 'QQQ':
-            indexPrice = etfPrice * 50.0; // QQQ is roughly 1/50th of NASDAQ-100
+            // QQQ tracks NASDAQ-100, need to estimate full NASDAQ composite
+            indexPrice = etfPrice * 37.0; // Adjusted ratio for better accuracy
             break;
           case 'DIA':
-            indexPrice = etfPrice * 130.0; // DIA is roughly 1/130th of DOW
+            // DIA tracks DOW at roughly 1/100th the value  
+            indexPrice = etfPrice * 100.0; // More accurate ratio
             break;
           default:
             indexPrice = etfPrice; // fallback

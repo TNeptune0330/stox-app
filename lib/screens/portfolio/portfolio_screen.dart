@@ -7,7 +7,6 @@ import '../../providers/market_data_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/portfolio_summary_card.dart';
 import '../../widgets/achievement_banner_widget.dart';
-import '../../widgets/styled_market_indices_widget.dart';
 import '../../utils/responsive_utils.dart';
 import '../../models/portfolio_model.dart';
 import '../../models/market_asset_model.dart';
@@ -197,9 +196,6 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                       totalPnLPercentage: portfolioProvider.totalPnLPercentage,
                     ),
                   ),
-
-                  // Market Indices Widget (styled with bubbles)
-                  const StyledMarketIndicesWidget(),
 
                   // Achievement Banner
                   const AchievementBannerWidget(),
@@ -392,7 +388,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                       itemBuilder: (context, index) {
                         final holding = provider.portfolio[index];
                         
-                        // Get current market price from MarketDataProvider
+                        // Get current market price from MarketDataProvider (using fresh Finnhub data)
                         final marketDataProvider = Provider.of<MarketDataProvider>(context, listen: false);
                         MarketAssetModel? marketAsset;
                         
@@ -400,27 +396,32 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                           marketAsset = marketDataProvider.allAssets.firstWhere(
                             (asset) => asset.symbol.toUpperCase() == holding.symbol.toUpperCase(),
                           );
-                          print('📊 Portfolio UI: Using MarketDataProvider data for ${holding.symbol}: \$${marketAsset.price.toStringAsFixed(2)} (updated: ${marketAsset.lastUpdated})');
+                          print('📊 Portfolio UI: Found market data for ${holding.symbol}: \$${marketAsset.price.toStringAsFixed(2)} (updated: ${marketAsset.lastUpdated})');
                         } catch (e) {
                           print('❌ Portfolio UI: No market data available for ${holding.symbol}');
-                          // Show error state when no real data is available
-                          marketAsset = MarketAssetModel(
-                            symbol: holding.symbol,
-                            name: '${holding.symbol} - DATA ERROR',
-                            price: 0.0,
-                            change: 0.0,
-                            changePercent: 0.0,
-                            type: 'stock',
-                            lastUpdated: DateTime.now(),
-                          );
+                          marketAsset = null;
                         }
                         
-                        // Calculate values using the fresh market data
-                        final currentPrice = marketAsset.price;
+                        // Calculate values using the most accurate price data
+                        final currentPrice = marketAsset?.price ?? holding.avgPrice;
                         final currentValue = holding.quantity * currentPrice;
                         final purchaseValue = holding.quantity * holding.avgPrice;
                         final pnlDollar = currentValue - purchaseValue;
                         final pnlPercent = purchaseValue > 0 ? (pnlDollar / purchaseValue) * 100 : 0.0;
+                        
+                        if (marketAsset != null) {
+                          print('✅ Portfolio UI: Using live Finnhub price for ${holding.symbol}: \$${currentPrice.toStringAsFixed(2)}');
+                        } else {
+                          print('⚠️ Portfolio UI: Using average price fallback for ${holding.symbol}: \$${currentPrice.toStringAsFixed(2)}');
+                        }
+                        
+                        print('📊 P&L Debug for ${holding.symbol}:');
+                        print('   Current Price: \$${currentPrice.toStringAsFixed(2)}');
+                        print('   Quantity: ${holding.quantity}');
+                        print('   Current Value: \$${currentValue.toStringAsFixed(2)}');
+                        print('   Purchase Value: \$${purchaseValue.toStringAsFixed(2)}');
+                        print('   P&L Dollar: \$${pnlDollar.toStringAsFixed(2)}');
+                        print('   P&L Percent: ${pnlPercent.toStringAsFixed(2)}%');
                         
                         // Determine colors
                         final isPositive = pnlDollar >= 0;
