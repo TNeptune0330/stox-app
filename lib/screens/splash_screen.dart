@@ -110,9 +110,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     await Future.delayed(const Duration(milliseconds: 400));
     
     final portfolioProvider = Provider.of<PortfolioProvider>(context, listen: false);
-    final currentUser = LocalDatabaseService.getCurrentUser();
-    if (currentUser != null) {
-      await portfolioProvider.loadPortfolio(currentUser.id);
+    
+    // Only load portfolio if user is authenticated with proper Supabase user
+    if (authProvider.isAuthenticated && authProvider.user != null) {
+      print('🏦 SplashScreen: Loading portfolio for authenticated user: ${authProvider.user!.id}');
+      await portfolioProvider.loadPortfolio(authProvider.user!.id);
+    } else {
+      print('⚠️ SplashScreen: No authenticated user, skipping portfolio load');
+      // Don't load portfolio with default user - wait for proper authentication
     }
     
     // Step 5: Final checks

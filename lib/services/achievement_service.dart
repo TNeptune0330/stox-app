@@ -83,45 +83,58 @@ class AchievementService {
 
   // Load user achievements from Supabase
   Future<Map<String, dynamic>> loadUserAchievements(String userId) async {
+    print('🏆 AchievementService: Loading achievements for user $userId');
+    
     return await _connectionManager.executeWithFallback<Map<String, dynamic>>(
       () async {
-        // Get unlocked achievements
-        final unlockedResponse = await _supabase
-            .from('user_achievements')
-            .select('achievement_id, unlocked_at')
-            .eq('user_id', UuidUtils.ensureUuidFormat(userId));
+        try {
+          print('🏆 AchievementService: Querying Supabase for achievements...');
+          
+          // Get unlocked achievements
+          final unlockedResponse = await _supabase
+              .from('user_achievements')
+              .select('achievement_id, unlocked_at')
+              .eq('user_id', UuidUtils.ensureUuidFormat(userId));
 
-        // Get achievement progress
-        final progressResponse = await _supabase
-            .from('achievement_progress')
-            .select('achievement_id, current_progress, is_completed')
-            .eq('user_id', UuidUtils.ensureUuidFormat(userId));
+          print('🏆 AchievementService: Found ${unlockedResponse.length} unlocked achievements');
 
-        _connectionManager.recordSuccess();
+          // Get achievement progress
+          final progressResponse = await _supabase
+              .from('achievement_progress')
+              .select('achievement_id, current_progress, is_completed')
+              .eq('user_id', UuidUtils.ensureUuidFormat(userId));
 
-        final Set<String> unlockedAchievements = {};
-        final Map<String, int> userProgress = {};
+          print('🏆 AchievementService: Found ${progressResponse.length} progress records');
 
-        for (final row in unlockedResponse) {
-          unlockedAchievements.add(row['achievement_id'] as String);
+          _connectionManager.recordSuccess();
+
+          final Set<String> unlockedAchievements = {};
+          final Map<String, int> userProgress = {};
+
+          for (final row in unlockedResponse) {
+            unlockedAchievements.add(row['achievement_id'] as String);
+          }
+
+          for (final row in progressResponse) {
+            final achievementId = row['achievement_id'] as String;
+            final progress = row['current_progress'] as int;
+            userProgress[achievementId] = progress;
+          }
+
+          print('✅ Loaded achievements from Supabase: ${unlockedAchievements.length} unlocked, ${userProgress.length} in progress');
+
+          // Cache locally
+          await LocalDatabaseService.saveSetting('unlocked_achievements', unlockedAchievements);
+          await LocalDatabaseService.saveSetting('user_progress', userProgress);
+
+          return {
+            'unlocked_achievements': unlockedAchievements,
+            'user_progress': userProgress,
+          };
+        } catch (e) {
+          print('❌ AchievementService: Supabase query failed: $e');
+          rethrow;
         }
-
-        for (final row in progressResponse) {
-          final achievementId = row['achievement_id'] as String;
-          final progress = row['current_progress'] as int;
-          userProgress[achievementId] = progress;
-        }
-
-        print('✅ Loaded achievements from Supabase: ${unlockedAchievements.length} unlocked, ${userProgress.length} in progress');
-
-        // Cache locally
-        await LocalDatabaseService.saveSetting('unlocked_achievements', unlockedAchievements);
-        await LocalDatabaseService.saveSetting('user_progress', userProgress);
-
-        return {
-          'unlocked_achievements': unlockedAchievements,
-          'user_progress': userProgress,
-        };
       },
       () async {
         // Fallback to local storage

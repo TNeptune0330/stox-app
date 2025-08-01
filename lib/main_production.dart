@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Services
 import 'services/local_database_service.dart';
-import 'services/enhanced_market_data_service.dart';
 import 'services/revenue_admob_service.dart';
 
 // Providers
@@ -65,17 +64,15 @@ Future<void> _initializeCoreServices() async {
     await LocalDatabaseService.initialize();
     print('✅ Local Database initialized');
     
-    // Initialize Market Data Service
-    await EnhancedMarketDataService.initializeMarketData();
-    print('✅ Market Data Service initialized');
+    // Market data service disabled - using search-driven Google Finance approach
+    print('✅ Market Data Service: Using search-driven approach only');
     
     // Initialize AdMob
     await RevenueAdMobService.initialize(); // Temporarily disabled for iOS build
     print('✅ AdMob Service initialized');
     
-    // Start periodic market data updates
-    await EnhancedMarketDataService.startPeriodicUpdates();
-    print('✅ Market data updates started');
+    // Periodic market data updates disabled - using search-driven approach
+    print('✅ Market data: No periodic updates - search-driven only');
     
     // Set system UI overlay style
     SystemChrome.setSystemUIOverlayStyle(

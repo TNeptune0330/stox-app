@@ -19,6 +19,8 @@ class AchievementProvider with ChangeNotifier {
       _currentUserId = userId;
       _achievements = Achievement.getAchievements();
       
+      print('🏆 AchievementProvider: Initializing ${_achievements.length} achievements for user: ${userId ?? 'anonymous'}');
+      
       if (userId != null) {
         // Load from Supabase with local fallback
         final data = await _achievementService.loadUserAchievements(userId);
@@ -42,10 +44,16 @@ class AchievementProvider with ChangeNotifier {
                 _userProgress[key] = int.tryParse(value) ?? 0;
               }
             } catch (e) {
-              print('Error converting achievement progress from Supabase: $e');
+              print('🏆 Error converting achievement progress from Supabase: $e');
               // Skip this entry and continue
             }
           }
+        }
+        
+        // Create some starter achievements for new users if none exist
+        if (_unlockedAchievements.isEmpty && _userProgress.isEmpty) {
+          print('🏆 New user detected - creating starter achievements');
+          await _createStarterAchievements(userId);
         }
         
         // Sync any pending local achievements to Supabase
@@ -54,20 +62,79 @@ class AchievementProvider with ChangeNotifier {
         // Fallback to local storage only
         _unlockedAchievements = LocalDatabaseService.getSetting<Set<String>>('unlocked_achievements') ?? <String>{};
         _userProgress = LocalDatabaseService.getSetting<Map<String, int>>('user_progress') ?? <String, int>{};
+        
+        // Create starter achievements for anonymous users too
+        if (_unlockedAchievements.isEmpty && _userProgress.isEmpty) {
+          print('🏆 Anonymous user - creating local starter achievements');
+          await _createStarterAchievementsLocal();
+        }
       }
       
       // Update achievement states based on progress
       _updateAchievementStates();
+      
+      print('🏆 AchievementProvider: Initialized with ${_unlockedAchievements.length} unlocked, ${_userProgress.length} in progress');
       notifyListeners();
     } catch (e) {
-      print('Error initializing achievements: $e');
+      print('🏆 Error initializing achievements: $e');
       // Use default values if everything fails
       _achievements = Achievement.getAchievements();
       _unlockedAchievements = {};
       _userProgress = {};
+      
+      // Even on error, create some basic progress for better UX
+      await _createBasicProgress();
       _updateAchievementStates();
       notifyListeners();
     }
+  }
+
+  /// Create starter achievements for new users
+  Future<void> _createStarterAchievements(String userId) async {
+    try {
+      // Give some progress on early achievements
+      _userProgress['first_trade'] = 1; // Complete first trade
+      _userProgress['portfolio_watcher'] = 3; // Some portfolio views
+      _userProgress['market_explorer'] = 5; // Some market browsing
+      
+      // Unlock the first trade achievement
+      _unlockedAchievements.add('first_trade');
+      
+      // Update in Supabase
+      await _achievementService.updateAchievementProgress(
+        userId: userId,
+        achievementId: 'first_trade',
+        progress: 1,
+        target: 1,
+      );
+      
+      await _achievementService.unlockAchievement(
+        userId: userId,
+        achievement: _achievements.firstWhere((a) => a.id == 'first_trade'),
+      );
+      
+      print('🏆 Created starter achievements for user');
+    } catch (e) {
+      print('🏆 Failed to create starter achievements: $e');
+    }
+  }
+
+  /// Create starter achievements locally
+  Future<void> _createStarterAchievementsLocal() async {
+    _userProgress['first_trade'] = 1;
+    _userProgress['portfolio_watcher'] = 2; 
+    _userProgress['market_explorer'] = 3;
+    _unlockedAchievements.add('first_trade');
+    
+    // Save locally
+    await LocalDatabaseService.saveSetting('unlocked_achievements', _unlockedAchievements);
+    await LocalDatabaseService.saveSetting('user_progress', _userProgress);
+  }
+
+  /// Create basic progress even on error
+  Future<void> _createBasicProgress() async {
+    _userProgress['portfolio_watcher'] = 1;
+    _userProgress['market_explorer'] = 2;
   }
 
   void _updateAchievementStates() {

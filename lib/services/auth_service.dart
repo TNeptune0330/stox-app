@@ -359,24 +359,24 @@ class AuthService {
       // Handle theme enum constraint gracefully
       if (updates.containsKey('color_theme')) {
         final theme = updates['color_theme'] as String;
-        // Map new theme names to compatible enum values
+        // Map new theme names to compatible enum values (only: light, dark, green, blue)
         final compatibleThemes = {
-          'deepOcean': 'dark_blue',
-          'forestTwilight': 'dark_green', 
-          'royalPurple': 'dark_purple',
-          'crimsonNight': 'dark_red',
-          'goldenSunset': 'dark_orange',
-          'arcticBlue': 'light_blue',
-          'lightLavender': 'light_purple',
-          'sunsetWarmth': 'light_orange',
-          'lightMint': 'light_green',
+          'deepOcean': 'blue',
+          'forestTwilight': 'green', 
+          'royalPurple': 'blue',
+          'crimsonNight': 'dark',
+          'goldenSunset': 'light',
+          'arcticBlue': 'blue',
+          'lightLavender': 'light',
+          'sunsetWarmth': 'light',
+          'lightMint': 'green',
           'monochromeLight': 'light',
           'monochromeDark': 'dark',
-          'lightProfessional': 'light_blue',
-          'custom': 'custom',
+          'lightProfessional': 'light',
+          'custom': 'dark', // Default custom themes to dark
         };
         
-        updates['color_theme'] = compatibleThemes[theme] ?? 'dark_blue';
+        updates['color_theme'] = compatibleThemes[theme] ?? 'blue';
         print('📱 Mapped theme $theme to ${updates['color_theme']}');
       }
       

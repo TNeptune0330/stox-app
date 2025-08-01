@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
-import '../services/enhanced_market_data_service.dart';
+import '../services/market_indices_service.dart';
+import '../models/market_asset_model.dart';
 
 class MarketIndicesBanner extends StatefulWidget {
   const MarketIndicesBanner({super.key});
@@ -11,79 +12,70 @@ class MarketIndicesBanner extends StatefulWidget {
 }
 
 class _MarketIndicesBannerState extends State<MarketIndicesBanner> {
-  Map<String, Map<String, dynamic>> _indicesData = {};
+  List<MarketAssetModel> _indicesData = [];
   bool _isLoading = true;
-
-  final List<Map<String, String>> _indices = [
-    {'symbol': '^DJI', 'name': 'DOW', 'fullName': 'Dow Jones'},
-    {'symbol': '^IXIC', 'name': 'NASDAQ', 'fullName': 'NASDAQ Composite'},
-    {'symbol': '^GSPC', 'name': 'S&P 500', 'fullName': 'S&P 500'},
-  ];
 
   @override
   void initState() {
     super.initState();
-    _loadIndicesData();
+    print('📊 MarketIndicesBanner: Widget initialized - FORCING immediate data load...');
+    
+    // Immediate load - no delay
+    _loadRealIndicesData();
+    
+    // Backup attempts at regular intervals
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted && _indicesData.isEmpty) {
+        print('📊 MarketIndicesBanner: Retry attempt #1...');
+        _loadRealIndicesData();
+      }
+    });
+    
+    Future.delayed(const Duration(milliseconds: 3000), () {
+      if (mounted && _indicesData.isEmpty) {
+        print('📊 MarketIndicesBanner: Retry attempt #2...');
+        _loadRealIndicesData();
+      }
+    });
   }
 
-  Future<void> _loadIndicesData() async {
+  Future<void> _loadRealIndicesData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     
     try {
-      final Map<String, Map<String, dynamic>> newData = {};
+      print('📊 MarketIndicesBanner: FORCING fresh real market indices data (no cache)...');
       
-      for (final index in _indices) {
-        try {
-          // Try to get real data for each index
-          final quote = await EnhancedMarketDataService.getAsset(index['symbol']!);
-          if (quote != null) {
-            newData[index['symbol']!] = {
-              'name': index['name']!,
-              'price': quote.price,
-              'change': quote.changePercent,
-              'changeValue': quote.price * (quote.changePercent / 100),
-            };
-          } else {
-            // Fallback with default values
-            newData[index['symbol']!] = {
-              'name': index['name']!,
-              'price': _getDefaultPrice(index['symbol']!),
-              'change': 0.0,
-              'changeValue': 0.0,
-            };
-          }
-        } catch (e) {
-          print('Error loading ${index['name']}: $e');
-          // Fallback with default values
-          newData[index['symbol']!] = {
-            'name': index['name']!,
-            'price': _getDefaultPrice(index['symbol']!),
-            'change': 0.0,
-            'changeValue': 0.0,
-          };
-        }
-      }
-      
+      // Clear any existing data first to prevent showing stale data
       setState(() {
-        _indicesData = newData;
+        _indicesData = [];
+      });
+      
+      // Use dedicated market indices service for accurate data
+      final realIndicesData = await MarketIndicesService.getRealMarketIndices();
+      
+      if (!mounted) return;
+      setState(() {
+        _indicesData = realIndicesData;
         _isLoading = false;
       });
+      
+      if (realIndicesData.isNotEmpty) {
+        print('✅ MarketIndicesBanner: Successfully loaded ${realIndicesData.length} market indices');
+        for (final index in realIndicesData) {
+          print('   📈 ${index.name}: \$${index.price.toStringAsFixed(2)} (${index.changePercent >= 0 ? '+' : ''}${index.changePercent.toStringAsFixed(2)}%)');
+        }
+      } else {
+        print('⚠️ MarketIndicesBanner: No market indices data loaded - this may indicate API issues');
+      }
     } catch (e) {
-      print('Error loading indices data: $e');
-      setState(() => _isLoading = false);
-    }
-  }
-
-  double _getDefaultPrice(String symbol) {
-    switch (symbol) {
-      case '^DJI':
-        return 34000.0;
-      case '^IXIC':
-        return 14000.0;
-      case '^GSPC':
-        return 4300.0;
-      default:
-        return 0.0;
+      print('❌ MarketIndicesBanner: Error loading real indices data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Keep any existing data instead of clearing it
+        });
+      }
     }
   }
 
@@ -91,80 +83,76 @@ class _MarketIndicesBannerState extends State<MarketIndicesBanner> {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: themeProvider.backgroundHigh,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: themeProvider.theme.withOpacity(0.3),
+        if (_isLoading) {
+          return Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Center(
+              child: SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: themeProvider.theme,
+                ),
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: themeProvider.theme.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          );
+        }
+
+        if (_indicesData.isEmpty) {
+          return Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 16,
+                  color: themeProvider.contrast.withOpacity(0.5),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Real market data unavailable',
+                  style: TextStyle(
+                    color: themeProvider.contrast.withOpacity(0.7),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _loadRealIndicesData,
+                  child: Icon(
+                    Icons.refresh,
+                    size: 16,
+                    color: themeProvider.theme,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: themeProvider.theme.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.trending_up,
-                      color: themeProvider.theme,
-                      size: 20,
-                    ),
+              ..._indicesData.map((index) => _buildIndexItem(index, themeProvider)).toList(),
+              // Add refresh button
+              GestureDetector(
+                onTap: _loadRealIndicesData,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.refresh,
+                    size: 16,
+                    color: themeProvider.theme.withOpacity(0.7),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Market Indices',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: themeProvider.contrast,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (_isLoading)
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
-                      ),
-                    ),
-                ],
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Indices Row
-              Row(
-                children: _indices.map((index) {
-                  final data = _indicesData[index['symbol']];
-                  return Expanded(
-                    child: _buildIndexCard(
-                      data?['name'] ?? index['name']!,
-                      data?['price']?.toDouble() ?? 0.0,
-                      data?['change']?.toDouble() ?? 0.0,
-                      data?['changeValue']?.toDouble() ?? 0.0,
-                      themeProvider,
-                      _isLoading,
-                    ),
-                  );
-                }).toList(),
+                ),
               ),
             ],
           ),
@@ -173,99 +161,39 @@ class _MarketIndicesBannerState extends State<MarketIndicesBanner> {
     );
   }
 
-  Widget _buildIndexCard(
-    String name,
-    double price,
-    double changePercent,
-    double changeValue,
-    ThemeProvider themeProvider,
-    bool isLoading,
-  ) {
-    final isPositive = changePercent >= 0;
+  Widget _buildIndexItem(MarketAssetModel index, ThemeProvider themeProvider) {
+    final isPositive = index.changePercent >= 0;
     final color = isPositive ? Colors.green : Colors.red;
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: themeProvider.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: themeProvider.theme.withOpacity(0.2),
-        ),
-      ),
+
+    return Expanded(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Index Name
           Text(
-            name,
+            index.name,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: themeProvider.contrast,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            index.price.toStringAsFixed(0),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: themeProvider.contrast.withOpacity(0.8),
+              color: themeProvider.contrast,
             ),
-            overflow: TextOverflow.ellipsis,
           ),
-          
-          const SizedBox(height: 4),
-          
-          // Price
-          if (isLoading)
-            Container(
-              width: 60,
-              height: 16,
-              decoration: BoxDecoration(
-                color: themeProvider.contrast.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            )
-          else
-            Text(
-              price > 1000 
-                  ? '${(price / 1000).toStringAsFixed(1)}K'
-                  : price.toStringAsFixed(0),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: themeProvider.contrast,
-              ),
+          Text(
+            '${isPositive ? '+' : ''}${index.changePercent.toStringAsFixed(2)}%',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: color,
             ),
-          
-          const SizedBox(height: 4),
-          
-          // Change
-          if (isLoading)
-            Container(
-              width: 40,
-              height: 12,
-              decoration: BoxDecoration(
-                color: themeProvider.contrast.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            )
-          else
-            Row(
-              children: [
-                Icon(
-                  isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 12,
-                  color: color,
-                ),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Text(
-                    '${changePercent.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: color,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+          ),
         ],
       ),
     );

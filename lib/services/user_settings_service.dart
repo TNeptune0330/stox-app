@@ -15,14 +15,35 @@ class UserSettingsService {
   }) async {
     await _connectionManager.executeWithFallback<void>(
       () async {
-        await _supabase
+        // Try to update first, then insert if it doesn't exist
+        final existingResponse = await _supabase
             .from('user_settings')
-            .upsert({
-              'user_id': UuidUtils.ensureUuidFormat(userId),
-              'setting_key': key,
-              'setting_value': value,
-              'updated_at': DateTime.now().toIso8601String(),
-            });
+            .select('id')
+            .eq('user_id', UuidUtils.ensureUuidFormat(userId))
+            .eq('setting_key', key)
+            .maybeSingle();
+            
+        if (existingResponse != null) {
+          // Update existing record
+          await _supabase
+              .from('user_settings')
+              .update({
+                'setting_value': value,
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .eq('user_id', UuidUtils.ensureUuidFormat(userId))
+              .eq('setting_key', key);
+        } else {
+          // Insert new record
+          await _supabase
+              .from('user_settings')
+              .insert({
+                'user_id': UuidUtils.ensureUuidFormat(userId),
+                'setting_key': key,
+                'setting_value': value,
+                'updated_at': DateTime.now().toIso8601String(),
+              });
+        }
 
         _connectionManager.recordSuccess();
         print('✅ Setting saved to Supabase: $key');

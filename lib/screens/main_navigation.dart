@@ -7,6 +7,7 @@ import '../providers/theme_provider.dart';
 import '../providers/achievement_provider.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../widgets/market_indices_banner.dart';
 import 'market/market_screen.dart';
 import 'portfolio/portfolio_screen.dart';
 import 'achievements/achievements_screen.dart';
@@ -46,6 +47,8 @@ class _MainNavigationState extends State<MainNavigation> {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     if (authProvider.user != null) {
+      print('🏠 MainNavigation: Initializing data for user ${authProvider.user!.id}');
+      
       // Set user ID for data syncing
       achievementProvider.setUserId(authProvider.user!.id);
       themeProvider.setUserId(authProvider.user!.id);
@@ -56,6 +59,10 @@ class _MainNavigationState extends State<MainNavigation> {
         achievementProvider.initialize(authProvider.user!.id),
         themeProvider.initialize(authProvider.user!.id),
       ]);
+      
+      print('🏠 MainNavigation: All providers initialized successfully');
+    } else {
+      print('🏠 MainNavigation: No authenticated user - skipping full initialization');
     }
   }
 
@@ -67,6 +74,8 @@ class _MainNavigationState extends State<MainNavigation> {
           backgroundColor: themeProvider.background,
           body: Column(
             children: [
+              // Market Indices Banner - Always visible at top
+              const MarketIndicesBanner(),
               Expanded(
                 child: IndexedStack(
                   index: _currentIndex,

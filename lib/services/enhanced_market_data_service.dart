@@ -756,36 +756,9 @@ class EnhancedMarketDataService {
   
   // Initialize market data
   static Future<void> initializeMarketData() async {
-    try {
-      print('$_logPrefix Initializing market data...');
-      
-      // Check if we have existing data
-      final existingAssets = LocalDatabaseService.getMarketAssets();
-      print('$_logPrefix Found ${existingAssets.length} existing assets in database');
-      
-      if (existingAssets.isEmpty) {
-        print('$_logPrefix No existing data found, fetching real market data...');
-        // ONLY use real data - never mock data
-        await _initializeRealMarketData();
-      } else {
-        print('$_logPrefix Using existing market data (${existingAssets.length} assets)');
-        
-        // Check if data is stale (older than 1 hour)
-        final hasStaleData = existingAssets.any((asset) => 
-          DateTime.now().difference(asset.lastUpdated).inHours >= 1);
-        
-        if (hasStaleData) {
-          print('$_logPrefix Data is stale, updating in background...');
-          _updateMarketDataInBackground();
-        }
-      }
-      
-    } catch (e) {
-      print('$_logPrefix ❌ Error initializing market data: $e');
-      // NEVER use mock data - only retry with real data
-      print('$_logPrefix 🔄 Retrying with real data only...');
-      await _initializeRealMarketData();
-    }
+    // DISABLED: No automatic initialization - using search-driven approach only
+    print('$_logPrefix ✅ Auto-initialization disabled - search-driven approach only');
+    return;
   }
   
   static void _updateMarketDataInBackground() {
@@ -800,21 +773,9 @@ class EnhancedMarketDataService {
   }
   
   static Future<void> updateAllMarketData() async {
-    try {
-      print('$_logPrefix 🔄 Updating all market data...');
-      
-      // Update stocks and cryptos in parallel
-      final futures = <Future>[
-        _updateStockData(),
-        _updateCryptoData(),
-      ];
-      
-      await Future.wait(futures);
-      
-      print('$_logPrefix ✅ Market data update completed');
-    } catch (e) {
-      print('$_logPrefix ❌ Error updating market data: $e');
-    }
+    // DISABLED: No automatic market data updates - using search-driven approach only
+    print('$_logPrefix ✅ Auto-updates disabled - search-driven approach only');
+    return;
   }
   
   static Future<void> _updateStockData() async {
@@ -1581,31 +1542,9 @@ class EnhancedMarketDataService {
   }
   
   static Future<void> startPeriodicUpdates() async {
-    print('$_logPrefix Starting enhanced market data updates...');
-    
-    // Update immediately
-    await updateAllMarketData();
-    
-    // Schedule periodic updates every 10 minutes to respect API rate limits
-    Stream.periodic(const Duration(minutes: 10)).listen((_) async {
-      try {
-        // Use realistic price simulation first
-        await RealisticPriceSimulator.simulateRealisticPriceUpdates();
-        
-        // Occasionally try real API updates (every 5th update)
-        if (DateTime.now().minute % 10 == 0) {
-          await updateAllMarketData();
-        }
-      } catch (e) {
-        print('$_logPrefix ❌ Periodic update failed: $e');
-        // Fallback to basic simulation if everything fails
-        try {
-          await RealisticPriceSimulator.simulateRealisticPriceUpdates();
-        } catch (fallbackError) {
-          print('$_logPrefix ❌ Fallback simulation also failed: $fallbackError');
-        }
-      }
-    });
+    // DISABLED: No periodic updates - using search-driven approach only
+    print('$_logPrefix ✅ Periodic updates disabled - search-driven approach only');
+    return;
   }
   
   static Future<Map<String, dynamic>> getMarketStats() async {

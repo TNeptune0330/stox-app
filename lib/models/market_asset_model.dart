@@ -6,6 +6,7 @@ class MarketAssetModel {
   final double changePercent;
   final String type; // 'stock', 'crypto', 'etf'
   final DateTime lastUpdated;
+  final String? exchange; // Optional exchange field
 
   MarketAssetModel({
     required this.symbol,
@@ -15,6 +16,7 @@ class MarketAssetModel {
     required this.changePercent,
     required this.type,
     required this.lastUpdated,
+    this.exchange,
   });
 
   factory MarketAssetModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class MarketAssetModel {
       changePercent: (json['change_percent'] as num).toDouble(),
       type: json['type'] as String,
       lastUpdated: DateTime.parse(json['last_updated'] as String),
+      exchange: json['exchange'] as String?,
     );
   }
 
@@ -38,6 +41,7 @@ class MarketAssetModel {
       'change_percent': changePercent,
       'type': type,
       'last_updated': lastUpdated.toIso8601String(),
+      'exchange': exchange,
     };
   }
 
@@ -49,6 +53,7 @@ class MarketAssetModel {
     double? changePercent,
     String? type,
     DateTime? lastUpdated,
+    String? exchange,
   }) {
     return MarketAssetModel(
       symbol: symbol ?? this.symbol,
@@ -58,6 +63,7 @@ class MarketAssetModel {
       changePercent: changePercent ?? this.changePercent,
       type: type ?? this.type,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      exchange: exchange ?? this.exchange,
     );
   }
 
@@ -91,7 +97,7 @@ class MarketAssetModel {
 
   @override
   String toString() {
-    return 'MarketAssetModel(symbol: $symbol, name: $name, price: $price, change: $change, changePercent: $changePercent, type: $type, lastUpdated: $lastUpdated)';
+    return 'MarketAssetModel(symbol: $symbol, name: $name, price: $price, change: $change, changePercent: $changePercent, type: $type, lastUpdated: $lastUpdated, exchange: $exchange)';
   }
 
   @override
@@ -104,7 +110,8 @@ class MarketAssetModel {
         other.change == change &&
         other.changePercent == changePercent &&
         other.type == type &&
-        other.lastUpdated == lastUpdated;
+        other.lastUpdated == lastUpdated &&
+        other.exchange == exchange;
   }
 
   @override
@@ -115,6 +122,7 @@ class MarketAssetModel {
         change.hashCode ^
         changePercent.hashCode ^
         type.hashCode ^
-        lastUpdated.hashCode;
+        lastUpdated.hashCode ^
+        exchange.hashCode;
   }
 }

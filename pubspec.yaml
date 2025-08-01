@@ -70,6 +70,11 @@ dependencies:
   
   # URL Launcher for opening news articles
   url_launcher: ^6.2.4
+  
+  # Performance monitoring
+  device_info_plus: ^10.1.2
+  package_info_plus: ^8.0.2
+  connectivity_plus: ^6.0.5
 
 dev_dependencies:
   flutter_test:

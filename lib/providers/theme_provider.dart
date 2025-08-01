@@ -32,6 +32,8 @@ class ThemeProvider with ChangeNotifier {
     try {
       _currentUserId = userId;
       
+      print('📱 ThemeProvider: Initializing theme for user: ${userId ?? 'anonymous'}');
+      
       if (userId != null) {
         // Load from Supabase with local fallback
         _selectedTheme = await _settingsService.getSetting<String>(
@@ -39,6 +41,8 @@ class ThemeProvider with ChangeNotifier {
           key: 'selected_theme',
           defaultValue: 'deepOcean',
         ) ?? 'deepOcean';
+        
+        print('📱 ThemeProvider: Loaded theme from Supabase: $_selectedTheme');
         
         // Load full theme customization
         final savedThemeJson = await _settingsService.getSetting<String>(
@@ -48,6 +52,7 @@ class ThemeProvider with ChangeNotifier {
         
         if (savedThemeJson != null && _selectedTheme == 'custom') {
           try {
+            print('📱 ThemeProvider: Loading custom theme from JSON');
             final themeMap = Map<String, dynamic>.from(json.decode(savedThemeJson));
             _currentTheme = AppThemeModel.fromJson(themeMap);
             // Try to create a FiveColorTheme from the custom theme
@@ -61,9 +66,10 @@ class ThemeProvider with ChangeNotifier {
               isDark: _currentTheme.isDark,
             );
           } catch (e) {
-            print('Error loading custom theme: $e');
+            print('📱 ThemeProvider: Error loading custom theme: $e');
             _fiveColorTheme = FiveColorTheme.darkBlue;
             _currentTheme = _fiveColorTheme.toAppThemeModel();
+            _selectedTheme = 'deepOcean';
           }
         } else {
           _fiveColorTheme = FiveColorTheme.getThemeByName(_selectedTheme);
@@ -73,6 +79,8 @@ class ThemeProvider with ChangeNotifier {
         // Fallback to local storage
         _selectedTheme = LocalDatabaseService.getSetting<String>('selected_theme') ?? 'deepOcean';
         final savedThemeJson = LocalDatabaseService.getSetting<String>('custom_theme_json');
+        
+        print('📱 ThemeProvider: Loading theme from local storage: $_selectedTheme');
         
         if (savedThemeJson != null && _selectedTheme == 'custom') {
           try {
@@ -186,10 +194,13 @@ class ThemeProvider with ChangeNotifier {
 
   // Set current user ID for Supabase sync
   void setUserId(String? userId) {
-    _currentUserId = userId;
-    if (userId != null) {
-      // Re-initialize with user data
-      initialize(userId);
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+      print('📱 ThemeProvider: User ID changed to $userId, re-initializing...');
+      if (userId != null) {
+        // Re-initialize with user data
+        initialize(userId);
+      }
     }
   }
 

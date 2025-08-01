@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/portfolio_provider.dart';
@@ -10,7 +9,6 @@ import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation.dart';
 import 'services/storage_service.dart';
 import 'services/ad_service.dart';
-import 'services/price_update_service.dart';
 
 class StoxApp extends StatelessWidget {
   const StoxApp({super.key});
@@ -61,8 +59,8 @@ class _AppInitializerState extends State<AppInitializer> {
       await StorageService.initialize();
       await AdService.instance.initialize();
       
-      // Start periodic price updates
-      PriceUpdateService.instance.startPeriodicUpdates();
+      // Periodic price updates disabled - using search-driven approach
+      print('✅ Price updates: Disabled - search-driven approach only');
       
       // Initialize providers
       if (mounted) {

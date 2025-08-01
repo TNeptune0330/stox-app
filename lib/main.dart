@@ -8,11 +8,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Services
 import 'services/local_database_service.dart';
-import 'services/enhanced_market_data_service.dart';
 import 'services/revenue_admob_service.dart';
 import 'services/storage_service.dart';
 import 'services/connection_manager.dart';
 import 'services/financial_news_service.dart';
+import 'services/optimized_cache_service.dart';
+import 'services/optimized_network_service.dart';
+import 'services/performance_monitor_service.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -34,6 +36,10 @@ import 'config/supabase_config.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Start performance monitoring immediately
+  PerformanceMonitorService.startAppStartup();
+  await PerformanceMonitorService.initialize();
+  
   print('🚀 Stox Trading Simulator - Production Launch');
   
   try {
@@ -45,6 +51,9 @@ void main() async {
       // Skip comprehensive tests for faster startup
       print('🚀 Production mode - optimized startup (tests disabled)');
     }
+    
+    // Complete startup measurement
+    PerformanceMonitorService.completeAppStartup();
     
     // Launch app
     runApp(const StoxApp());
@@ -73,6 +82,13 @@ Future<void> _initializeCoreServices() async {
     // Reset connection manager state (in case URL was changed)
     ConnectionManager().resetConnectionState();
     
+    // Initialize performance services first
+    await Future.wait([
+      OptimizedCacheService.initialize(),
+      OptimizedNetworkService.initialize(),
+    ]);
+    print('✅ Performance services initialized');
+    
     // Initialize critical services in parallel for faster startup
     await Future.wait([
       StorageService.initialize(),
@@ -80,9 +96,8 @@ Future<void> _initializeCoreServices() async {
     ]);
     print('✅ Critical services initialized');
     
-    // Initialize market data service (required for app functionality)
-    await EnhancedMarketDataService.initializeMarketData();
-    print('✅ Market Data Service initialized');
+    // Market data service disabled - using search-driven Google Finance approach
+    print('✅ Market Data Service: Using search-driven approach only');
     
     // Defer non-critical services to not block app startup
     _initializeNonCriticalServices();
@@ -122,9 +137,8 @@ void _initializeNonCriticalServices() async {
     FinancialNewsService.updateDailyNews();
     print('✅ Daily news update initiated (background)');
     
-    // Start periodic market data updates
-    await EnhancedMarketDataService.startPeriodicUpdates();
-    print('✅ Market data updates started (background)');
+    // Periodic market data updates disabled - using search-driven approach
+    print('✅ Market data: No periodic updates - search-driven only');
   } catch (e) {
     print('⚠️ Non-critical service initialization failed: $e');
     // Don't crash app for non-critical services

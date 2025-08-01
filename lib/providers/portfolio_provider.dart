@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../models/portfolio_model.dart';
 import '../models/transaction_model.dart';
 import '../services/portfolio_service.dart';
+import '../services/portfolio_cache_service.dart';
 import '../services/ad_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/sync_service.dart';
 import '../services/connection_manager.dart';
+import '../services/optimized_cache_service.dart';
 import 'achievement_provider.dart';
 
 class PortfolioProvider with ChangeNotifier {
@@ -41,28 +43,86 @@ class PortfolioProvider with ChangeNotifier {
   String? get mostTraded => _stats['most_traded'] as String?;
 
   Future<void> loadPortfolio(String userId) async {
-    print('📊 Loading portfolio for user: $userId');
+    print('📊 PortfolioProvider: Loading portfolio for user: $userId');
+    
+    // Validate user ID
+    if (userId.isEmpty) {
+      print('❌ PortfolioProvider: Empty user ID provided');
+      _setError('Invalid user ID');
+      return;
+    }
+    
+    // Try to load from cache first
+    final cachedData = await PortfolioCacheService.getCachedPortfolioData();
+    if (cachedData != null) {
+      print('📊 PortfolioProvider: Using cached portfolio data');
+      _portfolio = cachedData['portfolio'] as List<PortfolioModel>;
+      _transactions = cachedData['transactions'] as List<TransactionModel>;
+      _summary = cachedData['summary'] as Map<String, dynamic>;
+      _stats = cachedData['stats'] as Map<String, dynamic>;
+      
+      print('📊 PortfolioProvider: Cached data loaded - ${_portfolio.length} holdings');
+      if (_portfolio.isNotEmpty) {
+        for (final holding in _portfolio) {
+          print('   📦 ${holding.symbol}: ${holding.quantity} shares @ \$${holding.avgPrice}');
+        }
+      }
+      
+      notifyListeners();
+      return; // Use cached data and exit
+    }
+    
     _setLoading(true);
     _clearError();
     
     try {
+      print('📊 PortfolioProvider: Loading fresh portfolio data from database...');
       final results = await Future.wait([
         _portfolioService.getUserPortfolio(userId),
+        _portfolioService.getUserTransactions(userId, limit: 100),
         _portfolioService.getPortfolioSummary(userId),
         _portfolioService.getPortfolioStats(userId),
       ]);
 
       _portfolio = results[0] as List<PortfolioModel>;
-      _summary = results[1] as Map<String, dynamic>;
-      _stats = results[2] as Map<String, dynamic>;
+      _transactions = results[1] as List<TransactionModel>;
+      _summary = results[2] as Map<String, dynamic>;
+      _stats = results[3] as Map<String, dynamic>;
       
-      print('✅ Portfolio loaded: ${_portfolio.length} holdings, Net Worth: \$${netWorth.toStringAsFixed(2)}');
+      print('📊 PortfolioProvider: Fresh data loaded:');
+      print('   📦 Holdings: ${_portfolio.length}');
+      print('   📋 Transactions: ${_transactions.length}');
+      print('   💰 Cash Balance: \$${cashBalance.toStringAsFixed(2)}');
+      print('   📈 Net Worth: \$${netWorth.toStringAsFixed(2)}');
+      
+      if (_portfolio.isNotEmpty) {
+        print('📊 PortfolioProvider: Holdings details:');
+        for (final holding in _portfolio) {
+          print('   📦 ${holding.symbol}: ${holding.quantity} shares @ \$${holding.avgPrice}');
+        }
+      } else {
+        print('⚠️ PortfolioProvider: No holdings found in database for user $userId');
+      }
+      
+      // Cache the fresh data
+      await PortfolioCacheService.cachePortfolioData(
+        portfolio: _portfolio,
+        transactions: _transactions,
+        summary: _summary,
+        stats: _stats,
+      );
+      
+      print('✅ PortfolioProvider: Portfolio loaded and cached successfully');
       
       notifyListeners();
     } catch (e) {
-      print('❌ Failed to load portfolio: $e');
-      // Don't show error in UI for demo - just use default empty state
+      print('❌ PortfolioProvider: Failed to load portfolio: $e');
+      print('❌ PortfolioProvider: Error type: ${e.runtimeType}');
+      print('❌ PortfolioProvider: Stack trace: ${StackTrace.current}');
+      
+      // Provide default state for demo purposes
       _portfolio = [];
+      _transactions = [];
       _summary = {
         'cash_balance': 10000.0,
         'holdings_value': 0.0,
@@ -77,10 +137,24 @@ class PortfolioProvider with ChangeNotifier {
         'worst_performer': null,
         'most_traded': null,
       };
+      
+      print('📊 PortfolioProvider: Using default state with \$10,000 cash balance');
+      print('📊 PortfolioProvider: Default state - Cash: \$${cashBalance.toStringAsFixed(2)}, Net Worth: \$${netWorth.toStringAsFixed(2)}');
       notifyListeners();
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// Force refresh portfolio data (invalidate cache and reload)
+  Future<void> forceRefreshWithConnection(String userId) async {
+    print('📊 Force refreshing portfolio data...');
+    
+    // Invalidate cache to force fresh data load
+    await PortfolioCacheService.invalidateCache();
+    
+    // Load fresh data
+    await loadPortfolio(userId);
   }
 
   Future<void> loadTransactions(String userId) async {
@@ -202,10 +276,10 @@ class PortfolioProvider with ChangeNotifier {
           print('⚠️ Failed to update leaderboard (non-blocking): $e');
         }
         
-        // Reload portfolio data to reflect changes (don't block if this fails)
+        // Invalidate cache and reload portfolio data to reflect changes
         try {
+          await PortfolioCacheService.invalidateCache();
           await loadPortfolio(userId);
-          await loadTransactions(userId);
         } catch (e) {
           print('⚠️ Failed to reload portfolio data (non-blocking): $e');
         }
@@ -255,27 +329,6 @@ class PortfolioProvider with ChangeNotifier {
     print('🔄 Refreshing portfolio data...');
     await loadPortfolio(userId);
     await loadTransactions(userId);
-  }
-
-  Future<void> forceRefreshWithConnection(String userId) async {
-    print('🔄 Force refreshing portfolio with connection reset...');
-    
-    // Reset connection manager state
-    ConnectionManager().resetConnectionState();
-    
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      await loadPortfolio(userId);
-      await loadTransactions(userId);
-      print('✅ Force refresh completed successfully');
-    } catch (e) {
-      print('❌ Force refresh failed: $e');
-      _setError('Failed to refresh: $e');
-    } finally {
-      _setLoading(false);
-    }
   }
 
   Future<bool> syncPendingData(String userId) async {

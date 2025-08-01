@@ -20,7 +20,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AchievementProvider>(context, listen: false).initialize();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final achievementProvider = Provider.of<AchievementProvider>(context, listen: false);
+      
+      if (authProvider.user != null) {
+        print('🏆 Initializing achievements for user: ${authProvider.user!.id}');
+        achievementProvider.initialize(authProvider.user!.id);
+      } else {
+        print('🏆 Initializing achievements without user (demo mode)');
+        achievementProvider.initialize();
+      }
     });
   }
 

@@ -52,23 +52,30 @@ class FinancialNewsService {
         return cachedNews.take(limit).toList();
       }
       
-      // If no valid cache, generate and cache daily news
-      print('$_logPrefix 🆕 Generating fresh daily news');
-      final freshNews = await _generateDailyNews(symbol: symbol, limit: limit);
+      // If no valid cache, fetch real news only
+      print('$_logPrefix 🆕 Fetching fresh news from API (no fake news)');
+      final freshNews = await _fetchRealNewsOnly(symbol: symbol, limit: limit);
       
-      // Cache the news for 24 hours
-      await _saveNewsToCache(symbol, freshNews);
-      
-      // Update memory cache
-      _memoryCache[cacheKey] = freshNews;
-      _lastMemoryCacheUpdate = DateTime.now();
-      
-      return freshNews;
+      if (freshNews.isNotEmpty) {
+        // Cache the news for 24 hours only if we got real news
+        await _saveNewsToCache(symbol, freshNews);
+        
+        // Update memory cache
+        _memoryCache[cacheKey] = freshNews;
+        _lastMemoryCacheUpdate = DateTime.now();
+        
+        return freshNews;
+      } else {
+        // Return empty list if no real news available - NO FAKE NEWS
+        print('$_logPrefix ℹ️ No real news available, returning empty list (no fake news)');
+        return [];
+      }
       
     } catch (e) {
       print('$_logPrefix ❌ Error fetching news: $e');
-      // Fallback to basic mock news
-      return _getMockNews(symbol: symbol, limit: limit);
+      // Return empty list instead of fake news
+      print('$_logPrefix ℹ️ Returning empty list due to error (no fake news fallback)');
+      return [];
     }
   }
   
@@ -106,8 +113,12 @@ class FinancialNewsService {
         _memoryCache.clear();
         _lastMemoryCacheUpdate = null;
         
-        // Update general market news first
-        await getNews(limit: 15);
+        // Update general market news first (real news only)
+        final generalNews = await _fetchRealNewsOnly(limit: 15);
+        if (generalNews.isNotEmpty) {
+          await _saveNewsToCache(null, generalNews);
+          print('$_logPrefix ✅ Updated general market news (${generalNews.length} real articles)');
+        }
         
         // Update news for most popular stocks (within rate limits)
         final popularStocks = [
@@ -120,8 +131,13 @@ class FinancialNewsService {
         
         for (final stock in dailyStocks) {
           try {
-            await getNews(symbol: stock, limit: 8);
-            print('$_logPrefix ✅ Updated news for $stock');
+            final stockNews = await _fetchRealNewsOnly(symbol: stock, limit: 8);
+            if (stockNews.isNotEmpty) {
+              await _saveNewsToCache(stock, stockNews);
+              print('$_logPrefix ✅ Updated news for $stock (${stockNews.length} real articles)');
+            } else {
+              print('$_logPrefix ℹ️ No real news found for $stock');
+            }
           } catch (e) {
             print('$_logPrefix ⚠️ Failed to update news for $stock: $e');
           }
@@ -188,9 +204,9 @@ class FinancialNewsService {
     }
   }
   
-  /// Generate fresh daily news from Finnhub API
-  static Future<List<NewsArticle>> _generateDailyNews({String? symbol, int limit = 10}) async {
-    print('$_logPrefix 🆕 Fetching fresh news from Finnhub API');
+  /// Fetch real news only from Finnhub API - NO FAKE NEWS
+  static Future<List<NewsArticle>> _fetchRealNewsOnly({String? symbol, int limit = 10}) async {
+    print('$_logPrefix 🆕 Fetching REAL news only from Finnhub API (no fake fallback)');
     
     try {
       await _waitForRateLimit();
@@ -235,7 +251,7 @@ class FinancialNewsService {
               .toList();
           
           if (articles.isNotEmpty) {
-            print('$_logPrefix ✅ Retrieved ${articles.length} real news articles from Finnhub');
+            print('$_logPrefix ✅ Retrieved ${articles.length} REAL news articles from Finnhub');
             return articles;
           }
         }
@@ -246,12 +262,9 @@ class FinancialNewsService {
       print('$_logPrefix ❌ Error fetching from Finnhub: $e');
     }
     
-    // Fallback to deterministic mock news if API fails
-    print('$_logPrefix 🔄 Falling back to deterministic mock news');
-    final today = DateTime.now();
-    final dateString = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    final seed = dateString.hashCode;
-    return _generateDeterministicMockNews(symbol: symbol, limit: limit, seed: seed);
+    // NO FALLBACK TO FAKE NEWS - return empty list if API fails
+    print('$_logPrefix ℹ️ API failed, returning empty list (NO FAKE NEWS FALLBACK)');
+    return [];
   }
   
   /// Wait for rate limit to avoid API throttling
@@ -273,220 +286,9 @@ class FinancialNewsService {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
   
-  /// Generate consistent mock news based on date seed
-  static List<NewsArticle> _generateDeterministicMockNews({String? symbol, int limit = 10, required int seed}) {
-    final random = seed.abs() % 1000000; // Create deterministic "random" number
-    final today = DateTime.now();
-    
-    final newsTemplates = symbol != null ? _getStockNewsTemplates(symbol) : _getGeneralNewsTemplates();
-    final selectedNews = <NewsArticle>[];
-    
-    // Use seed to select which news items to show today
-    for (int i = 0; i < limit && i < newsTemplates.length; i++) {
-      final templateIndex = (random + i * 7) % newsTemplates.length;
-      final template = newsTemplates[templateIndex];
-      
-      // Generate time with some variation but deterministic
-      final hoursAgo = 1 + ((random + i * 3) % 12);
-      final minutesAgo = (random + i * 11) % 60;
-      
-      selectedNews.add(NewsArticle(
-        title: template['title']!,
-        summary: template['summary']!,
-        url: 'https://example.com/news/${random + i}',
-        timePublished: today.subtract(Duration(hours: hoursAgo, minutes: minutesAgo)),
-        source: template['source']!,
-        sentiment: template['sentiment']!,
-      ));
-    }
-    
-    return selectedNews;
-  }
-  
-  static List<Map<String, String>> _getStockNewsTemplates(String symbol) {
-    return [
-      {
-        'title': '$symbol Reports Strong Q4 Earnings, Beats Expectations',
-        'summary': 'The company reported revenue growth of 15% year-over-year, driven by strong demand across all segments.',
-        'source': 'Financial Times',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': '$symbol Announces New Product Launch',
-        'summary': 'The new product line is expected to drive significant revenue growth in the coming quarters.',
-        'source': 'Reuters',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Analysts Upgrade $symbol Price Target',
-        'summary': 'Multiple analysts have raised their price targets following strong fundamentals and growth prospects.',
-        'source': 'Bloomberg',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': '$symbol CEO to Speak at Industry Conference',
-        'summary': 'The CEO will discuss the company\'s strategic vision and future growth opportunities.',
-        'source': 'CNBC',
-        'sentiment': 'Neutral',
-      },
-      {
-        'title': '$symbol Partners with Major Technology Firm',
-        'summary': 'Strategic partnership expected to accelerate digital transformation initiatives.',
-        'source': 'Wall Street Journal',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': '$symbol Faces Regulatory Scrutiny',
-        'summary': 'New regulations may impact the company\'s operations in key markets.',
-        'source': 'MarketWatch',
-        'sentiment': 'Bearish',
-      },
-      {
-        'title': '$symbol Expands International Operations',
-        'summary': 'Company announces expansion into three new international markets.',
-        'source': 'Business Insider',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': '$symbol Insider Trading Activity Reported',
-        'summary': 'Recent insider buying activity suggests confidence in the company\'s future performance.',
-        'source': 'Yahoo Finance',
-        'sentiment': 'Neutral',
-      },
-    ];
-  }
-  
-  static List<Map<String, String>> _getGeneralNewsTemplates() {
-    return [
-      {
-        'title': 'Market Rallies on Strong Economic Data',
-        'summary': 'Markets closed higher as investors digested positive economic indicators and corporate earnings.',
-        'source': 'Financial Times',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Fed Signals Pause in Rate Hikes',
-        'summary': 'Federal Reserve officials hint at maintaining current interest rates amid stable inflation.',
-        'source': 'Reuters',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Tech Stocks Lead Market Gains',
-        'summary': 'Technology companies continue to outperform broader market indices with strong innovation.',
-        'source': 'Bloomberg',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Global Markets Mixed on Trade Concerns',
-        'summary': 'International markets show mixed performance amid ongoing trade negotiations.',
-        'source': 'CNBC',
-        'sentiment': 'Neutral',
-      },
-      {
-        'title': 'Oil Prices Surge on Supply Concerns',
-        'summary': 'Crude oil prices jump as geopolitical tensions raise supply disruption concerns.',
-        'source': 'MarketWatch',
-        'sentiment': 'Neutral',
-      },
-      {
-        'title': 'Cryptocurrency Market Sees Volatility',
-        'summary': 'Digital assets experience significant price swings amid regulatory developments.',
-        'source': 'Wall Street Journal',
-        'sentiment': 'Neutral',
-      },
-      {
-        'title': 'Inflation Data Shows Continued Moderation',
-        'summary': 'Latest inflation figures suggest continued cooling in price pressures.',
-        'source': 'Business Insider',
-        'sentiment': 'Bullish',
-      },
-      {
-        'title': 'Banking Sector Faces New Challenges',
-        'summary': 'Regional banks navigate changing interest rate environment and regulatory landscape.',
-        'source': 'Yahoo Finance',
-        'sentiment': 'Bearish',
-      },
-    ];
-  }
-  
-  static List<NewsArticle> _getMockNews({String? symbol, int limit = 10}) {
-    final mockArticles = [
-      NewsArticle(
-        title: symbol != null 
-            ? '$symbol Reports Strong Q4 Earnings, Beats Expectations'
-            : 'Market Rallies on Strong Economic Data',
-        summary: symbol != null
-            ? 'The company reported revenue growth of 15% year-over-year, driven by strong demand across all segments.'
-            : 'Markets closed higher as investors digested positive economic indicators and corporate earnings.',
-        url: 'https://example.com/news/1',
-        timePublished: DateTime.now().subtract(const Duration(hours: 2)),
-        source: 'Financial Times',
-        sentiment: 'Bullish',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? '$symbol Announces New Product Launch'
-            : 'Fed Signals Pause in Rate Hikes',
-        summary: symbol != null
-            ? 'The new product line is expected to drive significant revenue growth in the coming quarters.'
-            : 'Federal Reserve officials hint at maintaining current interest rates amid stable inflation.',
-        url: 'https://example.com/news/2',
-        timePublished: DateTime.now().subtract(const Duration(hours: 5)),
-        source: 'Reuters',
-        sentiment: 'Bullish',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? 'Analysts Upgrade $symbol Price Target'
-            : 'Tech Stocks Lead Market Gains',
-        summary: symbol != null
-            ? 'Multiple analysts have raised their price targets following strong fundamentals and growth prospects.'
-            : 'Technology companies continue to outperform broader market indices with strong innovation.',
-        url: 'https://example.com/news/3',
-        timePublished: DateTime.now().subtract(const Duration(hours: 8)),
-        source: 'Bloomberg',
-        sentiment: 'Bullish',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? '$symbol CEO to Speak at Industry Conference'
-            : 'Global Markets Mixed on Trade Concerns',
-        summary: symbol != null
-            ? 'The CEO will discuss the company\'s strategic vision and future growth opportunities.'
-            : 'International markets show mixed performance amid ongoing trade negotiations.',
-        url: 'https://example.com/news/4',
-        timePublished: DateTime.now().subtract(const Duration(hours: 12)),
-        source: 'CNBC',
-        sentiment: 'Neutral',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? '$symbol Insider Trading Activity Reported'
-            : 'Oil Prices Surge on Supply Concerns',
-        summary: symbol != null
-            ? 'Recent insider buying activity suggests confidence in the company\'s future performance.'
-            : 'Crude oil prices jump as geopolitical tensions raise supply disruption concerns.',
-        url: 'https://example.com/news/5',
-        timePublished: DateTime.now().subtract(const Duration(days: 1)),
-        source: 'MarketWatch',
-        sentiment: 'Neutral',
-      ),
-      NewsArticle(
-        title: symbol != null
-            ? '$symbol Partners with Major Technology Firm'
-            : 'Cryptocurrency Market Sees Volatility',
-        summary: symbol != null
-            ? 'Strategic partnership expected to accelerate digital transformation initiatives.'
-            : 'Digital assets experience significant price swings amid regulatory developments.',
-        url: 'https://example.com/news/6',
-        timePublished: DateTime.now().subtract(const Duration(days: 1, hours: 6)),
-        source: 'Wall Street Journal',
-        sentiment: 'Bullish',
-      ),
-    ];
-    
-    return mockArticles.take(limit).toList();
-  }
+  // ALL FAKE NEWS GENERATION METHODS REMOVED
+  // This service now only provides real news from Finnhub API
+  // If no real news is available, it returns an empty list
 }
 
 class NewsArticle {

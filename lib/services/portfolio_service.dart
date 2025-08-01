@@ -6,6 +6,7 @@ import '../services/local_database_service.dart';
 import '../services/connection_manager.dart';
 import '../services/local_trading_service.dart';
 import '../services/enhanced_market_data_service.dart';
+import '../services/finnhub_limiter_service.dart';
 import '../utils/uuid_utils.dart';
 
 class PortfolioService {
@@ -13,24 +14,77 @@ class PortfolioService {
   final ConnectionManager _connectionManager = ConnectionManager();
 
   Future<List<PortfolioModel>> getUserPortfolio(String userId) async {
+    print('🏦 PortfolioService.getUserPortfolio: Starting for user $userId');
+    
+    // Debug: Check what portfolio data exists in the database
+    await _debugPortfolioData(userId);
+    
     // Use the user ID directly (should be Supabase Auth user ID)
-    return await _connectionManager.forceExecuteWithFallback<List<PortfolioModel>>(
+    final result = await _connectionManager.forceExecuteWithFallback<List<PortfolioModel>>(
       () async {
-        print('🔄 Attempting to load portfolio from Supabase...');
+        print('🔄 PortfolioService: Attempting to load portfolio from Supabase...');
+        print('🔄 PortfolioService: User ID: "$userId" (type: ${userId.runtimeType})');
+        print('🔄 PortfolioService: User ID length: ${userId.length}');
+        print('🔄 PortfolioService: Query: SELECT * FROM portfolio WHERE user_id = \'$userId\'');
+        
         final response = await _supabase
             .from('portfolio')
             .select()
             .eq('user_id', userId)
             .order('created_at', ascending: false);
 
-        print('✅ Portfolio loaded from Supabase: ${response.length} holdings');
-        return response.map<PortfolioModel>((json) => PortfolioModel.fromJson(json)).toList();
+        print('✅ PortfolioService: Raw Supabase response type: ${response.runtimeType}');
+        print('✅ PortfolioService: Raw Supabase response: $response');
+        print('✅ PortfolioService: Portfolio query successful: ${response.length} holdings');
+        
+        if (response.isEmpty) {
+          print('⚠️ PortfolioService: No portfolio data found in Supabase for user $userId');
+          return <PortfolioModel>[];
+        }
+        
+        print('🔄 PortfolioService: Converting ${response.length} JSON objects to PortfolioModel...');
+        final portfolioList = <PortfolioModel>[];
+        
+        for (int i = 0; i < response.length; i++) {
+          try {
+            final json = response[i];
+            print('🔄 PortfolioService: Converting item $i: $json');
+            
+            // Validate required fields before conversion
+            final requiredFields = ['id', 'user_id', 'symbol', 'quantity', 'avg_price', 'created_at', 'updated_at'];
+            for (final field in requiredFields) {
+              if (!json.containsKey(field) || json[field] == null) {
+                print('❌ PortfolioService: Missing required field "$field" in JSON: $json');
+                throw Exception('Missing required field: $field');
+              }
+            }
+            
+            final portfolioItem = PortfolioModel.fromJson(json);
+            portfolioList.add(portfolioItem);
+            print('✅ PortfolioService: Successfully converted ${portfolioItem.symbol}: ${portfolioItem.quantity} shares @ \$${portfolioItem.avgPrice}');
+            
+          } catch (e) {
+            print('❌ PortfolioService: Failed to convert JSON item $i: $e');
+            print('❌ PortfolioService: Problematic JSON: ${response[i]}');
+            // Continue processing other items instead of failing completely
+            continue;
+          }
+        }
+        
+        print('✅ PortfolioService: Successfully converted ${portfolioList.length}/${response.length} portfolio items');
+        return portfolioList;
       },
       () async {
-        print('📱 Loading portfolio from local storage...');
-        return await LocalTradingService.getLocalPortfolio(userId);
+        print('📱 PortfolioService: Loading portfolio from local storage...');
+        final localPortfolio = await LocalTradingService.getLocalPortfolio(userId);
+        print('📱 PortfolioService: Local portfolio loaded: ${localPortfolio.length} holdings');
+        return localPortfolio;
       },
-    ) ?? [];
+    );
+    
+    final finalResult = result ?? <PortfolioModel>[];
+    print('🏦 PortfolioService.getUserPortfolio: Returning ${finalResult.length} holdings');
+    return finalResult;
   }
 
   Future<List<TransactionModel>> getUserTransactions(String userId, {int limit = 50}) async {
@@ -122,7 +176,16 @@ class PortfolioService {
 
   Future<double> _getCurrentPrice(String symbol) async {
     try {
-      // First try to get current market price from Supabase
+      // Primary: Use Finnhub API for most accurate current price
+      if (FinnhubLimiterService.canMakeCall()) {
+        final finnhubAsset = await FinnhubLimiterService.getStockQuote(symbol);
+        if (finnhubAsset != null && finnhubAsset.price > 0) {
+          print('✅ Using Finnhub price for $symbol: \$${finnhubAsset.price.toStringAsFixed(2)}');
+          return finnhubAsset.price;
+        }
+      }
+      
+      // Fallback: Try to get current market price from Supabase cache
       final response = await _supabase
           .from('market_prices')
           .select('price')
@@ -130,14 +193,18 @@ class PortfolioService {
           .maybeSingle();
 
       if (response != null) {
-        return (response['price'] as num).toDouble();
+        final price = (response['price'] as num).toDouble();
+        if (price > 0) {
+          print('✅ Using cached price for $symbol: \$${price.toStringAsFixed(2)}');
+          return price;
+        }
       }
       
       // Fallback to enhanced market data service
       try {
         final assetData = await EnhancedMarketDataService.getAsset(symbol);
         if (assetData != null && assetData.price > 0) {
-          print('✅ Using market data service price for $symbol: \$${assetData.price}');
+          print('✅ Using market data service price for $symbol: \$${assetData.price.toStringAsFixed(2)}');
           return assetData.price;
         }
       } catch (e) {
@@ -217,23 +284,36 @@ class PortfolioService {
         double totalHoldingsValue = 0.0;
         double totalPnL = 0.0;
 
+        double totalCostBasis = 0.0; // Track original investment amount
+        
+        print('📊 Processing ${portfolio.length} holdings for portfolio summary');
+        
         for (final holding in portfolio) {
+          print('📊 Processing holding: ${holding.symbol} - Qty: ${holding.quantity}, Avg Price: \$${holding.avgPrice.toStringAsFixed(2)}');
+          
           final currentPrice = await _getCurrentPrice(holding.symbol);
           final holdingValue = holding.quantity * currentPrice;
           final holdingPnL = holding.calculatePnL(currentPrice);
+          final holdingCostBasis = holding.quantity * holding.avgPrice;
           
           totalHoldingsValue += holdingValue;
           totalPnL += holdingPnL;
+          totalCostBasis += holdingCostBasis;
+          
+          print('📊 ${holding.symbol}: Current \$${currentPrice.toStringAsFixed(2)}, Value \$${holdingValue.toStringAsFixed(2)}, P&L \$${holdingPnL.toStringAsFixed(2)}');
         }
 
         final netWorth = cashBalance + totalHoldingsValue;
+        
+        // Calculate P&L percentage based on cost basis (original investment)
+        final totalPnLPercentage = totalCostBasis > 0 ? (totalPnL / totalCostBasis) * 100 : 0.0;
 
         return {
           'cash_balance': cashBalance,
           'holdings_value': totalHoldingsValue,
           'net_worth': netWorth,
           'total_pnl': totalPnL,
-          'total_pnl_percentage': totalHoldingsValue > 0 ? (totalPnL / (totalHoldingsValue - totalPnL)) * 100 : 0.0,
+          'total_pnl_percentage': totalPnLPercentage,
         };
       },
       () async => await LocalTradingService.getPortfolioSummary(userId),
@@ -393,6 +473,110 @@ class PortfolioService {
         'worst_performer': null,
         'most_traded': null,
       };
+    }
+  }
+
+  /// Debug method to inspect portfolio data in the database
+  Future<void> _debugPortfolioData(String userId) async {
+    try {
+      print('🔍 DEBUG: ==========================================');
+      print('🔍 DEBUG: COMPREHENSIVE PORTFOLIO INSPECTION');
+      print('🔍 DEBUG: User ID: $userId');
+      print('🔍 DEBUG: ==========================================');
+      
+      // Check if user exists in users table
+      try {
+        final userCheck = await _supabase
+            .from('users')
+            .select('id, email, cash_balance, created_at')
+            .eq('id', userId)
+            .maybeSingle();
+        
+        if (userCheck != null) {
+          print('✅ DEBUG: User found in users table:');
+          print('   📧 Email: ${userCheck['email']}');
+          print('   💰 Cash: \$${userCheck['cash_balance']}');
+          print('   📅 Created: ${userCheck['created_at']}');
+        } else {
+          print('❌ DEBUG: User NOT found in users table with ID: $userId');
+          return; // No point continuing if user doesn't exist
+        }
+      } catch (e) {
+        print('❌ DEBUG: Error checking user table: $e');
+      }
+      
+      // Get total count of portfolio entries for this user
+      try {
+        final portfolioCountResponse = await _supabase
+            .from('portfolio')
+            .select('*')
+            .eq('user_id', userId);
+        
+        print('📊 DEBUG: Portfolio entries count: ${portfolioCountResponse.length}');
+        
+        if (portfolioCountResponse.isNotEmpty) {
+          // We already have all the entries from the query above
+          final allEntries = portfolioCountResponse;
+          
+          print('📦 DEBUG: All portfolio entries (${allEntries.length}):');
+          for (int i = 0; i < allEntries.length; i++) {
+            final entry = allEntries[i];
+            print('   [$i] ${entry['symbol']}: ${entry['quantity']} shares @ \$${entry['avg_price']}');
+            print('       ID: ${entry['id']}');
+            print('       User ID: ${entry['user_id']}');
+            print('       Created: ${entry['created_at']}');
+            print('       Updated: ${entry['updated_at']}');
+            print('       Raw JSON: $entry');
+            print('');
+          }
+        } else {
+          print('📦 DEBUG: No portfolio entries found - user truly has 0 holdings');
+        }
+      } catch (e) {
+        print('❌ DEBUG: Error checking portfolio table: $e');
+      }
+      
+      // Check recent transactions for this user
+      try {
+        final recentTransactions = await _supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('timestamp', ascending: false)
+            .limit(10);
+        
+        if (recentTransactions.isNotEmpty) {
+          print('📋 DEBUG: Recent transactions (${recentTransactions.length}):');
+          for (int i = 0; i < recentTransactions.length; i++) {
+            final tx = recentTransactions[i];
+            print('   [$i] ${tx['type'].toString().toUpperCase()} ${tx['quantity']} ${tx['symbol']} @ \$${tx['price']}');
+            print('       Timestamp: ${tx['timestamp']}');
+            print('       Total Value: \$${(tx['quantity'] * tx['price']).toStringAsFixed(2)}');
+          }
+        } else {
+          print('📋 DEBUG: No transactions found for this user');
+        }
+      } catch (e) {
+        print('❌ DEBUG: Error checking transactions table: $e');
+      }
+      
+      // Try a direct raw query to see what's in the portfolio table
+      try {
+        print('🔍 DEBUG: Raw portfolio table query...');
+        final rawQuery = await _supabase
+            .rpc('get_user_portfolio_debug', params: {'target_user_id': userId});
+        print('📊 DEBUG: Raw query result: $rawQuery');
+      } catch (e) {
+        print('⚠️ DEBUG: Raw query function not available (expected): $e');
+      }
+      
+      print('🔍 DEBUG: ==========================================');
+      print('🔍 DEBUG: INSPECTION COMPLETE');
+      print('🔍 DEBUG: ==========================================');
+      
+    } catch (e) {
+      print('❌ DEBUG: Critical error in debug inspection: $e');
+      print('❌ DEBUG: Error type: ${e.runtimeType}');
     }
   }
 }

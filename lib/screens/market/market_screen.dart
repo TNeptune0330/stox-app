@@ -5,8 +5,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/market_asset_model.dart';
 import '../../widgets/asset_list_tile.dart';
-import '../../widgets/market_indices_banner.dart';
-import '../../widgets/top_movers_section.dart';
 import '../main_navigation.dart';
 import 'trade_dialog.dart';
 import 'asset_detail_screen.dart';
@@ -186,6 +184,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           color: themeProvider.contrast,
                         ),
                         onChanged: (value) {
+                          // Update search query but don't search yet
                           marketProvider.setSearchQuery(value);
                         },
                         onSubmitted: (value) {
@@ -199,10 +198,6 @@ class _MarketScreenState extends State<MarketScreen> {
                 ),
               ),
               
-              // Market Indices Banner
-              const SliverToBoxAdapter(
-                child: MarketIndicesBanner(),
-              ),
 
               // Weekend Banner (only show on weekends)
               if (_isWeekend())
@@ -213,9 +208,10 @@ class _MarketScreenState extends State<MarketScreen> {
           // Content - either search results or top movers
           Consumer<MarketDataProvider>(
             builder: (context, marketProvider, child) {
-              final isSearching = _searchController.text.isNotEmpty;
+              // Only show search results if user has performed a search (hit enter)
+              final isShowingSearchResults = marketProvider.hasSearchBeenPerformed;
               
-              if (isSearching) {
+              if (isShowingSearchResults) {
                 // Show search results
                 if (marketProvider.isLoading && marketProvider.filteredAssets.isEmpty) {
                   return const SliverFillRemaining(
@@ -346,28 +342,75 @@ class _MarketScreenState extends State<MarketScreen> {
                   ),
                 );
               } else {
-                // Show top movers from major indices when not searching
+                // Show market movers when not searching
                 return SliverList(
                   delegate: SliverChildListDelegate([
-                    TopMoversSection(
-                      title: 'NASDAQ 100 Movers',
-                      assets: marketProvider.nasdaq100Movers,
-                      onAssetTap: (asset) => _showAssetDetail(context, asset),
-                      isLoading: marketProvider.isLoading,
+                    // Search prompt section
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: themeProvider.backgroundHigh,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: themeProvider.theme.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.search,
+                            size: 48,
+                            color: themeProvider.theme,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Search for Stocks',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: themeProvider.contrast,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Enter a ticker symbol or company name and press Enter',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: themeProvider.contrast.withOpacity(0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'META']
+                                .map((ticker) => Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: themeProvider.theme.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        ticker,
+                                        style: TextStyle(
+                                          color: themeProvider.theme,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                      ),
                     ),
-                    TopMoversSection(
-                      title: 'S&P 500 Movers',
-                      assets: marketProvider.sp500Movers,
-                      onAssetTap: (asset) => _showAssetDetail(context, asset),
-                      isLoading: marketProvider.isLoading,
-                    ),
-                    TopMoversSection(
-                      title: 'DOW Jones Movers',
-                      assets: marketProvider.dowJonesMovers,
-                      onAssetTap: (asset) => _showAssetDetail(context, asset),
-                      isLoading: marketProvider.isLoading,
-                    ),
-                    const SizedBox(height: 16),
+
+                    // Market Movers Sections
+                    _buildMoverSection(context, themeProvider, 'NASDAQ 100', marketProvider.nasdaq100Movers),
+                    _buildMoverSection(context, themeProvider, 'S&P 500', marketProvider.sp500Movers),
+                    _buildMoverSection(context, themeProvider, 'DOW JONES', marketProvider.dowJonesMovers),
                   ]),
                 );
               }
@@ -377,6 +420,97 @@ class _MarketScreenState extends State<MarketScreen> {
       ),
     );
       },
+    );
+  }
+
+  Widget _buildMoverSection(BuildContext context, ThemeProvider themeProvider, String title, List<MarketAssetModel> movers) {
+    if (movers.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: themeProvider.backgroundHigh,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: themeProvider.theme.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.trending_up,
+              color: themeProvider.theme,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '$title Movers',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: themeProvider.contrast,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundHigh,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: themeProvider.theme.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  color: themeProvider.theme,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '$title Top Movers',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.contrast,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Movers List
+          ...movers.map((asset) => Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: AssetListTile(
+              asset: asset,
+              onTap: () => _showAssetDetail(context, asset),
+            ),
+          )),
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 
