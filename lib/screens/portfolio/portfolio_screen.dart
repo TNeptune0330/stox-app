@@ -423,6 +423,17 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                         print('   P&L Dollar: \$${pnlDollar.toStringAsFixed(2)}');
                         print('   P&L Percent: ${pnlPercent.toStringAsFixed(2)}%');
                         
+                        // Helper function to format currency values properly
+                        String formatCurrency(double value) {
+                          if (value.abs() >= 1000000) {
+                            return '\$${(value / 1000000).toStringAsFixed(2)}M';
+                          } else if (value.abs() >= 1000) {
+                            return '\$${(value / 1000).toStringAsFixed(1)}K';
+                          } else {
+                            return '\$${value.toStringAsFixed(2)}';
+                          }
+                        }
+                        
                         // Determine colors
                         final isPositive = pnlDollar >= 0;
                         final pnlColor = isPositive ? Colors.green : Colors.red;
@@ -522,7 +533,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                                           const SizedBox(width: 4),
                                           Flexible(
                                             child: Text(
-                                              '${isPositive ? '+' : '-'}\$${pnlDollar.abs().toStringAsFixed(2)}',
+                                              '${isPositive ? '+' : ''}${formatCurrency(pnlDollar)}',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 13,
@@ -534,7 +545,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                                         ],
                                       ),
                                       Text(
-                                        '${isPositive ? '+' : '-'}${pnlPercent.abs().toStringAsFixed(1)}%',
+                                        '${isPositive ? '+' : ''}${pnlPercent.toStringAsFixed(2)}%',
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
