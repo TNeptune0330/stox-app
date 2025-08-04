@@ -336,8 +336,8 @@ class _PortfolioScreenState extends State<PortfolioScreen>
               
               // Holdings List
               Flexible(
-                child: Consumer<PortfolioProvider>(
-                  builder: (context, provider, child) {
+                child: Consumer2<PortfolioProvider, MarketDataProvider>(
+                  builder: (context, provider, marketDataProvider, child) {
                     if (provider.isLoading) {
                       return const Padding(
                         padding: EdgeInsets.all(40),
@@ -388,8 +388,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                       itemBuilder: (context, index) {
                         final holding = provider.portfolio[index];
                         
-                        // Get current market price from MarketDataProvider (using fresh Finnhub data)
-                        final marketDataProvider = Provider.of<MarketDataProvider>(context, listen: false);
+                        // Use MarketDataProvider from Consumer2 for automatic updates
                         MarketAssetModel? marketAsset;
                         
                         try {
