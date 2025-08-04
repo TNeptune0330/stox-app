@@ -403,10 +403,8 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                         
                         // Calculate values using the most accurate price data
                         final currentPrice = marketAsset?.price ?? holding.avgPrice;
-                        final currentValue = holding.quantity * currentPrice;
-                        final purchaseValue = holding.quantity * holding.avgPrice;
-                        final pnlDollar = currentValue - purchaseValue;
-                        final pnlPercent = purchaseValue > 0 ? (pnlDollar / purchaseValue) * 100 : 0.0;
+                        final pnlDollar = currentPrice - holding.avgPrice; // Per-share price difference
+                        final pnlPercent = holding.avgPrice > 0 ? (pnlDollar / holding.avgPrice) * 100 : 0.0;
                         
                         if (marketAsset != null) {
                           print('✅ Portfolio UI: Using live Finnhub price for ${holding.symbol}: \$${currentPrice.toStringAsFixed(2)}');
@@ -416,23 +414,14 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                         
                         print('📊 P&L Debug for ${holding.symbol}:');
                         print('   Current Price: \$${currentPrice.toStringAsFixed(2)}');
-                        print('   Quantity: ${holding.quantity}');
-                        print('   Current Value: \$${currentValue.toStringAsFixed(2)}');
-                        print('   Purchase Value: \$${purchaseValue.toStringAsFixed(2)}');
-                        print('   P&L Dollar: \$${pnlDollar.toStringAsFixed(2)}');
+                        print('   Average Price: \$${holding.avgPrice.toStringAsFixed(2)}');
+                        print('   Quantity: ${holding.quantity}');  
+                        print('   P&L per Share: \$${pnlDollar.toStringAsFixed(2)}');
                         print('   P&L Percent: ${pnlPercent.toStringAsFixed(2)}%');
                         
-                        // Helper function to format currency values properly
+                        // Simple formatting for per-share price differences
                         String formatCurrency(double value) {
-                          if (value.abs() >= 1000000) {
-                            return '\$${(value / 1000000).toStringAsFixed(2)}M';
-                          } else if (value.abs() >= 10000) {
-                            // Only use K format for values >= $10,000 to maintain precision
-                            return '\$${(value / 1000).toStringAsFixed(1)}K';
-                          } else {
-                            // Show full value for amounts under $10,000
-                            return '\$${value.toStringAsFixed(2)}';
-                          }
+                          return '\$${value.toStringAsFixed(2)}';
                         }
                         
                         // Determine colors
