@@ -161,12 +161,22 @@ class PortfolioService {
     try {
       final portfolio = await getUserPortfolio(userId);
       double totalValue = 0.0;
+      int validHoldings = 0;
 
       for (final holding in portfolio) {
         final currentPrice = await _getCurrentPrice(holding.symbol);
-        totalValue += holding.quantity * currentPrice;
+        if (currentPrice > 0) {
+          // Only include holdings with REAL market data
+          final holdingValue = holding.quantity * currentPrice;
+          totalValue += holdingValue;
+          validHoldings++;
+          print('📊 Adding ${holding.symbol}: ${holding.quantity} × \$${currentPrice.toStringAsFixed(2)} = \$${holdingValue.toStringAsFixed(2)}');
+        } else {
+          print('⚠️ Skipping ${holding.symbol}: No live market data available');
+        }
       }
 
+      print('✅ Portfolio value calculated: \$${totalValue.toStringAsFixed(2)} from $validHoldings holdings with live data');
       return totalValue;
     } catch (e) {
       print('❌ Error calculating portfolio value: $e');
@@ -176,52 +186,23 @@ class PortfolioService {
 
   Future<double> _getCurrentPrice(String symbol) async {
     try {
-      // Primary: Use Finnhub API for most accurate current price
-      if (FinnhubLimiterService.canMakeCall()) {
-        final finnhubAsset = await FinnhubLimiterService.getStockQuote(symbol);
-        if (finnhubAsset != null && finnhubAsset.price > 0) {
-          print('✅ Using Finnhub price for $symbol: \$${finnhubAsset.price.toStringAsFixed(2)}');
-          return finnhubAsset.price;
-        }
+      // ONLY use live Finnhub API data - NO FALLBACKS
+      final finnhubAsset = await FinnhubLimiterService.getStockQuote(symbol);
+      if (finnhubAsset != null && finnhubAsset.price > 0) {
+        print('✅ Using LIVE Finnhub price for $symbol: \$${finnhubAsset.price.toStringAsFixed(2)}');
+        return finnhubAsset.price;
       }
       
-      // Fallback: Try to get current market price from Supabase cache
-      final response = await _supabase
-          .from('market_prices')
-          .select('price')
-          .eq('symbol', symbol)
-          .maybeSingle();
-
-      if (response != null) {
-        final price = (response['price'] as num).toDouble();
-        if (price > 0) {
-          print('✅ Using cached price for $symbol: \$${price.toStringAsFixed(2)}');
-          return price;
-        }
+      // If Finnhub fails, try enhanced market data service (live data only)
+      final assetData = await EnhancedMarketDataService.getAsset(symbol);
+      if (assetData != null && assetData.price > 0) {
+        print('✅ Using LIVE market data for $symbol: \$${assetData.price.toStringAsFixed(2)}');
+        return assetData.price;
       }
       
-      // Fallback to enhanced market data service
-      try {
-        final assetData = await EnhancedMarketDataService.getAsset(symbol);
-        if (assetData != null && assetData.price > 0) {
-          print('✅ Using market data service price for $symbol: \$${assetData.price.toStringAsFixed(2)}');
-          return assetData.price;
-        }
-      } catch (e) {
-        print('⚠️ Market data service failed for $symbol: $e');
-      }
-      
-      // Last resort: get average purchase price from portfolio holdings
-      try {
-        final userId = await _getCurrentUserId();
-        final portfolio = await getUserPortfolio(userId);
-        final holding = portfolio.firstWhere((h) => h.symbol == symbol);
-        print('⚠️ Using avg purchase price for $symbol: \$${holding.avgPrice}');
-        return holding.avgPrice;
-      } catch (e) {
-        print('❌ All price sources failed for $symbol, using 0.0');
-        return 0.0;
-      }
+      // NO FALLBACKS - if we can't get live data, return 0
+      print('❌ No live market data available for $symbol - returning 0.0');
+      return 0.0;
     } catch (e) {
       print('❌ Error fetching current price for $symbol: $e');
       return 0.0;

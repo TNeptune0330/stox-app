@@ -395,22 +395,19 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                           marketAsset = marketDataProvider.allAssets.firstWhere(
                             (asset) => asset.symbol.toUpperCase() == holding.symbol.toUpperCase(),
                           );
-                          print('📊 Portfolio UI: Found market data for ${holding.symbol}: \$${marketAsset.price.toStringAsFixed(2)} (updated: ${marketAsset.lastUpdated})');
+                          print('📊 Portfolio UI: Found live market data for ${holding.symbol}: \$${marketAsset.price.toStringAsFixed(2)} (updated: ${marketAsset.lastUpdated})');
                         } catch (e) {
-                          print('❌ Portfolio UI: No market data available for ${holding.symbol}');
-                          marketAsset = null;
+                          print('❌ Portfolio UI: No market data available for ${holding.symbol} - skipping until data loads');
+                          // Skip this item until real market data is available
+                          return const SizedBox.shrink();
                         }
                         
-                        // Calculate values using the most accurate price data
-                        final currentPrice = marketAsset?.price ?? holding.avgPrice;
+                        // Only calculate if we have REAL market data
+                        final currentPrice = marketAsset.price; // NO FALLBACK - only real data
                         final pnlDollar = currentPrice - holding.avgPrice; // Per-share price difference
                         final pnlPercent = holding.avgPrice > 0 ? (pnlDollar / holding.avgPrice) * 100 : 0.0;
                         
-                        if (marketAsset != null) {
-                          print('✅ Portfolio UI: Using live Finnhub price for ${holding.symbol}: \$${currentPrice.toStringAsFixed(2)}');
-                        } else {
-                          print('⚠️ Portfolio UI: Using average price fallback for ${holding.symbol}: \$${currentPrice.toStringAsFixed(2)}');
-                        }
+                        print('✅ Portfolio UI: Using LIVE Finnhub price for ${holding.symbol}: \$${currentPrice.toStringAsFixed(2)}');
                         
                         print('📊 P&L Debug for ${holding.symbol}:');
                         print('   Current Price: \$${currentPrice.toStringAsFixed(2)}');

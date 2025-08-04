@@ -9,6 +9,7 @@ import '../services/leaderboard_service.dart';
 import '../services/sync_service.dart';
 import '../services/connection_manager.dart';
 import '../services/optimized_cache_service.dart';
+import '../services/enhanced_market_data_service.dart';
 import 'achievement_provider.dart';
 
 class PortfolioProvider with ChangeNotifier {
@@ -100,6 +101,21 @@ class PortfolioProvider with ChangeNotifier {
         for (final holding in _portfolio) {
           print('   📦 ${holding.symbol}: ${holding.quantity} shares @ \$${holding.avgPrice}');
         }
+        
+        // Pre-load market data for all portfolio symbols using MarketDataProvider singleton
+        final symbols = _portfolio.map((h) => h.symbol).toList();
+        print('📊 Pre-loading live market data for ${symbols.length} portfolio symbols...');
+        
+        // Force market data to be loaded for portfolio symbols
+        for (final symbol in symbols) {
+          try {
+            print('🔄 Pre-loading market data for $symbol...');
+            await EnhancedMarketDataService.getAsset(symbol);
+          } catch (e) {
+            print('❌ Failed to pre-load $symbol: $e');
+          }
+        }
+        print('✅ Market data pre-loading attempted for all symbols');
       } else {
         print('⚠️ PortfolioProvider: No holdings found in database for user $userId');
       }
