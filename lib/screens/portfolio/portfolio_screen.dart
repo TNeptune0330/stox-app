@@ -426,9 +426,11 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                         String formatCurrency(double value) {
                           if (value.abs() >= 1000000) {
                             return '\$${(value / 1000000).toStringAsFixed(2)}M';
-                          } else if (value.abs() >= 1000) {
+                          } else if (value.abs() >= 10000) {
+                            // Only use K format for values >= $10,000 to maintain precision
                             return '\$${(value / 1000).toStringAsFixed(1)}K';
                           } else {
+                            // Show full value for amounts under $10,000
                             return '\$${value.toStringAsFixed(2)}';
                           }
                         }
