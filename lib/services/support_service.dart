@@ -96,6 +96,17 @@ class SupportService {
       }
 
       print('📧 Submitting $requestType request: $subject');
+      
+      // Ensure user profile exists to avoid policy issues
+      try {
+        await _supabase.from('user_profiles').upsert({
+          'id': user.id,
+          'email': user.email,
+          'is_admin': false,
+        });
+      } catch (profileError) {
+        print('⚠️ Profile upsert failed (continuing anyway): $profileError');
+      }
 
       final requestData = {
         'user_id': user.id,
