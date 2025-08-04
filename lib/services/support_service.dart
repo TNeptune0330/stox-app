@@ -1,4 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class SupportRequest {
   final String id;
@@ -78,6 +80,104 @@ class SupportRequest {
 
 class SupportService {
   static final _supabase = Supabase.instance.client;
+  
+  /// Send email notification for new support request
+  static Future<void> _sendEmailNotification(SupportRequest request) async {
+    try {
+      print('📧 Preparing email notification...');
+      
+      // Create formatted email content
+      final emailSubject = '[Stox App Support] ${request.requestType.toUpperCase()}: ${request.subject}';
+      final emailBody = '''
+🔔 New Stox App Support Request
+
+📧 From: ${request.email}
+👤 User: ${request.fullName ?? 'N/A'}
+🏷️ Type: ${request.requestType.toUpperCase()}
+📋 Subject: ${request.subject}
+⚡ Priority: ${request.priority.toUpperCase()}
+
+📝 Description:
+${request.description}
+
+🔧 Technical Details:
+• App Version: ${request.appVersion ?? 'N/A'}
+• Device Info: ${request.deviceInfo ?? 'N/A'}
+• User ID: ${request.userId}
+• Request ID: ${request.id}
+• Submitted: ${request.createdAt.toString()}
+
+---
+Reply to this email to respond to the user.
+User's email: ${request.email}
+
+Stox Trading Simulator Support System
+      ''';
+
+      // Try multiple email services for reliability
+      bool emailSent = false;
+
+      // Method 1: Try Supabase Edge Function (if configured)
+      if (!emailSent) {
+        try {
+          final response = await _supabase.functions.invoke('send-email', body: {
+            'to': 'pradhancode@gmail.com',
+            'subject': emailSubject,
+            'html': emailBody.replaceAll('\n', '<br>'),
+            'text': emailBody,
+          });
+          
+          if (response.status == 200) {
+            print('✅ Email sent via Supabase Edge Function');
+            emailSent = true;
+          }
+        } catch (e) {
+          print('⚠️ Supabase Edge Function failed: $e');
+        }
+      }
+
+      // Method 2: Try simple HTTP POST to email service
+      if (!emailSent) {
+        try {
+          final response = await http.post(
+            Uri.parse('https://api.resend.com/emails'),
+            headers: {
+              'Authorization': 'Bearer re_123456789', // Would need real API key
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'from': 'Stox App <noreply@stoxapp.com>',
+              'to': ['pradhancode@gmail.com'],
+              'subject': emailSubject,
+              'text': emailBody,
+            }),
+          );
+          
+          if (response.statusCode == 200) {
+            print('✅ Email sent via Resend API');
+            emailSent = true;
+          }
+        } catch (e) {
+          print('⚠️ Resend API failed: $e');
+        }
+      }
+
+      // Method 3: Log detailed notification (always works)
+      print('📧 EMAIL NOTIFICATION:');
+      print('To: pradhancode@gmail.com');
+      print('Subject: $emailSubject');
+      print('Body:\n$emailBody');
+      print('📧 End of email notification');
+      
+      if (!emailSent) {
+        print('📧 Email services unavailable - notification logged to console');
+      }
+      
+    } catch (e) {
+      print('❌ Email notification error: $e');
+      // Don't throw - email failure shouldn't break support request submission
+    }
+  }
 
   /// Submit a new support request
   static Future<SupportRequest> submitSupportRequest({
@@ -129,9 +229,17 @@ class SupportService {
           .single();
 
       print('✅ Support request submitted successfully');
-      print('📧 Email notification sent to pradhancode@gmail.com');
+      
+      final supportRequest = SupportRequest.fromJson(response);
+      
+      // Send email notification in background
+      _sendEmailNotification(supportRequest).catchError((error) {
+        print('⚠️ Email notification failed but request was saved: $error');
+      });
+      
+      print('📧 Email notification initiated to pradhancode@gmail.com');
 
-      return SupportRequest.fromJson(response);
+      return supportRequest;
     } catch (e) {
       print('❌ Error submitting support request: $e');
       rethrow;
