@@ -169,38 +169,6 @@ class _SupportScreenState extends State<SupportScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.blue.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.email,
-                              color: Colors.blue,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                'Responses sent to: pradhancode@gmail.com',
-                                style: TextStyle(
-                                  color: Colors.blue[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -429,43 +397,6 @@ class _SupportScreenState extends State<SupportScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 16),
-
-                      // Contact Info
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: themeProvider.theme.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: themeProvider.theme.withOpacity(0.2),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '📧 Direct Contact',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: themeProvider.contrast,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'For urgent issues, email directly: pradhancode@gmail.com',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: themeProvider.contrast.withOpacity(0.7),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
