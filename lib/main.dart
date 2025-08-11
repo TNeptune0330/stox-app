@@ -12,10 +12,6 @@ import 'services/revenue_admob_service.dart';
 import 'services/storage_service.dart';
 import 'services/connection_manager.dart';
 import 'services/financial_news_service.dart';
-import 'services/optimized_cache_service.dart';
-import 'services/optimized_network_service.dart';
-import 'services/performance_monitor_service.dart';
-
 // Providers
 import 'providers/auth_provider.dart';
 import 'providers/portfolio_provider.dart';
@@ -25,20 +21,15 @@ import 'providers/achievement_provider.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
-import 'screens/auth/login_screen.dart';
+import 'screens/auth/modern_sign_in_screen.dart';
 import 'screens/main_navigation.dart';
 import 'screens/onboarding/onboarding_screen.dart';
-import 'screens/tutorial/tutorial_screen.dart';
 
 // Config
 import 'config/supabase_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Start performance monitoring immediately
-  PerformanceMonitorService.startAppStartup();
-  await PerformanceMonitorService.initialize();
   
   print('🚀 Stox Trading Simulator - Production Launch');
   
@@ -51,9 +42,6 @@ void main() async {
       // Skip comprehensive tests for faster startup
       print('🚀 Production mode - optimized startup (tests disabled)');
     }
-    
-    // Complete startup measurement
-    PerformanceMonitorService.completeAppStartup();
     
     // Launch app
     runApp(const StoxApp());
@@ -82,12 +70,7 @@ Future<void> _initializeCoreServices() async {
     // Reset connection manager state (in case URL was changed)
     ConnectionManager().resetConnectionState();
     
-    // Initialize performance services first
-    await Future.wait([
-      OptimizedCacheService.initialize(),
-      OptimizedNetworkService.initialize(),
-    ]);
-    print('✅ Performance services initialized');
+    print('✅ Core services initialized');
     
     // Initialize critical services in parallel for faster startup
     await Future.wait([
@@ -245,10 +228,10 @@ class _StoxAppState extends State<StoxApp> {
             theme: themeProvider.themeData,
             home: const SplashScreen(),
             routes: {
-              '/login': (context) => const LoginScreen(),
+              '/login': (context) => const ModernSignInScreen(),
               '/main': (context) => const MainNavigation(),
               '/onboarding': (context) => const OnboardingScreen(),
-              '/tutorial': (context) => const TutorialScreen(),
+              '/tutorial': (context) => const MainNavigation(),
             },
             builder: (context, child) {
               // Ensure consistent text scaling on all devices

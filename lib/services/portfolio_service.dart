@@ -4,9 +4,9 @@ import '../models/transaction_model.dart';
 import '../services/storage_service.dart';
 import '../services/local_database_service.dart';
 import '../services/connection_manager.dart';
-import '../services/local_trading_service.dart';
 import '../services/enhanced_market_data_service.dart';
 import '../services/finnhub_limiter_service.dart';
+import '../services/portfolio_cache_service.dart';
 import '../utils/uuid_utils.dart';
 
 class PortfolioService {
@@ -76,7 +76,8 @@ class PortfolioService {
       },
       () async {
         print('📱 PortfolioService: Loading portfolio from local storage...');
-        final localPortfolio = await LocalTradingService.getLocalPortfolio(userId);
+        // Temporarily return empty portfolio for local database
+        final localPortfolio = <PortfolioModel>[];
         print('📱 PortfolioService: Local portfolio loaded: ${localPortfolio.length} holdings');
         return localPortfolio;
       },
@@ -100,7 +101,7 @@ class PortfolioService {
 
         return response.map<TransactionModel>((json) => TransactionModel.fromJson(json)).toList();
       },
-      () async => await LocalTradingService.getLocalTransactions(userId, limit: limit),
+      () async => <TransactionModel>[],
     ) ?? [];
   }
 
@@ -132,12 +133,20 @@ class PortfolioService {
         });
         
         // Check if trade was successful
+        print('🔍 PortfolioService: execute_trade result: $result');
         if (result['success'] != true) {
+          print('❌ PortfolioService: Trade failed with error: ${result['error']}');
           throw Exception(result['error'] ?? 'Trade execution failed');
         }
         
         _connectionManager.recordSuccess();
         print('✅ Trade executed successfully (Supabase): $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
+        print('✅ PortfolioService: Trade result details: $result');
+        
+        // Clear all cache immediately after successful database update
+        await _clearAllCaches();
+        print('🗑️ PortfolioService: All caches cleared after successful trade');
+        
         return true;
       } catch (e) {
         _connectionManager.recordFailure();
@@ -148,8 +157,7 @@ class PortfolioService {
     // Fallback to local trading
     print('🔄 Executing trade locally...');
     // Use the user ID directly (should be Supabase Auth user ID)
-    return await LocalTradingService.executeTrade(
-      userId: userId,
+    return await LocalDatabaseService.executeTrade(
       symbol: symbol,
       type: type,
       quantity: quantity,
@@ -246,19 +254,39 @@ class PortfolioService {
         print('🔄 Attempting to load portfolio summary from Supabase...');
         final portfolio = await getUserPortfolio(userId);
         
-        // Get user's cash balance from Supabase
-        final user = await _supabase
-            .from('users')
-            .select('cash_balance')
-            .eq('id', userId)
-            .maybeSingle();
+        // Try to get user's cash balance from users table first, then user_profiles as fallback
+        double cashBalance = 10000.0; // Default balance
         
-        if (user == null) {
-          print('⚠️ User not found in Supabase for ID: $userId');
-          throw Exception('User not found in database');
+        try {
+          final user = await _supabase
+              .from('users')
+              .select('cash_balance')
+              .eq('id', userId)
+              .maybeSingle();
+          
+          if (user != null) {
+            cashBalance = (user['cash_balance'] as num).toDouble();
+            print('✅ Got cash balance from users table: \$${cashBalance.toStringAsFixed(2)}');
+          } else {
+            print('⚠️ User not found in users table, trying user_profiles...');
+            
+            // Fallback to user_profiles table
+            final userProfile = await _supabase
+                .from('user_profiles')
+                .select('cash_balance')
+                .eq('id', userId)
+                .maybeSingle();
+            
+            if (userProfile != null && userProfile['cash_balance'] != null) {
+              cashBalance = (userProfile['cash_balance'] as num).toDouble();
+              print('✅ Got cash balance from user_profiles: \$${cashBalance.toStringAsFixed(2)}');
+            } else {
+              print('⚠️ No cash balance found, using default: \$${cashBalance.toStringAsFixed(2)}');
+            }
+          }
+        } catch (e) {
+          print('❌ Error fetching cash balance: $e - using default: \$${cashBalance.toStringAsFixed(2)}');
         }
-        
-        final cashBalance = (user['cash_balance'] as num).toDouble();
         
         print('✅ Portfolio summary loaded from Supabase: Cash \$${cashBalance.toStringAsFixed(2)}');
 
@@ -297,7 +325,7 @@ class PortfolioService {
           'total_pnl_percentage': totalPnLPercentage,
         };
       },
-      () async => await LocalTradingService.getPortfolioSummary(userId),
+      () async => LocalDatabaseService.getPortfolioSummary(),
     ) ?? {
       'cash_balance': 10000.0,
       'holdings_value': 0.0,
@@ -333,23 +361,35 @@ class PortfolioService {
 
         return response?['quantity'] ?? 0;
       },
-      () async => await LocalTradingService.getSharesOwned(userId, symbol),
+      () async => 0,
     ) ?? 0;
   }
 
   Future<double> getUserCashBalance(String userId) async {
     try {
-      // Use the user ID directly (should be Supabase Auth user ID)
-      final response = await _supabase
+      // Try users table first
+      final userResponse = await _supabase
           .from('users')
           .select('cash_balance')
           .eq('id', userId)
           .maybeSingle();
 
-      if (response != null) {
-        return (response['cash_balance'] as num).toDouble();
+      if (userResponse != null && userResponse['cash_balance'] != null) {
+        return (userResponse['cash_balance'] as num).toDouble();
       }
-      print('⚠️ User not found in Supabase for cash balance: $userId');
+      
+      // Fallback to user_profiles table
+      final profileResponse = await _supabase
+          .from('user_profiles')
+          .select('cash_balance')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (profileResponse != null && profileResponse['cash_balance'] != null) {
+        return (profileResponse['cash_balance'] as num).toDouble();
+      }
+      
+      print('⚠️ User not found in either users or user_profiles table: $userId');
       return 10000.0; // Default starting balance
     } catch (e) {
       print('❌ Error fetching cash balance: $e');
@@ -359,14 +399,39 @@ class PortfolioService {
 
   Future<void> updateUserCashBalance(String userId, double newBalance) async {
     try {
-      // Use the user ID directly (should be Supabase Auth user ID)
-      await _supabase
+      // Try to update users table first
+      final userUpdateResult = await _supabase
           .from('users')
           .update({'cash_balance': newBalance})
           .eq('id', userId);
+      
+      print('✅ Updated cash balance in users table: \$${newBalance.toStringAsFixed(2)}');
+      
+      // Also update user_profiles as backup
+      try {
+        await _supabase
+            .from('user_profiles')
+            .update({'cash_balance': newBalance})
+            .eq('id', userId);
+        print('✅ Updated cash balance in user_profiles table: \$${newBalance.toStringAsFixed(2)}');
+      } catch (e) {
+        print('⚠️ Could not update user_profiles cash balance (non-critical): $e');
+      }
+      
     } catch (e) {
-      print('❌ Error updating cash balance: $e');
-      throw Exception('Failed to update cash balance');
+      print('❌ Error updating cash balance in users table: $e');
+      
+      // Fallback to updating user_profiles only
+      try {
+        await _supabase
+            .from('user_profiles')
+            .update({'cash_balance': newBalance})
+            .eq('id', userId);
+        print('✅ Updated cash balance in user_profiles table (fallback): \$${newBalance.toStringAsFixed(2)}');
+      } catch (fallbackError) {
+        print('❌ Error updating cash balance in user_profiles: $fallbackError');
+        throw Exception('Failed to update cash balance in any table');
+      }
     }
   }
 
@@ -558,6 +623,21 @@ class PortfolioService {
     } catch (e) {
       print('❌ DEBUG: Critical error in debug inspection: $e');
       print('❌ DEBUG: Error type: ${e.runtimeType}');
+    }
+  }
+
+  /// Clear all caches after database updates
+  Future<void> _clearAllCaches() async {
+    try {
+      // Clear portfolio cache
+      await PortfolioCacheService.clearCache();
+      
+      // Clear other relevant caches
+      await StorageService.clearCache();
+      
+      print('🗑️ PortfolioService: All caches cleared successfully');
+    } catch (e) {
+      print('❌ PortfolioService: Error clearing caches: $e');
     }
   }
 }

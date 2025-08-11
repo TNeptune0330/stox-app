@@ -282,12 +282,8 @@ class AuthService {
           'id': supabaseUserId,
           'email': user.email!,
           'username': fullName,
-          'avatar_url': user.userMetadata?['avatar_url'],
-          'color_theme': 'light',
           'cash_balance': 10000.0,
-          'total_trades': 0,
           'created_at': DateTime.now().toIso8601String(),
-          'last_login': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         };
 
@@ -306,7 +302,6 @@ class AuthService {
         
         // Update last login and other fields
         final updatedUser = {
-          'last_login': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         };
 
@@ -356,44 +351,31 @@ class AuthService {
     try {
       updates['updated_at'] = DateTime.now().toIso8601String();
       
-      // Handle theme enum constraint gracefully
-      if (updates.containsKey('color_theme')) {
-        final theme = updates['color_theme'] as String;
-        // Map new theme names to compatible enum values (only: light, dark, green, blue)
-        final compatibleThemes = {
-          'deepOcean': 'blue',
-          'forestTwilight': 'green', 
-          'royalPurple': 'blue',
-          'crimsonNight': 'dark',
-          'goldenSunset': 'light',
-          'arcticBlue': 'blue',
-          'lightLavender': 'light',
-          'sunsetWarmth': 'light',
-          'lightMint': 'green',
-          'monochromeLight': 'light',
-          'monochromeDark': 'dark',
-          'lightProfessional': 'light',
-          'custom': 'dark', // Default custom themes to dark
-        };
-        
-        updates['color_theme'] = compatibleThemes[theme] ?? 'blue';
-        print('📱 Mapped theme $theme to ${updates['color_theme']}');
+      // Remove unsupported fields based on database schema
+      final supportedFields = ['username', 'cash_balance', 'updated_at'];
+      final filteredUpdates = <String, dynamic>{};
+      
+      for (final entry in updates.entries) {
+        if (supportedFields.contains(entry.key)) {
+          filteredUpdates[entry.key] = entry.value;
+        } else {
+          print('⚠️ Skipping unsupported field: ${entry.key}');
+        }
       }
       
-      await _supabase
-          .from('users')
-          .update(updates)
-          .eq('id', currentUser!.id);
-          
-      print('✅ User data updated successfully');
+      if (filteredUpdates.isNotEmpty) {
+        await _supabase
+            .from('users')
+            .update(filteredUpdates)
+            .eq('id', currentUser!.id);
+            
+        print('✅ User data updated successfully');
+      } else {
+        print('⚠️ No valid fields to update');
+      }
     } catch (e) {
       print('❌ Failed to update user data: $e');
-      // Don't throw for theme constraint errors - just log and continue
-      if (e.toString().contains('enum') || e.toString().contains('constraint')) {
-        print('⚠️ Theme enum constraint error - app will continue with local theme');
-      } else {
-        throw Exception('Failed to update user data: $e');
-      }
+      throw Exception('Failed to update user data: $e');
     }
   }
 

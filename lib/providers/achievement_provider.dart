@@ -50,11 +50,8 @@ class AchievementProvider with ChangeNotifier {
           }
         }
         
-        // Create some starter achievements for new users if none exist
-        if (_unlockedAchievements.isEmpty && _userProgress.isEmpty) {
-          print('🏆 New user detected - creating starter achievements');
-          await _createStarterAchievements(userId);
-        }
+        // Don't create fake achievements - let users earn them naturally
+        print('🏆 User initialized with ${_unlockedAchievements.length} earned achievements');
         
         // Sync any pending local achievements to Supabase
         await _achievementService.syncAchievementsToSupabase(userId);
@@ -63,11 +60,8 @@ class AchievementProvider with ChangeNotifier {
         _unlockedAchievements = LocalDatabaseService.getSetting<Set<String>>('unlocked_achievements') ?? <String>{};
         _userProgress = LocalDatabaseService.getSetting<Map<String, int>>('user_progress') ?? <String, int>{};
         
-        // Create starter achievements for anonymous users too
-        if (_unlockedAchievements.isEmpty && _userProgress.isEmpty) {
-          print('🏆 Anonymous user - creating local starter achievements');
-          await _createStarterAchievementsLocal();
-        }
+        // Let anonymous users earn achievements naturally too
+        print('🏆 Anonymous user initialized with ${_unlockedAchievements.length} earned achievements');
       }
       
       // Update achievement states based on progress
@@ -82,60 +76,12 @@ class AchievementProvider with ChangeNotifier {
       _unlockedAchievements = {};
       _userProgress = {};
       
-      // Even on error, create some basic progress for better UX
-      await _createBasicProgress();
+      // On error, start with clean slate
       _updateAchievementStates();
       notifyListeners();
     }
   }
 
-  /// Create starter achievements for new users
-  Future<void> _createStarterAchievements(String userId) async {
-    try {
-      // Give some progress on early achievements
-      _userProgress['first_trade'] = 1; // Complete first trade
-      _userProgress['portfolio_watcher'] = 3; // Some portfolio views
-      _userProgress['market_explorer'] = 5; // Some market browsing
-      
-      // Unlock the first trade achievement
-      _unlockedAchievements.add('first_trade');
-      
-      // Update in Supabase
-      await _achievementService.updateAchievementProgress(
-        userId: userId,
-        achievementId: 'first_trade',
-        progress: 1,
-        target: 1,
-      );
-      
-      await _achievementService.unlockAchievement(
-        userId: userId,
-        achievement: _achievements.firstWhere((a) => a.id == 'first_trade'),
-      );
-      
-      print('🏆 Created starter achievements for user');
-    } catch (e) {
-      print('🏆 Failed to create starter achievements: $e');
-    }
-  }
-
-  /// Create starter achievements locally
-  Future<void> _createStarterAchievementsLocal() async {
-    _userProgress['first_trade'] = 1;
-    _userProgress['portfolio_watcher'] = 2; 
-    _userProgress['market_explorer'] = 3;
-    _unlockedAchievements.add('first_trade');
-    
-    // Save locally
-    await LocalDatabaseService.saveSetting('unlocked_achievements', _unlockedAchievements);
-    await LocalDatabaseService.saveSetting('user_progress', _userProgress);
-  }
-
-  /// Create basic progress even on error
-  Future<void> _createBasicProgress() async {
-    _userProgress['portfolio_watcher'] = 1;
-    _userProgress['market_explorer'] = 2;
-  }
 
   void _updateAchievementStates() {
     for (int i = 0; i < _achievements.length; i++) {

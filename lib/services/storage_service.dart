@@ -14,6 +14,7 @@ class StorageService {
   static const String _userProgressKey = 'user_progress';
   static const String _onboardingCompletedKey = 'onboarding_completed';
   static const String _tutorialCompletedKey = 'tutorial_completed';
+  static const String _watchlistKey = 'user_watchlist';
 
   static SharedPreferences? _prefs;
   static Box<Map>? _assetsBox;
@@ -189,5 +190,41 @@ class StorageService {
 
   static bool isTutorialCompleted() {
     return _prefs?.getBool(_tutorialCompletedKey) ?? false;
+  }
+
+  // Watchlist methods
+  static Future<void> saveWatchlist(List<String> watchlist) async {
+    try {
+      final watchlistJson = jsonEncode(watchlist);
+      await _prefs?.setString(_watchlistKey, watchlistJson);
+      print('💾 StorageService: Saved watchlist to storage: ${watchlist.length} items');
+    } catch (e) {
+      print('❌ StorageService: Failed to save watchlist: $e');
+    }
+  }
+
+  static Future<List<String>> getWatchlist() async {
+    try {
+      final watchlistJson = _prefs?.getString(_watchlistKey);
+      if (watchlistJson != null && watchlistJson.isNotEmpty) {
+        final List<dynamic> decoded = jsonDecode(watchlistJson);
+        final watchlist = decoded.map((item) => item.toString()).toList();
+        print('📋 StorageService: Loaded watchlist from storage: ${watchlist.length} items');
+        return watchlist;
+      }
+    } catch (e) {
+      print('❌ StorageService: Failed to load watchlist: $e');
+    }
+    print('📋 StorageService: No watchlist found, returning empty list');
+    return [];
+  }
+
+  static Future<void> clearWatchlist() async {
+    try {
+      await _prefs?.remove(_watchlistKey);
+      print('🗑️ StorageService: Cleared watchlist from storage');
+    } catch (e) {
+      print('❌ StorageService: Failed to clear watchlist: $e');
+    }
   }
 }

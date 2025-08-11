@@ -1,0 +1,7 @@
+PLACEHOLDER: Create app_icon.png (1024x1024) here to fix app icon generation.
+
+The app icon should be a 1024x1024 PNG file representing your stock trading app.
+Suggested design: Blue background with white "S" or stock chart symbol.
+
+After adding the PNG file, run:
+flutter pub run flutter_launcher_icons

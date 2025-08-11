@@ -7,6 +7,11 @@ class MarketAssetModel {
   final String type; // 'stock', 'crypto', 'etf'
   final DateTime lastUpdated;
   final String? exchange; // Optional exchange field
+  final String? description; // Company description
+  final double? dayHigh; // Day's high price
+  final double? dayLow; // Day's low price
+  final double? weekHigh52; // 52-week high
+  final double? weekLow52; // 52-week low
 
   MarketAssetModel({
     required this.symbol,
@@ -17,6 +22,11 @@ class MarketAssetModel {
     required this.type,
     required this.lastUpdated,
     this.exchange,
+    this.description,
+    this.dayHigh,
+    this.dayLow,
+    this.weekHigh52,
+    this.weekLow52,
   });
 
   factory MarketAssetModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +39,11 @@ class MarketAssetModel {
       type: json['type'] as String,
       lastUpdated: DateTime.parse(json['last_updated'] as String),
       exchange: json['exchange'] as String?,
+      description: json['description'] as String?,
+      dayHigh: json['day_high'] != null ? (json['day_high'] as num).toDouble() : null,
+      dayLow: json['day_low'] != null ? (json['day_low'] as num).toDouble() : null,
+      weekHigh52: json['week_high_52'] != null ? (json['week_high_52'] as num).toDouble() : null,
+      weekLow52: json['week_low_52'] != null ? (json['week_low_52'] as num).toDouble() : null,
     );
   }
 
@@ -42,6 +57,11 @@ class MarketAssetModel {
       'type': type,
       'last_updated': lastUpdated.toIso8601String(),
       'exchange': exchange,
+      'description': description,
+      'day_high': dayHigh,
+      'day_low': dayLow,
+      'week_high_52': weekHigh52,
+      'week_low_52': weekLow52,
     };
   }
 
@@ -54,6 +74,11 @@ class MarketAssetModel {
     String? type,
     DateTime? lastUpdated,
     String? exchange,
+    String? description,
+    double? dayHigh,
+    double? dayLow,
+    double? weekHigh52,
+    double? weekLow52,
   }) {
     return MarketAssetModel(
       symbol: symbol ?? this.symbol,
@@ -64,6 +89,11 @@ class MarketAssetModel {
       type: type ?? this.type,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       exchange: exchange ?? this.exchange,
+      description: description ?? this.description,
+      dayHigh: dayHigh ?? this.dayHigh,
+      dayLow: dayLow ?? this.dayLow,
+      weekHigh52: weekHigh52 ?? this.weekHigh52,
+      weekLow52: weekLow52 ?? this.weekLow52,
     );
   }
 

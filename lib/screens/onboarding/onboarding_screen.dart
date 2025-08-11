@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/storage_service.dart';
 import '../legal/legal_document_screen.dart';
-import '../auth/login_screen.dart';
+import '../auth/modern_sign_in_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -31,8 +31,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Column(
                 children: [
                   Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // App Logo and Welcome
                         Container(
@@ -141,15 +143,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 32),
                       ],
+                    ),
                     ),
                   ),
                   
-                  // Continue Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
+                  // Fixed bottom section
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Continue Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
                       onPressed: _canProceed ? _continueToApp : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _canProceed 
@@ -212,6 +220,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  ],
                   ),
                 ],
               ),
@@ -309,7 +319,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const LoginScreen(),
+            builder: (context) => const ModernSignInScreen(),
           ),
         );
       }

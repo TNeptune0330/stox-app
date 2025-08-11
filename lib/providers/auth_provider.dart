@@ -181,8 +181,6 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> updateProfile({
     String? username,
-    String? avatarUrl,
-    String? colorTheme,
   }) async {
     if (_user == null) return;
 
@@ -191,15 +189,11 @@ class AuthProvider with ChangeNotifier {
     try {
       final updates = <String, dynamic>{};
       if (username != null) updates['username'] = username;
-      if (avatarUrl != null) updates['avatar_url'] = avatarUrl;
-      if (colorTheme != null) updates['color_theme'] = colorTheme;
 
       await _authService.updateUserData(updates);
       
       _user = _user!.copyWith(
         username: username ?? _user!.username,
-        avatarUrl: avatarUrl ?? _user!.avatarUrl,
-        colorTheme: colorTheme ?? _user!.colorTheme,
         updatedAt: DateTime.now(),
       );
 

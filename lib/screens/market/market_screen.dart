@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/market_data_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../theme/modern_theme.dart';
 import '../../models/market_asset_model.dart';
 import '../../widgets/asset_list_tile.dart';
 import '../../widgets/styled_market_indices_widget.dart';
@@ -101,8 +102,10 @@ class _MarketScreenState extends State<MarketScreen> {
         return Scaffold(
           body: CustomScrollView(
             slivers: [
-              AppBarTitle(
-                title: 'Market',
+              SliverAppBar(
+                title: const Text('Market'),
+                backgroundColor: ModernTheme.backgroundCard,
+                foregroundColor: ModernTheme.textPrimary,
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.refresh),
@@ -127,7 +130,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           enableSuggestions: false,
                           textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
-                            hintText: 'Enter stock ticker and press Enter...',
+                            hintText: 'Search stocks...',
                             hintStyle: TextStyle(
                               color: themeProvider.contrast.withOpacity(0.6),
                             ),
@@ -350,58 +353,62 @@ class _MarketScreenState extends State<MarketScreen> {
                 // Show market movers when not searching
                 return SliverList(
                   delegate: SliverChildListDelegate([
-                    // Search prompt section
+                    // Compact search prompt section
                     Container(
-                      margin: const EdgeInsets.all(16),
-                      padding: const EdgeInsets.all(20),
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: themeProvider.backgroundHigh,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: themeProvider.theme.withOpacity(0.3),
                         ),
                       ),
-                      child: Column(
+                      child: Row(
                         children: [
                           Icon(
                             Icons.search,
-                            size: 48,
+                            size: 24,
                             color: themeProvider.theme,
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Search for Stocks',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: themeProvider.contrast,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Search for Stocks',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: themeProvider.contrast,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Enter ticker or company name above',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: themeProvider.contrast.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Enter a ticker symbol or company name and press Enter',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: themeProvider.contrast.withOpacity(0.7),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
                           Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'META']
+                            spacing: 4,
+                            children: ['AAPL', 'TSLA', 'GOOGL']
                                 .map((ticker) => Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: themeProvider.theme.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(6),
+                                        borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
                                         ticker,
                                         style: TextStyle(
                                           color: themeProvider.theme,
-                                          fontSize: 12,
+                                          fontSize: 10,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -429,7 +436,9 @@ class _MarketScreenState extends State<MarketScreen> {
   }
 
   Widget _buildMoverSection(BuildContext context, ThemeProvider themeProvider, String title, List<MarketAssetModel> movers) {
+    print('🔍 Building mover section for $title: ${movers.length} movers');
     if (movers.isEmpty) {
+      print('⚠️ $title movers list is empty - showing loading state');
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.all(16),

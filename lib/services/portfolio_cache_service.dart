@@ -14,8 +14,8 @@ class PortfolioCacheService {
   static const String _statsKey = 'stats_cache';
   static const String _lastUpdateKey = 'portfolio_last_update';
   
-  // Cache duration (5 minutes for portfolio data)
-  static const Duration _cacheValidDuration = Duration(minutes: 5);
+  // Cache duration (30 seconds for portfolio data to prevent stale data)
+  static const Duration _cacheValidDuration = Duration(seconds: 30);
   
   /// Check if cache is still valid
   static Future<bool> isCacheValid() async {

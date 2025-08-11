@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../models/market_asset_model.dart';
 import '../services/google_stock_search_service.dart';
 import '../services/finnhub_limiter_service.dart';
-import '../services/optimized_cache_service.dart';
 
 class MarketDataProvider with ChangeNotifier {
   List<MarketAssetModel> _filteredAssets = [];
@@ -45,6 +44,17 @@ class MarketDataProvider with ChangeNotifier {
   String? get error => _error;
   bool get hasSearchBeenPerformed => _hasSearchBeenPerformed;
   
+  // Combined assets list
+  List<MarketAssetModel> get assets {
+    final Set<MarketAssetModel> allAssets = {};
+    allAssets.addAll(_nasdaq100Movers);
+    allAssets.addAll(_sp500Movers);
+    allAssets.addAll(_dowJonesMovers);
+    allAssets.addAll(_filteredAssets);
+    allAssets.addAll(_assetCache.values);
+    return allAssets.toList();
+  }
+  
   // Cache for individual asset lookups
   final Map<String, MarketAssetModel> _assetCache = {};
   
@@ -56,6 +66,29 @@ class MarketDataProvider with ChangeNotifier {
     allAssets.addAll(_dowJonesMovers);
     allAssets.addAll(_assetCache.values);
     return allAssets.toList();
+  }
+  
+  /// Get a specific asset by symbol from cache or market movers
+  MarketAssetModel? getAssetBySymbol(String symbol) {
+    final upperSymbol = symbol.toUpperCase();
+    
+    // Check cache first
+    if (_assetCache.containsKey(upperSymbol)) {
+      return _assetCache[upperSymbol];
+    }
+    
+    // Check market movers
+    for (final asset in [..._nasdaq100Movers, ..._sp500Movers, ..._dowJonesMovers]) {
+      if (asset.symbol == upperSymbol) {
+        // Cache it for future lookups
+        _assetCache[upperSymbol] = asset;
+        return asset;
+      }
+    }
+    
+    // If not found, try to fetch it
+    fetchSymbolPrice(symbol);
+    return null;
   }
   
   Future<void> initialize() async {
@@ -82,19 +115,18 @@ class MarketDataProvider with ChangeNotifier {
   
   Future<void> _loadMarketMovers() async {
     try {
-      print('🔄 Loading market movers using Google Finance scraping...');
+      print('🔄 Loading market movers using Finnhub API...');
       
-      // Use only Google scraping for market movers to save API calls
-      // Load top 3 movers from each index using Google Finance
-      _nasdaq100Movers = await _loadMoversFromGoogle(_nasdaq100Symbols.take(6).toList(), 'NASDAQ');
-      _sp500Movers = await _loadMoversFromGoogle(_sp500Symbols.take(6).toList(), 'S&P 500');
-      _dowJonesMovers = await _loadMoversFromGoogle(_dowJonesSymbols.take(6).toList(), 'DOW');
+      // Use Finnhub API for real market data
+      _nasdaq100Movers = await _loadMoversFromFinnhub(_nasdaq100Symbols.take(3).toList(), 'NASDAQ 100');
+      _sp500Movers = await _loadMoversFromFinnhub(_sp500Symbols.take(3).toList(), 'S&P 500');
+      _dowJonesMovers = await _loadMoversFromFinnhub(_dowJonesSymbols.take(3).toList(), 'DOW JONES');
       
-      print('✅ Market movers loaded via Google scraping: NASDAQ(${_nasdaq100Movers.length}), S&P500(${_sp500Movers.length}), DOW(${_dowJonesMovers.length})');
+      print('✅ Market movers loaded: NASDAQ(${_nasdaq100Movers.length}), S&P500(${_sp500Movers.length}), DOW(${_dowJonesMovers.length})');
       notifyListeners();
     } catch (e) {
       print('❌ Failed to load market movers: $e');
-      // Set empty lists if loading fails
+      // Set empty lists if loading fails  
       _nasdaq100Movers = [];
       _sp500Movers = [];
       _dowJonesMovers = [];
@@ -102,45 +134,42 @@ class MarketDataProvider with ChangeNotifier {
     }
   }
   
-  /// Load market movers using Finnhub API (primary) with Google Finance fallback
-  Future<List<MarketAssetModel>> _loadMoversFromGoogle(List<String> symbols, String indexName) async {
+  /// Load market movers using ONLY Finnhub API - no fallbacks
+  Future<List<MarketAssetModel>> _loadMoversFromFinnhub(List<String> symbols, String indexName) async {
     final movers = <MarketAssetModel>[];
+    
+    print('🔄 Loading $indexName movers from Finnhub API...');
     
     for (final symbol in symbols) {
       try {
-        // Primary: Always use Finnhub API (UNLIMITED) for most accurate data
-        print('🎯 PRIMARY: Using Finnhub API for $symbol in $indexName (UNLIMITED)');
-        final finnhubAsset = await FinnhubLimiterService.getStockQuote(symbol);
-        if (finnhubAsset != null) {
-          movers.add(finnhubAsset);
-          print('✅ FINNHUB: [$indexName] $symbol = \$${finnhubAsset.price.toStringAsFixed(2)} (${finnhubAsset.changePercent >= 0 ? '+' : ''}${finnhubAsset.changePercent.toStringAsFixed(2)}%)');
-          continue;
+        final asset = await FinnhubLimiterService.getStockQuote(symbol);
+        if (asset != null) {
+          movers.add(asset);
+          print('✅ [$indexName] $symbol = \$${asset.price.toStringAsFixed(2)} (${asset.changePercent >= 0 ? '+' : ''}${asset.changePercent.toStringAsFixed(2)}%)');
         } else {
-          print('⚠️ Finnhub returned null for $symbol (rate limited or invalid), trying fallback');
-        }
-        
-        // Fallback: Use Google Finance scraping (less accurate but available)
-        final results = await GoogleStockSearchService.searchStocks(symbol);
-        if (results.isNotEmpty) {
-          movers.add(results.first);
-          print('✅ FALLBACK: [$indexName] $symbol loaded via Google scraping');
-        } else {
-          print('❌ [$indexName] No data found for $symbol via any method');
+          print('❌ [$indexName] Failed to load $symbol from Finnhub');
         }
       } catch (e) {
-        print('❌ [$indexName] Failed to load $symbol: $e');
+        print('❌ [$indexName] Error loading $symbol: $e');
       }
+      
+      // Small delay to avoid rate limiting
+      await Future.delayed(const Duration(milliseconds: 100));
     }
     
-    // Sort by absolute change percent and take top 3
-    movers.sort((a, b) => b.changePercent.abs().compareTo(a.changePercent.abs()));
-    return movers.take(3).toList();
+    if (movers.isEmpty) {
+      print('⚠️ No $indexName movers loaded - all API calls failed');
+      return [];
+    }
+    
+    // Since we only loaded 3 symbols, just return them (already top symbols from the index)
+    print('🏆 Top 3 $indexName movers loaded: ${movers.map((m) => '${m.symbol}(${m.changePercent.toStringAsFixed(2)}%)').join(', ')}');
+    return movers;
   }
   
   Future<void> refreshMarketData() async {
-    print('📊 Manual refresh requested - no auto-loading enabled');
-    print('📊 Use search function to load specific stocks');
-    // No automatic data loading - user must search for specific stocks
+    print('📊 Manual refresh requested - loading market movers');
+    await _loadMarketMovers();
   }
   
   Future<void> setSearchQuery(String query) async {
@@ -184,8 +213,13 @@ class MarketDataProvider with ChangeNotifier {
       // Use Google Stock Search Service
       final searchResults = await GoogleStockSearchService.searchStocks(query);
       
-      _filteredAssets = searchResults;
-      print('✅ Search completed: ${searchResults.length} results found');
+      if (searchResults.isEmpty) {
+        _setError('No stocks found for "$query". Please check the ticker symbol or company name.');
+        _filteredAssets = [];
+      } else {
+        _filteredAssets = searchResults;
+        print('✅ Search completed: ${searchResults.length} results found');
+      }
       
     } catch (e) {
       print('❌ Search failed: $e');
@@ -221,11 +255,10 @@ class MarketDataProvider with ChangeNotifier {
     try {
       print('📊 Fetching current price for $symbol...');
       
-      // Check optimized cache first (2 minute TTL for market data)
-      final cachedAsset = await OptimizedCacheService.getMarketAsset(symbol);
-      if (cachedAsset != null) {
-        _assetCache[symbol.toUpperCase()] = cachedAsset;
-        print('📊 Using optimized cache for $symbol: \$${cachedAsset.price}');
+      // Check memory cache first
+      if (_assetCache.containsKey(symbol.toUpperCase())) {
+        final cachedAsset = _assetCache[symbol.toUpperCase()]!;
+        print('📊 Using memory cache for $symbol: \$${cachedAsset.price}');
         return cachedAsset;
       }
       
@@ -234,9 +267,8 @@ class MarketDataProvider with ChangeNotifier {
       if (searchResults.isNotEmpty) {
         final asset = searchResults.first;
         
-        // Cache in both memory and persistent cache
+        // Cache in memory
         _assetCache[symbol.toUpperCase()] = asset;
-        await OptimizedCacheService.setMarketAsset(asset);
         
         notifyListeners(); // Update UI with new data
         print('📊 Fetched and cached fresh price for $symbol: \$${asset.price}');
@@ -259,10 +291,9 @@ class MarketDataProvider with ChangeNotifier {
     final cachedAssets = <String, MarketAssetModel>{};
     
     for (final symbol in cacheKeys) {
-      final cached = await OptimizedCacheService.getMarketAsset(symbol);
-      if (cached != null) {
+      if (_assetCache.containsKey(symbol)) {
+        final cached = _assetCache[symbol]!;
         cachedAssets[symbol] = cached;
-        _assetCache[symbol] = cached;
       }
     }
     

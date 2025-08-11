@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/local_trading_service.dart';
+import '../services/local_database_service.dart';
 import '../services/connection_manager.dart';
 import '../models/transaction_model.dart';
 
@@ -13,7 +13,7 @@ class SyncService {
       print('🔄 Starting sync for pending trades...');
       
       // Get all pending trades
-      final pendingTrades = await LocalTradingService.getPendingTrades(userId);
+      final pendingTrades = await LocalDatabaseService.getPendingTrades(userId);
       
       if (pendingTrades.isEmpty) {
         print('✅ No pending trades to sync');
@@ -56,7 +56,7 @@ class SyncService {
       
       // Clear successfully synced trades
       if (syncedCount > 0) {
-        await LocalTradingService.clearSyncedTrades(userId, syncedCount);
+        await LocalDatabaseService.clearSyncedTrades(userId, syncedCount);
         print('🧹 Cleared $syncedCount synced trades from local storage');
       }
       
@@ -80,7 +80,7 @@ class SyncService {
       print('🔄 Syncing user data...');
       
       // Get local user data
-      final userData = await LocalTradingService.getLocalUserData(userId);
+      final userData = await LocalDatabaseService.getLocalUserData(userId);
       if (userData == null) {
         print('❌ No local user data found');
         return false;
@@ -110,7 +110,7 @@ class SyncService {
       print('🔄 Syncing portfolio holdings...');
       
       // Get local portfolio
-      final portfolio = await LocalTradingService.getLocalPortfolio(userId);
+      final portfolio = await LocalDatabaseService.getLocalPortfolio(userId);
       
       if (portfolio.isEmpty) {
         print('✅ No portfolio to sync');
@@ -189,7 +189,7 @@ class SyncService {
   /// Get sync status for UI
   static Future<Map<String, dynamic>> getSyncStatus(String userId) async {
     try {
-      final pendingTrades = await LocalTradingService.getPendingTrades(userId);
+      final pendingTrades = await LocalDatabaseService.getPendingTrades(userId);
       final hasConnection = await _connectionManager.hasConnection();
       
       return {

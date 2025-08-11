@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import '../config/api_keys.dart';
 import '../models/market_asset_model.dart';
 import '../services/local_database_service.dart';
-import '../services/realistic_price_simulator.dart';
 
 class EnhancedMarketDataService {
   static const String _logPrefix = '[MarketData]';

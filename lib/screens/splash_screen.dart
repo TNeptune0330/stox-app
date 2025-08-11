@@ -9,10 +9,9 @@ import '../services/enhanced_market_data_service.dart';
 import '../services/revenue_admob_service.dart';
 import '../utils/responsive_utils.dart';
 import '../services/storage_service.dart';
-import '../screens/auth/login_screen.dart';
-import '../screens/main_navigation.dart';
-import '../screens/onboarding/onboarding_screen.dart';
-import '../screens/tutorial/tutorial_screen.dart';
+import 'auth/modern_sign_in_screen.dart';
+import 'main_navigation.dart';
+import 'onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -190,7 +189,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
+          builder: (context) => const ModernSignInScreen(),
         ),
       );
     }
@@ -212,7 +211,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const TutorialScreen(),
+          builder: (context) => const MainNavigation(),
         ),
       );
     }
