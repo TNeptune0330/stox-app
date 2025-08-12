@@ -31,11 +31,6 @@ class _StyledMarketIndicesWidgetState extends State<StyledMarketIndicesWidget> {
       
       final realIndicesData = await MarketIndicesService.getRealMarketIndices();
       
-      print('🔍 StyledMarketIndicesWidget: Service returned ${realIndicesData.length} indices');
-      for (final index in realIndicesData) {
-        print('🔍 Index: ${index.name} = \$${index.price.toStringAsFixed(0)} (${index.changePercent >= 0 ? '+' : ''}${index.changePercent.toStringAsFixed(2)}%)');
-      }
-      
       if (!mounted) return;
       setState(() {
         _indicesData = realIndicesData;
@@ -49,7 +44,6 @@ class _StyledMarketIndicesWidgetState extends State<StyledMarketIndicesWidget> {
       }
     } catch (e) {
       print('❌ StyledMarketIndicesWidget: Error loading indices: $e');
-      print('❌ StyledMarketIndicesWidget: Stack trace: ${StackTrace.current}');
       if (mounted) {
         setState(() {
           _isLoading = false;

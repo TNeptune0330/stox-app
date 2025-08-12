@@ -16,7 +16,7 @@ import 'providers/market_data_provider.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
-import 'screens/auth/modern_sign_in_screen.dart';
+import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation.dart';
 
 // Config
@@ -166,7 +166,7 @@ class StoxApp extends StatelessWidget {
         ),
         home: const SplashScreen(),
         routes: {
-          '/login': (context) => const ModernSignInScreen(),
+          '/login': (context) => const LoginScreen(),
           '/main': (context) => const MainNavigation(),
         },
       ),

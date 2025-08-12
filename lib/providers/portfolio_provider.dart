@@ -1,16 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/portfolio_model.dart';
 import '../models/transaction_model.dart';
 import '../services/portfolio_service.dart';
 import '../services/portfolio_cache_service.dart';
 import '../services/ad_service.dart';
 import '../services/leaderboard_service.dart';
-// import '../services/sync_service.dart'; // Temporarily disabled
+import '../services/sync_service.dart';
 import '../services/connection_manager.dart';
+import '../services/optimized_cache_service.dart';
 import '../services/enhanced_market_data_service.dart';
-import '../services/storage_service.dart';
 import 'achievement_provider.dart';
 
 class PortfolioProvider with ChangeNotifier {
@@ -19,7 +18,6 @@ class PortfolioProvider with ChangeNotifier {
   
   List<PortfolioModel> _portfolio = [];
   List<TransactionModel> _transactions = [];
-  List<String> _watchlist = []; // Store stock symbols in watchlist
   Map<String, dynamic> _summary = {};
   Map<String, dynamic> _stats = {};
   bool _isLoading = false;
@@ -27,7 +25,6 @@ class PortfolioProvider with ChangeNotifier {
 
   List<PortfolioModel> get portfolio => _portfolio;
   List<TransactionModel> get transactions => _transactions;
-  List<String> get watchlist => _watchlist;
   Map<String, dynamic> get summary => _summary;
   Map<String, dynamic> get stats => _stats;
   bool get isLoading => _isLoading;
@@ -36,20 +33,8 @@ class PortfolioProvider with ChangeNotifier {
   double get cashBalance => (_summary['cash_balance'] as num?)?.toDouble() ?? 0.0;
   double get holdingsValue => (_summary['holdings_value'] as num?)?.toDouble() ?? 0.0;
   double get netWorth => (_summary['net_worth'] as num?)?.toDouble() ?? 0.0;
-  double get totalPnL {
-    // Only show P&L if user has holdings
-    if (_portfolio.isEmpty) return 0.0;
-    return (_summary['total_pnl'] as num?)?.toDouble() ?? 0.0;
-  }
-  
-  double get totalPnLPercentage {
-    // Only show P&L percentage if user has holdings
-    if (_portfolio.isEmpty) return 0.0;
-    return (_summary['total_pnl_percentage'] as num?)?.toDouble() ?? 0.0;
-  }
-  
-  // Helper to check if user should see P&L (has actual holdings)
-  bool get hasPnL => _portfolio.isNotEmpty && holdingsValue > 0;
+  double get totalPnL => (_summary['total_pnl'] as num?)?.toDouble() ?? 0.0;
+  double get totalPnLPercentage => (_summary['total_pnl_percentage'] as num?)?.toDouble() ?? 0.0;
 
   // Portfolio statistics
   int get totalTrades => (_stats['total_trades'] as int?) ?? 0;
@@ -58,8 +43,8 @@ class PortfolioProvider with ChangeNotifier {
   String? get worstPerformer => _stats['worst_performer'] as String?;
   String? get mostTraded => _stats['most_traded'] as String?;
 
-  Future<void> loadPortfolio(String userId, {bool forceRefresh = false}) async {
-    print('📊 PortfolioProvider: Loading portfolio for user: $userId (forceRefresh: $forceRefresh)');
+  Future<void> loadPortfolio(String userId) async {
+    print('📊 PortfolioProvider: Loading portfolio for user: $userId');
     
     // Validate user ID
     if (userId.isEmpty) {
@@ -68,10 +53,9 @@ class PortfolioProvider with ChangeNotifier {
       return;
     }
     
-    // Try to load from cache first (unless forcing refresh)
-    if (!forceRefresh) {
-      final cachedData = await PortfolioCacheService.getCachedPortfolioData();
-      if (cachedData != null) {
+    // Try to load from cache first
+    final cachedData = await PortfolioCacheService.getCachedPortfolioData();
+    if (cachedData != null) {
       print('📊 PortfolioProvider: Using cached portfolio data');
       _portfolio = cachedData['portfolio'] as List<PortfolioModel>;
       _transactions = cachedData['transactions'] as List<TransactionModel>;
@@ -85,12 +69,8 @@ class PortfolioProvider with ChangeNotifier {
         }
       }
       
-      // Load watchlist from storage
-      await _loadWatchlistFromStorage();
-      
       notifyListeners();
       return; // Use cached data and exit
-      }
     }
     
     _setLoading(true);
@@ -147,9 +127,6 @@ class PortfolioProvider with ChangeNotifier {
         summary: _summary,
         stats: _stats,
       );
-      
-      // Load watchlist from storage
-      await _loadWatchlistFromStorage();
       
       print('✅ PortfolioProvider: Portfolio loaded and cached successfully');
       
@@ -316,27 +293,11 @@ class PortfolioProvider with ChangeNotifier {
         }
         
         // Invalidate cache and reload portfolio data to reflect changes
-        print('🔄 PortfolioProvider: Reloading portfolio data after trade...');
-        print('🔄 PortfolioProvider: Current holdings before reload: ${_portfolio.length}');
         try {
-          // Clear ALL cache completely to prevent stale data
-          await PortfolioCacheService.clearCache();
-          print('🔄 PortfolioProvider: Cache completely cleared, loading fresh data...');
-          
-          // Small delay to ensure database transaction commits
-          await Future.delayed(const Duration(milliseconds: 750));
-          
-          // Force reload without cache
-          await loadPortfolio(userId, forceRefresh: true);
-          print('✅ PortfolioProvider: Portfolio data reloaded successfully after trade');
-          print('✅ PortfolioProvider: Holdings after reload: ${_portfolio.length}');
-          for (final holding in _portfolio) {
-            print('   - ${holding.symbol}: ${holding.quantity} shares @ \$${holding.avgPrice.toStringAsFixed(2)}');
-          }
+          await PortfolioCacheService.invalidateCache();
+          await loadPortfolio(userId);
         } catch (e) {
-          print('❌ PortfolioProvider: Failed to reload portfolio data after trade: $e');
-          // Force a notification even if reload fails
-          notifyListeners();
+          print('⚠️ Failed to reload portfolio data (non-blocking): $e');
         }
         
         return true;
@@ -392,8 +353,7 @@ class PortfolioProvider with ChangeNotifier {
     _clearError();
     
     try {
-      // final syncSuccess = await SyncService.performFullSync(userId); // Temporarily disabled
-      final syncSuccess = true; // Default to success
+      final syncSuccess = await SyncService.performFullSync(userId);
       
       if (syncSuccess) {
         // Reload portfolio data after successful sync
@@ -416,8 +376,7 @@ class PortfolioProvider with ChangeNotifier {
 
   Future<Map<String, dynamic>> getSyncStatus(String userId) async {
     try {
-      // return await SyncService.getSyncStatus(userId); // Temporarily disabled
-      return {'pending_count': 0, 'last_sync': DateTime.now()};
+      return await SyncService.getSyncStatus(userId);
     } catch (e) {
       print('❌ Error getting sync status: $e');
       return {
@@ -508,129 +467,5 @@ class PortfolioProvider with ChangeNotifier {
     if (totalPnL > 0) return const Color(0xFF4CAF50);
     if (totalPnL < 0) return const Color(0xFFf44336);
     return const Color(0xFF607D8B);
-  }
-
-  // Watchlist functionality with persistence
-  Future<void> addToWatchlist(String symbol) async {
-    print('➕ PortfolioProvider: Adding $symbol to watchlist (current: $_watchlist)');
-    if (!_watchlist.contains(symbol)) {
-      _watchlist.add(symbol);
-      await _saveWatchlistToStorage();
-      notifyListeners();
-      print('✅ PortfolioProvider: Added $symbol to watchlist. New list: $_watchlist');
-    } else {
-      print('⚠️ PortfolioProvider: $symbol already in watchlist');
-    }
-  }
-  
-  Future<void> removeFromWatchlist(String symbol) async {
-    print('➖ PortfolioProvider: Removing $symbol from watchlist (current: $_watchlist)');
-    if (_watchlist.contains(symbol)) {
-      _watchlist.remove(symbol);
-      await _saveWatchlistToStorage();
-      notifyListeners();
-      print('✅ PortfolioProvider: Removed $symbol from watchlist. New list: $_watchlist');
-    } else {
-      print('⚠️ PortfolioProvider: $symbol not found in watchlist');
-    }
-  }
-  
-  bool isInWatchlist(String symbol) {
-    return _watchlist.contains(symbol);
-  }
-  
-  Future<void> clearWatchlist() async {
-    _watchlist.clear();
-    await _saveWatchlistToStorage();
-    notifyListeners();
-    print('🗑️ Cleared watchlist and updated storage');
-  }
-
-  // Private methods for watchlist persistence using Supabase database
-  Future<void> _loadWatchlistFromStorage() async {
-    try {
-      final userId = _getCurrentUserId();
-      if (userId != null) {
-        // Load from Supabase watchlist table
-        final supabase = Supabase.instance.client;
-        final response = await supabase
-            .from('watchlist')
-            .select('symbol')
-            .eq('user_id', userId);
-        
-        final symbols = (response as List).map((item) => item['symbol'] as String).toList();
-        _watchlist = symbols;
-        print('📋 PortfolioProvider: Loaded watchlist from Supabase: ${_watchlist.length} items: $_watchlist');
-        notifyListeners(); // Ensure UI updates when watchlist is loaded
-      } else {
-        // Fallback to local storage if not authenticated
-        final storedWatchlist = await StorageService.getWatchlist();
-        _watchlist = storedWatchlist;
-        print('📋 PortfolioProvider: Loaded watchlist from local storage: ${_watchlist.length} items');
-      }
-    } catch (e) {
-      print('❌ PortfolioProvider: Failed to load watchlist from database: $e');
-      // Fallback to local storage
-      try {
-        final storedWatchlist = await StorageService.getWatchlist();
-        _watchlist = storedWatchlist;
-        print('📋 PortfolioProvider: Fallback - loaded from local storage: ${_watchlist.length} items');
-      } catch (e2) {
-        print('❌ PortfolioProvider: Both database and local storage failed: $e2');
-        _watchlist = []; // Final fallback to empty list
-      }
-    }
-  }
-
-  Future<void> _saveWatchlistToStorage() async {
-    try {
-      final userId = _getCurrentUserId();
-      if (userId != null) {
-        final supabase = Supabase.instance.client;
-        
-        // Delete all existing watchlist items for this user
-        await supabase.from('watchlist').delete().eq('user_id', userId);
-        
-        // Insert new watchlist items
-        if (_watchlist.isNotEmpty) {
-          final watchlistData = _watchlist.map((symbol) => {
-            'user_id': userId,
-            'symbol': symbol,
-          }).toList();
-          
-          await supabase.from('watchlist').insert(watchlistData);
-        }
-        
-        print('💾 PortfolioProvider: Saved watchlist to Supabase: ${_watchlist.length} items: $_watchlist');
-        
-        // Also save to local storage as backup
-        await StorageService.saveWatchlist(_watchlist);
-      } else {
-        // Save to local storage only if not authenticated
-        await StorageService.saveWatchlist(_watchlist);
-        print('💾 PortfolioProvider: Saved watchlist to local storage: ${_watchlist.length} items');
-      }
-    } catch (e) {
-      print('❌ PortfolioProvider: Failed to save watchlist to database: $e');
-      // Fallback to local storage
-      try {
-        await StorageService.saveWatchlist(_watchlist);
-        print('💾 PortfolioProvider: Fallback - saved to local storage: ${_watchlist.length} items');
-      } catch (e2) {
-        print('❌ PortfolioProvider: Both database and local storage save failed: $e2');
-      }
-    }
-  }
-  
-  // Helper method to get auth provider - pass context from calling widget
-  String? _getCurrentUserId() {
-    try {
-      // Get user ID from Supabase auth directly
-      final user = Supabase.instance.client.auth.currentUser;
-      return user?.id;
-    } catch (e) {
-      print('❌ PortfolioProvider: Failed to get current user ID: $e');
-      return null;
-    }
   }
 }

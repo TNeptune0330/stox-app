@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/portfolio_provider.dart';
-import 'providers/market_data_provider.dart';
+import 'providers/market_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/achievement_provider.dart';
-import 'screens/auth/modern_sign_in_screen.dart';
+import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation.dart';
 import 'services/storage_service.dart';
 import 'services/ad_service.dart';
-import 'theme/modern_theme.dart';
-import 'widgets/modern_loading.dart';
 
 class StoxApp extends StatelessWidget {
   const StoxApp({super.key});
@@ -21,7 +19,7 @@ class StoxApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PortfolioProvider()),
-        ChangeNotifierProvider(create: (_) => MarketDataProvider()),
+        ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AchievementProvider()),
       ],
@@ -29,7 +27,7 @@ class StoxApp extends StatelessWidget {
         builder: (context, themeProvider, child) {
           return MaterialApp(
             title: 'Stox',
-            theme: ModernTheme.darkTheme,
+            theme: themeProvider.themeData,
             home: const AppInitializer(),
             debugShowCheckedModeBanner: false,
           );
@@ -69,13 +67,11 @@ class _AppInitializerState extends State<AppInitializer> {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
         final achievementProvider = Provider.of<AchievementProvider>(context, listen: false);
-        final marketDataProvider = Provider.of<MarketDataProvider>(context, listen: false);
         
         await Future.wait([
           authProvider.initialize(),
           themeProvider.initialize(),
           achievementProvider.initialize(),
-          marketDataProvider.initialize(),
         ]);
       }
       
@@ -98,13 +94,15 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized) {
-      return Scaffold(
-        backgroundColor: ModernTheme.backgroundPrimary,
-        body: const Center(
-          child: ModernLoading(
-            size: 80,
-            message: 'Initializing Stox...',
-            showMessage: true,
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Initializing Stox...'),
+            ],
           ),
         ),
       );
@@ -115,7 +113,7 @@ class _AppInitializerState extends State<AppInitializer> {
         if (authProvider.isAuthenticated) {
           return const MainNavigation();
         } else {
-          return const ModernSignInScreen();
+          return const LoginScreen();
         }
       },
     );

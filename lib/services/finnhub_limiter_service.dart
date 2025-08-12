@@ -43,110 +43,48 @@ class FinnhubLimiterService {
     }
   }
   
-  /// Make unlimited Finnhub API call for comprehensive stock data
+  /// Make unlimited Finnhub API call for stock quote
   static Future<MarketAssetModel?> getStockQuote(String symbol) async {
     try {
-      // Fetch basic quote data
-      final quoteUrl = '$_finnhubBaseUrl/quote?symbol=$symbol&token=${ApiKeys.finnhubApiKey}';
-      print('$_logPrefix 🌐 [Call #$_callsToday] Fetching comprehensive data for $symbol from Finnhub (UNLIMITED)');
+      final url = '$_finnhubBaseUrl/quote?symbol=$symbol&token=${ApiKeys.finnhubApiKey}';
+      print('$_logPrefix 🌐 [Call #$_callsToday] Fetching $symbol from Finnhub (UNLIMITED)');
       
-      final quoteResponse = await http.get(Uri.parse(quoteUrl));
+      final response = await http.get(Uri.parse(url));
       _callsToday++; // Increment counter for monitoring only
       
-      if (quoteResponse.statusCode == 200) {
-        final quoteData = jsonDecode(quoteResponse.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
         
-        if (quoteData['c'] != null && quoteData['c'] > 0) {
-          final price = (quoteData['c'] as num).toDouble();
-          final previousClose = (quoteData['pc'] as num).toDouble();
+        if (data['c'] != null && data['c'] > 0) {
+          final price = (data['c'] as num).toDouble();
+          final previousClose = (data['pc'] as num).toDouble();
           final change = price - previousClose;
           final changePercent = (change / previousClose) * 100;
           
-          // Extract comprehensive market data from quote endpoint
-          final dayHigh = quoteData['h'] != null ? (quoteData['h'] as num).toDouble() : null;
-          final dayLow = quoteData['l'] != null ? (quoteData['l'] as num).toDouble() : null;
-          final openPrice = quoteData['o'] != null ? (quoteData['o'] as num).toDouble() : null;
-          
-          // Try to get company profile for additional data
-          String companyName = symbol;
-          String? exchange;
-          
-          try {
-            final profileUrl = '$_finnhubBaseUrl/stock/profile2?symbol=$symbol&token=${ApiKeys.finnhubApiKey}';
-            final profileResponse = await http.get(Uri.parse(profileUrl));
-            _callsToday++;
-            
-            if (profileResponse.statusCode == 200) {
-              final profileData = jsonDecode(profileResponse.body);
-              if (profileData['name'] != null && profileData['name'].toString().isNotEmpty) {
-                companyName = profileData['name'];
-              }
-              if (profileData['exchange'] != null) {
-                exchange = profileData['exchange'];
-              }
-            }
-          } catch (e) {
-            print('$_logPrefix ⚠️ Could not fetch profile for $symbol: $e');
-          }
-
-          // Get 52-week high/low from basic financial metrics
-          double? weekHigh52;
-          double? weekLow52;
-          
-          try {
-            final metricsUrl = '$_finnhubBaseUrl/stock/metric?symbol=$symbol&metric=all&token=${ApiKeys.finnhubApiKey}';
-            final metricsResponse = await http.get(Uri.parse(metricsUrl));
-            _callsToday++;
-            
-            if (metricsResponse.statusCode == 200) {
-              final metricsData = jsonDecode(metricsResponse.body);
-              final metric = metricsData['metric'];
-              if (metric != null) {
-                if (metric['52WeekHigh'] != null) {
-                  weekHigh52 = (metric['52WeekHigh'] as num).toDouble();
-                }
-                if (metric['52WeekLow'] != null) {
-                  weekLow52 = (metric['52WeekLow'] as num).toDouble();
-                }
-              }
-            }
-          } catch (e) {
-            print('$_logPrefix ⚠️ Could not fetch metrics for $symbol: $e');
-            // Generate realistic 52-week range based on current price
-            final variance = price * 0.4; // 40% variance
-            weekHigh52 = price + variance;
-            weekLow52 = price - variance;
-          }
-          
           final asset = MarketAssetModel(
             symbol: symbol,
-            name: companyName,
+            name: symbol, // We'll need to get name from elsewhere
             price: price,
             change: change,
             changePercent: changePercent,
             type: 'stock',
             lastUpdated: DateTime.now(),
-            exchange: exchange ?? 'NASDAQ',
-            dayHigh: dayHigh,
-            dayLow: dayLow,
-            weekHigh52: weekHigh52,
-            weekLow52: weekLow52,
           );
           
           // Cache the result for future use
           await LocalDatabaseService.saveMarketAsset(asset);
           
-          print('$_logPrefix ✅ [Call #$_callsToday] $symbol: \$${price.toStringAsFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%) - Complete data loaded');
+          print('$_logPrefix ✅ [Call #$_callsToday] $symbol: \$${price.toStringAsFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%)');
           return asset;
         } else {
           print('$_logPrefix ⚠️ Invalid price data for $symbol');
           return null;
         }
-      } else if (quoteResponse.statusCode == 429) {
+      } else if (response.statusCode == 429) {
         print('$_logPrefix ⚠️ Rate limited by Finnhub API (natural limit reached) for $symbol');
         return null;
       } else {
-        print('$_logPrefix ❌ HTTP ${quoteResponse.statusCode} error for $symbol');
+        print('$_logPrefix ❌ HTTP ${response.statusCode} error for $symbol');
         return null;
       }
     } catch (e) {

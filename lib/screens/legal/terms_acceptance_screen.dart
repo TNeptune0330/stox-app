@@ -19,7 +19,6 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0a0a0a),
-      resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -34,7 +33,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
                 Expanded(
@@ -43,7 +42,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 40),
                         
                         // Header
                         Center(
@@ -69,7 +68,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                                   size: 40,
                                 ),
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 24),
                               const Text(
                                 'Legal Agreement',
                                 style: TextStyle(
@@ -78,7 +77,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 12),
                               Text(
                                 'Please review and accept our terms to continue',
                                 style: TextStyle(
@@ -92,7 +91,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                           ),
                         ),
                         
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 48),
                         
                         // Terms of Service Card
                         _buildDocumentCard(
@@ -108,7 +107,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                           onToggle: (value) => setState(() => _termsAccepted = value!),
                         ),
                         
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 24),
                         
                         // Privacy Policy Card
                         _buildDocumentCard(
@@ -124,7 +123,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                           onToggle: (value) => setState(() => _privacyAccepted = value!),
                         ),
                         
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 32),
                         
                         // Important Notice
                         Container(
@@ -157,7 +156,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 12),
                               Text(
                                 'This app is for educational purposes only. No real money is involved in trading. Virtual performance does not guarantee real-world trading success.',
                                 style: TextStyle(
@@ -170,7 +169,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                           ),
                         ),
                         
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
@@ -242,7 +241,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
               Container(
@@ -273,7 +272,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       description,
                       style: TextStyle(
@@ -284,7 +283,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Checkbox(
                 value: isAccepted,
                 onChanged: onToggle,

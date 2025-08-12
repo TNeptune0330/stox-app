@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
-import '../../theme/modern_theme.dart';
 import '../main_navigation.dart';
 
 class ProfileEditScreen extends StatefulWidget {
@@ -37,10 +36,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            title: const Text('Edit Profile'),
-            backgroundColor: ModernTheme.backgroundCard,
-            foregroundColor: ModernTheme.textPrimary,
+          AppBarTitle(
+            title: 'Edit Profile',
             actions: [
               Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {

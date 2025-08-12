@@ -19,10 +19,20 @@ class GoogleStockSearchService {
       print('🎯 PRIMARY: Using Finnhub API for $ticker (UNLIMITED - most accurate data)');
       final finnhubAsset = await FinnhubLimiterService.getStockQuote(ticker);
       if (finnhubAsset != null) {
-        // Use the complete Finnhub asset data including all comprehensive fields
-        results.add(finnhubAsset); // Use the full asset with all market data fields
+        // Try to get company name from symbol lookup
+        final companyName = _getCompanyName(ticker);
+        final enhancedAsset = MarketAssetModel(
+          symbol: finnhubAsset.symbol,
+          name: companyName ?? finnhubAsset.name,
+          price: finnhubAsset.price,
+          change: finnhubAsset.change,
+          changePercent: finnhubAsset.changePercent,
+          type: finnhubAsset.type,
+          exchange: 'NASDAQ', // Default exchange
+          lastUpdated: finnhubAsset.lastUpdated,
+        );
+        results.add(enhancedAsset);
         print('✅ FINNHUB SUCCESS: $ticker = \$${finnhubAsset.price.toStringAsFixed(2)} (${finnhubAsset.changePercent >= 0 ? '+' : ''}${finnhubAsset.changePercent.toStringAsFixed(2)}%)');
-        print('✅ FINNHUB DATA: DayHigh=${finnhubAsset.dayHigh}, DayLow=${finnhubAsset.dayLow}, 52WH=${finnhubAsset.weekHigh52}, 52WL=${finnhubAsset.weekLow52}');
         return results;
       } else {
         print('⚠️ Finnhub returned null for $ticker (rate limited or invalid symbol), trying fallback methods');

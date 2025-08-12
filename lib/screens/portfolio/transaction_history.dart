@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/portfolio_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../theme/modern_theme.dart';
 import '../main_navigation.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
@@ -31,49 +30,26 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            title: const Text('Transaction History'),
-            backgroundColor: ModernTheme.backgroundCard,
-            foregroundColor: ModernTheme.textPrimary,
-          ),
+          const AppBarTitle(title: 'Transaction History'),
           
           Consumer<PortfolioProvider>(
             builder: (context, portfolioProvider, child) {
               if (portfolioProvider.isLoading) {
                 return const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(ModernTheme.accentBlue),
-                    ),
-                  ),
+                  child: LoadingWidget(),
                 );
               }
 
               if (portfolioProvider.error != null) {
                 return SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: ModernTheme.accentRed,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(portfolioProvider.error!),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                            if (authProvider.user != null) {
-                              portfolioProvider.loadTransactions(authProvider.user!.id);
-                            }
-                          },
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
+                  child: ErrorStateWidget(
+                    message: portfolioProvider.error!,
+                    onRetry: () {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      if (authProvider.user != null) {
+                        portfolioProvider.loadTransactions(authProvider.user!.id);
+                      }
+                    },
                   ),
                 );
               }
