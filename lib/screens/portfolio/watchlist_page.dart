@@ -222,11 +222,11 @@ class _WatchlistPageState extends State<WatchlistPage> {
 
   Widget _buildWatchlistCard(MarketAssetModel asset, int index, ThemeProvider themeProvider, WatchlistProvider watchlistProvider) {
     final isPositive = asset.changePercent >= 0;
-    final changeColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final changeColor = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
     
     // Use colorful accents for variety
     final colors = [
-      const Color(0xFF22C55E), // Green
+      const Color(0xFF3B82F6), // Blue
       const Color(0xFFEC4899), // Pink
       const Color(0xFFEAB308), // Yellow
       const Color(0xFF06B6D4), // Cyan

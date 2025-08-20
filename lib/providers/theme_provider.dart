@@ -9,8 +9,8 @@ import '../models/five_color_theme.dart';
 // Neon Navy Design System Color Tokens
 class NeonNavyColors {
   // Primary Colors
-  static const Color primary = Color(0xFF22C55E);        // Electric green
-  static const Color primaryDim = Color(0xFF16A34A);
+  static const Color primary = Color(0xFF3B82F6);        // Electric blue
+  static const Color primaryDim = Color(0xFF2563EB);
   static const Color error = Color(0xFFEF4444);          // Modern red
   static const Color warning = Color(0xFFF59E0B);
   static const Color info = Color(0xFF3B82F6);           // Blue accents/links
@@ -27,15 +27,15 @@ class NeonNavyColors {
   static const Color textMuted = Color(0xFF7B8AA0);
   
   // Chart Colors
-  static const Color chartLine = Color(0xFF22C55E);
-  static const Color donutIncome = Color(0xFF22C55E);
+  static const Color chartLine = Color(0xFF3B82F6);
+  static const Color donutIncome = Color(0xFFEA580C);
   static const Color donutOutcome = Color(0xFFEF4444);
   
   // Badge Colors  
   static const Color badgeRed = Color(0xFFEF4444);
   static const Color badgeOrange = Color(0xFFF59E0B);
   static const Color badgeYellow = Color(0xFFF59E0B);  // Bright yellow accent
-  static const Color badgeGreen = Color(0xFF22C55E);
+  static const Color badgeGreen = Color(0xFFEAB308);
   static const Color badgeBlue = Color(0xFF3B82F6);
   static const Color badgePurple = Color(0xFF8B5CF6);
   static const Color badgePink = Color(0xFFEC4899);     // Pink accent

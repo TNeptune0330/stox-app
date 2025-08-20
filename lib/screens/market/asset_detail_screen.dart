@@ -683,7 +683,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                   'Volume',
                   _fundamentals?['volume']?.toString() ?? 'N/A',
                   Icons.bar_chart,
-                  const Color(0xFF22C55E),
+                  const Color(0xFF3B82F6),
                 ),
                 const SizedBox(width: 12),
                 _buildStatCard(

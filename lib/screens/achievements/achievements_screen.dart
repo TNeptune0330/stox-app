@@ -47,7 +47,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     // Map achievement categories to badge colors
     switch (achievement.category.toLowerCase()) {
       case 'trading':
-        return BadgeType.green;
+        return BadgeType.orange;
       case 'portfolio':
         return BadgeType.blue;
       case 'milestone':
@@ -327,7 +327,7 @@ class _BadgeEmblem extends StatelessWidget {
     final color = switch (type) {
       BadgeType.red    => const Color(0xFFEF4444),
       BadgeType.orange => const Color(0xFFF59E0B),
-      BadgeType.green  => const Color(0xFF22C55E),
+      BadgeType.green  => const Color(0xFFEAB308),
       BadgeType.blue   => const Color(0xFF3B82F6),
       BadgeType.purple => const Color(0xFF8B5CF6),
     };

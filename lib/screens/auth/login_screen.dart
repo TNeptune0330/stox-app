@@ -88,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         colors: [
                           const Color(0xFF0F172A), // BG_DARK
                           const Color(0xFF1D2A3B), // SURFACE_DARK_2
-                          const Color(0xFF22C55E), // PRIMARY
+                          const Color(0xFF3B82F6), // PRIMARY
                         ],
                       ),
                     ),
@@ -249,7 +249,7 @@ class _AuthCard extends StatelessWidget {
             color: const Color(0xFF1D2A3B), // SURFACE_DARK_2
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: const Color(0xFF22C55E).withOpacity(0.3), // PRIMARY with opacity
+              color: const Color(0xFF3B82F6).withOpacity(0.3), // PRIMARY with opacity
               width: 1,
             ),
             boxShadow: [
@@ -268,7 +268,7 @@ class _AuthCard extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E), // PRIMARY
+                  color: const Color(0xFF3B82F6), // PRIMARY
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -342,7 +342,7 @@ class _AuthCard extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: authProvider.isLoading ? null : onGoogleSignIn,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF22C55E), // PRIMARY
+                        backgroundColor: const Color(0xFF3B82F6), // PRIMARY
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
