@@ -190,4 +190,13 @@ class StorageService {
   static bool isTutorialCompleted() {
     return _prefs?.getBool(_tutorialCompletedKey) ?? false;
   }
+
+  // Generic storage methods
+  static Future<void> setString(String key, String value) async {
+    await _prefs?.setString(key, value);
+  }
+  
+  static String? getString(String key) {
+    return _prefs?.getString(key);
+  }
 }
