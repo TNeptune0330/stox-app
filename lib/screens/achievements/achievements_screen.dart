@@ -99,7 +99,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            childAspectRatio: 0.8,
+                            childAspectRatio: 0.9,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
@@ -232,8 +232,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           
           // Main content
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Badge emblem
                 _BadgeEmblem(

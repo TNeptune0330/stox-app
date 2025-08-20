@@ -163,7 +163,7 @@ class _MarketIndicesBannerState extends State<MarketIndicesBanner> {
 
   Widget _buildIndexItem(MarketAssetModel index, ThemeProvider themeProvider) {
     final isPositive = index.changePercent >= 0;
-    final color = isPositive ? Colors.green : Colors.red;
+    final color = isPositive ? const Color(0xFF3B82F6) : Colors.red;
 
     return Expanded(
       child: Column(

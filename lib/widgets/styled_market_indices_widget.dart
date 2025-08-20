@@ -182,7 +182,7 @@ class _StyledMarketIndicesWidgetState extends State<StyledMarketIndicesWidget> {
 
   Widget _buildIndexBubble(MarketAssetModel index, ThemeProvider themeProvider) {
     final isPositive = index.changePercent >= 0;
-    final changeColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final changeColor = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
 
     return Expanded(
       child: Container(

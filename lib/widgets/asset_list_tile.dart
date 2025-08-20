@@ -76,7 +76,7 @@ class AssetListTile extends StatelessWidget {
       case 'crypto':
         return Colors.orange;
       case 'etf':
-        return Colors.green;
+        return const Color(0xFFEC4899);
       default:
         return Colors.grey;
     }

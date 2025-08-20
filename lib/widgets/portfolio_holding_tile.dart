@@ -112,7 +112,7 @@ class PortfolioHoldingTile extends StatelessWidget {
       case 'stock':
         return Colors.blue;
       case 'etf':
-        return Colors.green;
+        return const Color(0xFFEC4899);
       case 'crypto':
         return Colors.orange;
       default:

@@ -62,14 +62,14 @@ class PortfolioSummaryCard extends StatelessWidget {
                     Text(
                       currencyFormatter.format(totalPnL),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: isPositivePnL ? Colors.green : const Color(0xFFE74C3C),
+                        color: isPositivePnL ? const Color(0xFF3B82F6) : const Color(0xFFE74C3C),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       '${isPositivePnL ? '+' : ''}${totalPnLPercentage.toStringAsFixed(2)}%',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isPositivePnL ? Colors.green : const Color(0xFFE74C3C),
+                        color: isPositivePnL ? const Color(0xFF3B82F6) : const Color(0xFFE74C3C),
                       ),
                     ),
                   ],
@@ -96,7 +96,7 @@ class PortfolioSummaryCard extends StatelessWidget {
                     context,
                     'Holdings',
                     currencyFormatter.format(holdingsValue),
-                    Colors.green,
+                    const Color(0xFFEA580C),
                   ),
                 ),
               ],

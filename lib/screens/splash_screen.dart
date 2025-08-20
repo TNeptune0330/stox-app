@@ -84,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
   
   void _startShapeCycle() {
-    Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+    Timer.periodic(const Duration(milliseconds: 2200), (timer) {
       if (mounted && !_reducedMotion) {
         setState(() {
           _currentShape = (_currentShape + 1) % 3; // Cycle through 0, 1, 2
@@ -374,7 +374,7 @@ class _MorphingLoader extends StatelessWidget {
           return Semantics(
             label: 'Loading',
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 800),
+              duration: const Duration(milliseconds: 600),
               transitionBuilder: (Widget child, Animation<double> animation) {
                 return ScaleTransition(
                   scale: animation,
@@ -414,13 +414,16 @@ class _MorphingLoader extends StatelessWidget {
             ),
           )
         else if (currentShape == 1)
-          // Pink Circle (bouncing)
+          // Pink Circle (bouncing with squash and stretch)
           Transform.translate(
-            offset: Offset(0, reducedMotion ? 0 : sin(animationValue * 4 * pi) * 8),
+            offset: Offset(0, reducedMotion ? 0 : sin(animationValue * 6 * pi) * 12),
             child: Transform.scale(
-              scale: reducedMotion 
+              scaleX: reducedMotion 
                   ? 0.98 + (animationValue * 0.02)
-                  : 0.9 + (sin(animationValue * 4 * pi).abs() * 0.1),
+                  : 1.0 + (sin(animationValue * 6 * pi) * 0.15),
+              scaleY: reducedMotion 
+                  ? 0.98 + (animationValue * 0.02)
+                  : 1.0 - (sin(animationValue * 6 * pi).abs() * 0.1),
               child: Container(
                 width: size * 0.8,
                 height: size * 0.8,
