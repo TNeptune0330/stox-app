@@ -4,9 +4,7 @@ import '../../providers/portfolio_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/market_data_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../models/portfolio_model.dart';
 import '../../models/market_asset_model.dart';
-import '../market/trade_dialog.dart';
 import '../market/asset_detail_screen.dart';
 
 class HoldingsPage extends StatefulWidget {
@@ -261,7 +259,7 @@ class _HoldingsPageState extends State<HoldingsPage> {
           child: _buildAnalyticsCard(
             themeProvider,
             'Cash Balance',
-            '\$${portfolioProvider.balance.toStringAsFixed(2)}',
+            '\$${portfolioProvider.cashBalance.toStringAsFixed(2)}',
             Icons.account_balance,
             const Color(0xFFEC4899),
           ),
