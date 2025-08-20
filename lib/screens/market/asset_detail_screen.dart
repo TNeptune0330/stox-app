@@ -68,9 +68,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
       );
 
       setState(() {
-        _priceData = chartData.asMap().entries.map((entry) {
-          return FlSpot(entry.key.toDouble(), entry.value.close);
-        }).toList();
+        _priceData = chartData;
         _isLoading = false;
       });
     } catch (e) {
