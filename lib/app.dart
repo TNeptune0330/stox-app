@@ -5,6 +5,7 @@ import 'providers/portfolio_provider.dart';
 import 'providers/market_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/achievement_provider.dart';
+import 'providers/watchlist_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation.dart';
 import 'services/storage_service.dart';
@@ -22,6 +23,7 @@ class StoxApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AchievementProvider()),
+        ChangeNotifierProvider(create: (_) => WatchlistProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

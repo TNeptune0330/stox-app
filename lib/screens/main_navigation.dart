@@ -19,8 +19,37 @@ class MainNavigation extends StatefulWidget {
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class _MainNavigationState extends State<MainNavigation> with TickerProviderStateMixin {
   int _currentIndex = 1; // Default to Portfolio screen
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 220),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.92,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    // Delay initialization to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
+  
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
   
   final List<Widget> _screens = [
     const MarketScreen(),
@@ -28,15 +57,13 @@ class _MainNavigationState extends State<MainNavigation> {
     const AchievementsScreen(),
     const SettingsScreen(),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    // Delay initialization to avoid calling during build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeData();
-    });
-  }
+  
+  final List<Map<String, dynamic>> _navItems = [
+    {'icon': Icons.public, 'label': 'Markets'},
+    {'icon': Icons.work, 'label': 'Portfolio'},
+    {'icon': Icons.military_tech, 'label': 'Achievements'},
+    {'icon': Icons.settings, 'label': 'Settings'},
+  ];
 
   Future<void> _initializeData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -83,37 +110,144 @@ class _MainNavigationState extends State<MainNavigation> {
               const BannerAdWidget(), // Temporarily disabled for iOS build (returns empty container)
             ],
           ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
+          bottomNavigationBar: Container(
+            margin: const EdgeInsets.all(16),
+            height: 64,
+            decoration: BoxDecoration(
+              color: themeProvider.backgroundHigh,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: themeProvider.contrast.withOpacity(0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.24),
+                  blurRadius: 24,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(_navItems.length, (index) {
+                final isSelected = _currentIndex == index;
+                return _buildNavItem(
+                  themeProvider,
+                  index,
+                  _navItems[index]['icon'],
+                  _navItems[index]['label'],
+                  isSelected,
+                );
+              }),
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  Widget _buildNavItem(ThemeProvider themeProvider, int index, IconData icon, String label, bool isSelected) {
+    // Define accent colors for each tab
+    final accentColors = [
+      const Color(0xFFEC4899), // Pink for Markets
+      const Color(0xFFEAB308), // Yellow for Portfolio  
+      const Color(0xFF22C55E), // Green for Achievements
+      const Color(0xFFEA580C), // Orange for Settings
+    ];
+    final accentColor = accentColors[index % accentColors.length];
+    
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return GestureDetector(
+          onTap: () {
+            if (_currentIndex != index) {
+              _animationController.forward().then((_) {
+                _animationController.reverse();
+              });
               setState(() {
                 _currentIndex = index;
               });
-            },
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: themeProvider.theme,
-            unselectedItemColor: Colors.grey,
-            iconSize: ResponsiveUtils.getIconSize(context, 20),
-            selectedFontSize: ResponsiveUtils.getFontSize(context, 10),
-            unselectedFontSize: ResponsiveUtils.getFontSize(context, 9),
-            items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.trending_up),
-            label: 'Market',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            label: 'Portfolio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events),
-            label: 'Achievements',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-            ],
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: isSelected ? accentColor.withOpacity(0.15) : Colors.transparent,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Circular button with colored accent
+                Transform.scale(
+                  scale: isSelected ? _scaleAnimation.value : 1.0,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                          ? accentColor
+                          : themeProvider.backgroundHigh.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                      border: isSelected ? null : Border.all(
+                        color: themeProvider.contrast.withOpacity(0.1),
+                        width: 1,
+                      ),
+                      boxShadow: isSelected ? [
+                        BoxShadow(
+                          color: accentColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ] : null,
+                    ),
+                    child: Icon(
+                      icon,
+                      color: isSelected 
+                          ? Colors.white 
+                          : themeProvider.contrast.withOpacity(0.6),
+                      size: 24,
+                    ),
+                  ),
+                ),
+                // Label pill with colored accent (only for selected item)
+                if (isSelected) ...[
+                  const SizedBox(width: 8),
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 220),
+                    opacity: isSelected ? 1.0 : 0.0,
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: themeProvider.backgroundHigh,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: accentColor.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+              ],
+            ),
           ),
         );
       },

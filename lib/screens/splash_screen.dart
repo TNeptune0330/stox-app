@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/portfolio_provider.dart';
 import '../providers/market_data_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/local_database_service.dart';
 import '../services/enhanced_market_data_service.dart';
 import '../services/revenue_admob_service.dart';
@@ -22,15 +24,14 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _logoController;
-  late AnimationController _progressController;
-  late Animation<double> _logoAnimation;
-  late Animation<double> _progressAnimation;
+  late AnimationController _morphController;
+  late AnimationController _pulseController;
   
-  String _currentStatus = 'Initializing...';
-  double _progress = 0.0;
+  String _currentStatus = 'Preparing your portfolio…';
   bool _hasError = false;
   String? _errorMessage;
+  bool _reducedMotion = false;
+  int _currentShape = 0; // 0=triangle, 1=circle, 2=square
   
   @override
   void initState() {
@@ -39,35 +40,59 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _startInitialization();
   }
   
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkReducedMotion();
+  }
+  
+  void _checkReducedMotion() {
+    final newReducedMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (newReducedMotion != _reducedMotion) {
+      _reducedMotion = newReducedMotion;
+      _updateAnimations();
+    }
+  }
+  
+  void _updateAnimations() {
+    if (_reducedMotion) {
+      _morphController.stop();
+      _pulseController.repeat(reverse: true);
+    } else {
+      _pulseController.stop();
+      _morphController.repeat();
+      _startShapeCycle();
+    }
+  }
+  
   void _initializeAnimations() {
-    _logoController = AnimationController(
-      duration: const Duration(seconds: 2),
+    // Morph animation - 2000ms per shape cycle
+    _morphController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
     
-    _progressController = AnimationController(
-      duration: const Duration(seconds: 3),
+    // Pulse animation for reduced motion - 1400ms
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1400),
       vsync: this,
     );
     
-    _logoAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoController,
-      curve: Curves.elasticOut,
-    ));
-    
-    _progressAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _progressController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _logoController.forward();
-    _progressController.forward();
+    // Start with normal motion (will be updated in didChangeDependencies)
+    _morphController.repeat();
+    _startShapeCycle();
+  }
+  
+  void _startShapeCycle() {
+    Timer.periodic(const Duration(milliseconds: 2000), (timer) {
+      if (mounted && !_reducedMotion) {
+        setState(() {
+          _currentShape = (_currentShape + 1) % 3; // Cycle through 0, 1, 2
+        });
+      } else {
+        timer.cancel();
+      }
+    });
   }
   
   Future<void> _startInitialization() async {
@@ -84,29 +109,28 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   
   Future<void> _initializeApp() async {
     // Step 1: Initialize Database
-    await _updateStatus('Initializing database...', 0.1);
+    await _updateStatus('Initializing database…');
     await Future.delayed(const Duration(milliseconds: 300));
     
-    // Database should already be initialized in main.dart
     final dbStats = await LocalDatabaseService.getDatabaseStats();
     print('📊 Database initialized - ${dbStats['market_assets']} assets');
     
     // Step 2: Initialize Market Data Provider
-    await _updateStatus('Loading market data...', 0.3);
+    await _updateStatus('Loading market data…');
     await Future.delayed(const Duration(milliseconds: 500));
     
     final marketProvider = Provider.of<MarketDataProvider>(context, listen: false);
     await marketProvider.initialize();
     
     // Step 3: Initialize Auth Provider
-    await _updateStatus('Checking authentication...', 0.5);
+    await _updateStatus('Checking authentication…');
     await Future.delayed(const Duration(milliseconds: 300));
     
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.initialize();
     
     // Step 4: Initialize Portfolio Provider
-    await _updateStatus('Loading portfolio...', 0.7);
+    await _updateStatus('Loading portfolio…');
     await Future.delayed(const Duration(milliseconds: 400));
     
     final portfolioProvider = Provider.of<PortfolioProvider>(context, listen: false);
@@ -117,51 +141,39 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       await portfolioProvider.loadPortfolio(authProvider.user!.id);
     } else {
       print('⚠️ SplashScreen: No authenticated user, skipping portfolio load');
-      // Don't load portfolio with default user - wait for proper authentication
     }
     
     // Step 5: Final checks
-    await _updateStatus('Finalizing setup...', 0.9);
+    await _updateStatus('Ready to trade!');
     await Future.delayed(const Duration(milliseconds: 300));
-    
-    // Check AdMob status
-    final adStats = RevenueAdMobService.getAdStats();
-    print('🎯 AdMob Status: ${adStats['banner_loaded'] ? 'Ready' : 'Loading'}');
-    
-    await _updateStatus('Ready to trade!', 1.0);
-    await Future.delayed(const Duration(milliseconds: 500));
   }
   
-  Future<void> _updateStatus(String status, double progress) async {
+  Future<void> _updateStatus(String status) async {
     if (mounted) {
       setState(() {
         _currentStatus = status;
-        _progress = progress;
       });
     }
   }
   
   Future<void> _checkAuthentication() async {
     // First check if user has completed onboarding
-    await _updateStatus('Checking onboarding status...', 0.7);
+    await _updateStatus('Checking onboarding status…');
     await Future.delayed(const Duration(milliseconds: 300));
     
     final hasCompletedOnboarding = StorageService.isOnboardingCompleted();
     
     if (!hasCompletedOnboarding) {
-      // User needs to complete onboarding first
       await _navigateToOnboarding();
       return;
     }
     
-    await _updateStatus('Checking authentication...', 0.9);
+    await _updateStatus('Checking authentication…');
     await Future.delayed(const Duration(milliseconds: 300));
     
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUser = LocalDatabaseService.getCurrentUser();
     
     if (currentUser != null) {
-      // User is logged in, check if tutorial is completed
       final hasTutorial = StorageService.isTutorialCompleted();
       if (hasTutorial) {
         await _navigateToMain();
@@ -169,7 +181,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         await _navigateToTutorial();
       }
     } else {
-      // No user, go to login
       await _navigateToLogin();
     }
   }
@@ -218,248 +229,248 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     }
   }
   
+  void _retryInitialization() {
+    setState(() {
+      _hasError = false;
+      _errorMessage = null;
+    });
+    _startInitialization();
+  }
+  
   @override
   void dispose() {
-    _logoController.dispose();
-    _progressController.dispose();
+    _morphController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1a1a2e),
-              Color(0xFF0f1419),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Top section with logo
-              Expanded(
-                flex: 3,
-                child: Center(
-                  child: AnimatedBuilder(
-                    animation: _logoAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _logoAnimation.value,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Logo
-                            Container(
-                              width: ResponsiveUtils.getIconSize(context, 120),
-                              height: ResponsiveUtils.getIconSize(context, 120),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF7209b7),
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF7209b7).withOpacity(0.3),
-                                    blurRadius: 20,
-                                    spreadRadius: 5,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.trending_up,
-                                size: ResponsiveUtils.getIconSize(context, 64),
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            // App Name
-                            Text(
-                              'STOX',
-                              style: TextStyle(
-                                fontSize: ResponsiveUtils.getFontSize(context, 42),
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 4,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            
-                            // Subtitle
-                            Text(
-                              'TRADING SIMULATOR',
-                              style: TextStyle(
-                                fontSize: ResponsiveUtils.getFontSize(context, 16),
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white70,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Scaffold(
+          backgroundColor: themeProvider.background, // BG_DARK
+          body: SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // App Name and Version
+                  Text(
+                    'Stox',
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      color: themeProvider.contrast,
+                      letterSpacing: -1,
+                    ),
                   ),
-                ),
-              ),
-              
-              // Bottom section with progress
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_hasError) ...[
-                        // Error state
-                        const Icon(
+                  
+                  const SizedBox(height: 8),
+                  
+                  Text(
+                    'version 1.0.0',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: themeProvider.contrast.withOpacity(0.6),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 48),
+                  
+                  // Morphing shape loader
+                  _hasError
+                      ? Icon(
                           Icons.error_outline,
-                          size: 48,
-                          color: Colors.red,
+                          size: 64,
+                          color: themeProvider.themeData.colorScheme.error,
+                        )
+                      : _MorphingLoader(
+                          controller: _reducedMotion ? _pulseController : _morphController,
+                          reducedMotion: _reducedMotion,
+                          currentShape: _currentShape,
+                          size: 64,
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Initialization Failed',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _errorMessage ?? 'Unknown error occurred',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.white70,
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Status caption
+                  Text(
+                    _hasError ? 'Initialization failed' : _currentStatus,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFFA7B4C7), // TEXT_SECONDARY
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  // Error message and retry button
+                  if (_hasError) ...[
+                    const SizedBox(height: 16),
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Text(
+                          _errorMessage!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: themeProvider.themeData.colorScheme.error,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _hasError = false;
-                              _errorMessage = null;
-                              _progress = 0.0;
-                            });
-                            _startInitialization();
-                          },
-                          child: const Text('Retry'),
-                        ),
-                      ] else ...[
-                        // Loading state
-                        AnimatedBuilder(
-                          animation: _progressAnimation,
-                          builder: (context, child) {
-                            return Column(
-                              children: [
-                                // Progress bar
-                                Container(
-                                  width: double.infinity,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white24,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: FractionallySizedBox(
-                                    alignment: Alignment.centerLeft,
-                                    widthFactor: _progress,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF7209b7),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                
-                                // Status text
-                                Text(
-                                  _currentStatus,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                
-                                // Progress percentage
-                                Text(
-                                  '${(_progress * 100).toInt()}%',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Footer
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Practice trading with virtual currency',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white54,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Real market prices • No real money involved',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.white38,
+                    const SizedBox(height: 24),
+                    TextButton(
+                      onPressed: _retryInitialization,
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          color: themeProvider.themeData.colorScheme.primary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: RevenueAdMobService.isBannerAdLoaded 
-                                ? Colors.green 
-                                : Colors.orange,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'AdMob ${RevenueAdMobService.isBannerAdLoaded ? 'Ready' : 'Loading'}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.white38,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        );
+      },
+    );
+  }
+}
+
+// Private morphing loader widget
+class _MorphingLoader extends StatelessWidget {
+  final AnimationController controller;
+  final bool reducedMotion;
+  final int currentShape; // 0=triangle, 1=circle, 2=square
+  final double size;
+
+  const _MorphingLoader({
+    required this.controller,
+    required this.reducedMotion,
+    required this.currentShape,
+    this.size = 64,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) {
+          return Semantics(
+            label: 'Loading',
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Shape morphing animation
+                if (currentShape == 0)
+                  // Green Triangle (spinning)
+                  Transform.rotate(
+                    angle: reducedMotion ? 0 : (controller.value * 2 * pi),
+                    child: Transform.scale(
+                      scale: reducedMotion 
+                          ? 0.98 + (controller.value * 0.02) // Pulse between 0.98 and 1.0
+                          : 1.0,
+                      child: CustomPaint(
+                        size: Size(size, size),
+                        painter: _TrianglePainter(
+                          color: const Color(0xFF22C55E), // Green
+                        ),
+                      ),
+                    ),
+                  )
+                else if (currentShape == 1)
+                  // Pink Circle (bouncing)
+                  Transform.translate(
+                    offset: Offset(0, reducedMotion ? 0 : sin(controller.value * 4 * pi) * 8),
+                    child: Transform.scale(
+                      scale: reducedMotion 
+                          ? 0.98 + (controller.value * 0.02)
+                          : 0.9 + (sin(controller.value * 4 * pi).abs() * 0.1),
+                      child: Container(
+                        width: size * 0.8,
+                        height: size * 0.8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEC4899), // Pink
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  // Orange Square (expanding/contracting)
+                  Transform.scale(
+                    scale: reducedMotion 
+                        ? 0.98 + (controller.value * 0.02)
+                        : 0.7 + (sin(controller.value * 3 * pi).abs() * 0.3),
+                    child: Transform.rotate(
+                      angle: reducedMotion ? 0 : (controller.value * pi / 4),
+                      child: Container(
+                        width: size * 0.7,
+                        height: size * 0.7,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEA580C), // Orange
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+// Private triangle painter
+class _TrianglePainter extends CustomPainter {
+  final Color color;
+
+  _TrianglePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width * 0.4; // Make it slightly smaller than full size
+
+    // Create equilateral triangle
+    for (int i = 0; i < 3; i++) {
+      final angle = (i * 120 - 90) * (pi / 180); // Start from top
+      final x = center.dx + radius * cos(angle);
+      final y = center.dy + radius * sin(angle);
+      
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

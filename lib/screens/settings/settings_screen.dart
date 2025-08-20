@@ -29,803 +29,337 @@ class _SettingsScreenState extends State<SettingsScreen> {
           backgroundColor: themeProvider.background,
           body: CustomScrollView(
             slivers: [
-              const AppBarTitle(title: 'Settings'),
-              
-              SliverList(
-                delegate: SliverChildListDelegate([
-                  // User Profile Section
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, child) {
-                      if (authProvider.isLoading) {
-                        return Container(
-                          margin: const EdgeInsets.all(16),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: themeProvider.theme.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: themeProvider.theme.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 60,
-                                height: 60,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
-                                  backgroundColor: themeProvider.themeHigh.withOpacity(0.3),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Loading...',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: themeProvider.contrast,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Please wait',
-                                    style: TextStyle(
-                                      color: themeProvider.themeHigh,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      if (authProvider.user == null) {
-                        return Container(
-                          margin: const EdgeInsets.all(16),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: themeProvider.theme.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: themeProvider.contrast.withOpacity(0.3),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: themeProvider.contrast.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.pushReplacementNamed(context, '/login');
-                            },
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    color: themeProvider.contrast.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.person_outline,
-                                    size: 30,
-                                    color: themeProvider.contrast,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Guest User',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: themeProvider.contrast,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Sign in to save your progress',
-                                        style: TextStyle(
-                                          color: themeProvider.contrast.withOpacity(0.7),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.arrow_forward_ios,
-                                  color: themeProvider.theme,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      return Container(
-                        margin: const EdgeInsets.all(16),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: themeProvider.theme.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: themeProvider.theme.withOpacity(0.2),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: themeProvider.theme.withOpacity(0.1),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ProfileEditScreen(),
-                              ),
-                            );
-                          },
-                          child: Row(
-                            children: [
-                              ProfilePictureWidget(
-                                size: 80,
-                                showEditButton: true,
-                                onImageChanged: () {
-                                  // Trigger UI refresh when image changes
-                                  authProvider.notifyListeners();
-                                },
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      authProvider.user!.username ?? 'User',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: themeProvider.contrast,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      authProvider.user!.email,
-                                      style: TextStyle(
-                                        color: themeProvider.contrast.withOpacity(0.7),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: themeProvider.themeHigh.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: themeProvider.themeHigh.withOpacity(0.5),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'Balance: \$${authProvider.user!.cashBalance.toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          color: themeProvider.themeHigh,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                color: themeProvider.theme,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Theme Section (Collapsible)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: themeProvider.theme.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: themeProvider.theme.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Theme Header (Clickable)
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isThemeExpanded = !_isThemeExpanded;
-                            });
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [
-                                  themeProvider.theme.withOpacity(0.1),
-                                  themeProvider.themeHigh.withOpacity(0.05),
-                                ],
-                              ),
-                              borderRadius: _isThemeExpanded
-                                  ? const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      topRight: Radius.circular(16),
-                                    )
-                                  : BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.palette,
-                                  color: themeProvider.theme,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Themes',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: themeProvider.contrast,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  _isThemeExpanded 
-                                      ? Icons.keyboard_arrow_up 
-                                      : Icons.keyboard_arrow_down,
-                                  color: themeProvider.theme,
-                                  size: 24,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        // Theme Selection (Expandable)
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          height: _isThemeExpanded ? null : 0,
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 200),
-                            opacity: _isThemeExpanded ? 1.0 : 0.0,
-                            child: _isThemeExpanded
-                                ? Consumer<ThemeProvider>(
-                                    builder: (context, themeProvider, child) {
-                                      return Column(
-                                        children: ThemeProvider.themes.map((theme) {
-                                          final isSelected = themeProvider.selectedTheme == theme['value'];
-                                          return Container(
-                                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: isSelected 
-                                                  ? themeProvider.theme.withOpacity(0.1)
-                                                  : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(16),
-                                              border: isSelected
-                                                  ? Border.all(
-                                                      color: themeProvider.theme,
-                                                      width: 2,
-                                                    )
-                                                  : Border.all(
-                                                      color: Colors.grey.withOpacity(0.3),
-                                                      width: 1,
-                                                    ),
-                                            ),
-                                            child: ListTile(
-                                              contentPadding: const EdgeInsets.all(12),
-                                              onTap: () {
-                                                if (theme['value'] == 'custom') {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) => const ColorPickerScreen(),
-                                                    ),
-                                                  );
-                                                } else {
-                                                  themeProvider.setTheme(theme['value']);
-                                                  
-                                                  // Update user theme in database
-                                                  final authProvider = Provider.of<AuthProvider>(
-                                                    context, 
-                                                    listen: false,
-                                                  );
-                                                  authProvider.updateProfile(colorTheme: theme['value']);
-                                                }
-                                              },
-                                              title: Text(
-                                                theme['name'],
-                                                style: TextStyle(
-                                                  color: themeProvider.contrast,
-                                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                              subtitle: theme['previewColors'] != null
-                                                  ? Container(
-                                                      margin: const EdgeInsets.only(top: 8),
-                                                      height: 20,
-                                                      child: Row(
-                                                        children: (theme['previewColors'] as List<Color>).map((color) => 
-                                                          Expanded(
-                                                            child: Container(
-                                                              margin: const EdgeInsets.only(right: 2),
-                                                              decoration: BoxDecoration(
-                                                                color: color,
-                                                                borderRadius: BorderRadius.circular(4),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ).toList(),
-                                                      ),
-                                                    )
-                                                  : null,
-                                              leading: Container(
-                                                padding: const EdgeInsets.all(10),
-                                                decoration: BoxDecoration(
-                                                  color: (theme['color'] as Color).withOpacity(0.2),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Icon(
-                                                  theme['icon'],
-                                                  color: theme['color'],
-                                                  size: 20,
-                                                ),
-                                              ),
-                                              trailing: isSelected
-                                                  ? Icon(
-                                                      Icons.check_circle,
-                                                      color: themeProvider.theme,
-                                                      size: 24,
-                                                    )
-                                                  : const Icon(
-                                                      Icons.circle_outlined,
-                                                      color: Colors.grey,
-                                                      size: 24,
-                                                    ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                      );
-                                    },
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-
-                  // App Info Section
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: themeProvider.theme.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: themeProvider.contrast.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildInfoTile(
-                          icon: Icons.info_outline,
-                          title: 'About',
-                          subtitle: 'App version and info',
-                          color: themeProvider.themeHigh,
-                          themeProvider: themeProvider,
-                          onTap: () {
-                            showAboutDialog(
-                              context: context,
-                              applicationName: 'Stox',
-                              applicationVersion: '1.0.0',
-                              applicationIcon: Icon(
-                                Icons.trending_up,
-                                color: themeProvider.theme,
-                                size: 32,
-                              ),
-                              children: [
-                                Text(
-                                  'A stock trading simulator with real market data. '
-                                  'Practice trading without risking real money.',
-                                  style: TextStyle(
-                                    color: themeProvider.contrast.withOpacity(0.8),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        Divider(
-                          color: themeProvider.theme.withOpacity(0.1),
-                          height: 1,
-                          indent: 16,
-                          endIndent: 16,
-                        ),
-                        _buildInfoTile(
-                          icon: Icons.help_outline,
-                          title: 'Help & Support',
-                          subtitle: 'Get help with using the app',
-                          color: themeProvider.theme,
-                          themeProvider: themeProvider,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Help & Support coming soon!'),
-                                backgroundColor: themeProvider.theme,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        Divider(
-                          color: themeProvider.theme.withOpacity(0.1),
-                          height: 1,
-                          indent: 16,
-                          endIndent: 16,
-                        ),
-                        _buildInfoTile(
-                          icon: Icons.description_outlined,
-                          title: 'Terms of Service',
-                          subtitle: 'App terms and conditions',
-                          color: themeProvider.contrast,
-                          themeProvider: themeProvider,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const LegalDocumentScreen(
-                                  title: 'Terms of Service',
-                                  assetPath: 'assets/legal/terms_of_service.md',
-                                  showAcceptButton: false,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        Divider(
-                          color: themeProvider.theme.withOpacity(0.1),
-                          height: 1,
-                          indent: 16,
-                          endIndent: 16,
-                        ),
-                        _buildInfoTile(
-                          icon: Icons.privacy_tip_outlined,
-                          title: 'Privacy Policy',
-                          subtitle: 'How we protect your data',
-                          color: themeProvider.themeHigh,
-                          themeProvider: themeProvider,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const LegalDocumentScreen(
-                                  title: 'Privacy Policy',
-                                  assetPath: 'assets/legal/privacy_policy.md',
-                                  showAcceptButton: false,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Tutorial Section
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: themeProvider.backgroundHigh,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: themeProvider.contrast.withOpacity(0.3),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeProvider.contrast.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          contentPadding: const EdgeInsets.all(16),
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: themeProvider.theme.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.school,
-                              color: themeProvider.theme,
-                              size: 24,
-                            ),
-                          ),
-                          title: Text(
-                            'Replay Tutorial',
-                            style: TextStyle(
-                              color: themeProvider.contrast,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          subtitle: Text(
-                            'Learn how to use the app again',
-                            style: TextStyle(
-                              color: themeProvider.contrast.withOpacity(0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                          trailing: Icon(
-                            Icons.play_arrow,
-                            color: themeProvider.theme,
-                            size: 24,
-                          ),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const TutorialScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Analytics Section (Admin only)
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, child) {
-                      // Show analytics only for admin users from database
-                      final isAdmin = authProvider.isAdmin ?? false;
-                      const isDebug = true; // Change to false for production
-                      
-                      if (!isAdmin && !isDebug) {
-                        return const SizedBox.shrink();
-                      }
-                      
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: themeProvider.backgroundHigh,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: themeProvider.contrast.withOpacity(0.3),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: themeProvider.contrast.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              contentPadding: const EdgeInsets.all(16),
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.analytics,
-                                  color: Colors.purple,
-                                  size: 24,
-                                ),
-                              ),
-                              title: Text(
-                                'User Analytics',
-                                style: TextStyle(
-                                  color: themeProvider.contrast,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'View app usage and user metrics',
-                                style: TextStyle(
-                                  color: themeProvider.contrast.withOpacity(0.7),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              trailing: Icon(
-                                Icons.bar_chart,
-                                color: Colors.purple,
-                                size: 24,
-                              ),
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const AnalyticsScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Support Section
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: themeProvider.backgroundHigh,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: themeProvider.contrast.withOpacity(0.3),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeProvider.contrast.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          contentPadding: const EdgeInsets.all(16),
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.support_agent,
-                              color: Colors.orange,
-                              size: 24,
-                            ),
-                          ),
-                          title: Text(
-                            'Support & Feedback',
-                            style: TextStyle(
-                              color: themeProvider.contrast,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          subtitle: Text(
-                            'Report bugs, request features, get help',
-                            style: TextStyle(
-                              color: themeProvider.contrast.withOpacity(0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.orange,
-                            size: 18,
-                          ),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const SupportScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Sign Out Section
-                  Container(
-                    margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: themeProvider.theme.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: themeProvider.contrast.withOpacity(0.3),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeProvider.contrast.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: GestureDetector(
-                      onTap: () => _showSignOutDialog(context, themeProvider),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: themeProvider.contrast.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.logout,
-                                color: themeProvider.contrast,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                'Sign Out',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: themeProvider.contrast,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: themeProvider.contrast,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ]),
+              // Simple app bar
+              SliverAppBar(
+                backgroundColor: themeProvider.background,
+                elevation: 0,
+                pinned: true,
+                title: Text(
+                  'Settings',
+                  style: Theme.of(context).textTheme.headlineLarge,
+                ),
               ),
+              
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // User Header Section
+                    _buildUserHeader(themeProvider),
+                    const SizedBox(height: 32),
+                    
+                    // Settings Items
+                    _buildSettingsItem(
+                      themeProvider,
+                      Icons.description,
+                      'Terms of Use',
+                      () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const LegalDocumentScreen(
+                              title: 'Terms of Service',
+                              assetPath: 'assets/legal/terms_of_service.md',
+                              showAcceptButton: false,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    _buildSettingsItem(
+                      themeProvider,
+                      Icons.privacy_tip,
+                      'Privacy Policy',
+                      () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const LegalDocumentScreen(
+                              title: 'Privacy Policy',
+                              assetPath: 'assets/legal/privacy_policy.md',
+                              showAcceptButton: false,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    _buildSettingsItem(
+                      themeProvider,
+                      Icons.help_outline,
+                      'Help & Support',
+                      () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SupportScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    _buildSettingsItem(
+                      themeProvider,
+                      Icons.logout,
+                      'Logout',
+                      () => _showSignOutDialog(context, themeProvider),
+                      isDestructive: true,
+                    ),
+                    
+                    const SizedBox(height: 100), // Bottom padding for nav bar
+                  ]),
+                ),
+              ),
+
             ],
           ),
         );
       },
+    );
+  }
+  
+  Widget _buildUserHeader(ThemeProvider themeProvider) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        if (authProvider.isLoading) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: themeProvider.backgroundHigh,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: themeProvider.contrast.withOpacity(0.1)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Loading...',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: themeProvider.contrast,
+                      ),
+                    ),
+                    Text(
+                      'Please wait',
+                      style: TextStyle(
+                        color: themeProvider.contrast.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (authProvider.user == null) {
+          return GestureDetector(
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: themeProvider.backgroundHigh,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: themeProvider.contrast.withOpacity(0.1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.24),
+                    blurRadius: 24,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: themeProvider.contrast.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.person_outline,
+                      size: 30,
+                      color: themeProvider.contrast,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Guest User',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.contrast,
+                          ),
+                        ),
+                        Text(
+                          'Sign in to save your progress',
+                          style: TextStyle(
+                            color: themeProvider.contrast.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: themeProvider.theme,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProfileEditScreen(),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: themeProvider.backgroundHigh,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: themeProvider.contrast.withOpacity(0.1)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.24),
+                  blurRadius: 24,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                ProfilePictureWidget(
+                  size: 60,
+                  showEditButton: false,
+                  onImageChanged: () {
+                    authProvider.notifyListeners();
+                  },
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        authProvider.user!.username ?? 'User',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: themeProvider.contrast,
+                        ),
+                      ),
+                      Text(
+                        authProvider.user!.email,
+                        style: TextStyle(
+                          color: themeProvider.contrast.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: themeProvider.theme,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  Widget _buildSettingsItem(
+    ThemeProvider themeProvider,
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    bool isDestructive = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: themeProvider.backgroundHigh,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: themeProvider.contrast.withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.24),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isDestructive 
+                    ? const Color(0xFFEF4444).withOpacity(0.1) 
+                    : themeProvider.theme.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isDestructive ? const Color(0xFFEF4444) : themeProvider.theme,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDestructive ? const Color(0xFFEF4444) : themeProvider.contrast,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: themeProvider.contrast.withOpacity(0.5),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

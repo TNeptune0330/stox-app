@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/market_asset_model.dart';
+import '../../models/portfolio_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/portfolio_provider.dart';
@@ -13,10 +14,14 @@ import 'trade_dialog.dart';
 
 class AssetDetailScreen extends StatefulWidget {
   final MarketAssetModel asset;
+  final bool isHolding;
+  final PortfolioModel? holdingDetails;
 
   const AssetDetailScreen({
     super.key,
     required this.asset,
+    this.isHolding = false,
+    this.holdingDetails,
   });
 
   @override
@@ -57,58 +62,38 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     });
 
     try {
-      // Load real historical data
-      _priceData = await EnhancedMarketDataService.getHistoricalData(
-        widget.asset.symbol, 
-        _selectedTimeframe
+      final chartData = await EnhancedMarketDataService.getHistoricalData(
+        widget.asset.symbol,
+        _selectedTimeframe,
       );
-      
-      // If no historical data available, create a single point from current price
-      if (_priceData.isEmpty) {
-        print('No historical data available for ${widget.asset.symbol}, using current price');
-        _priceData = [FlSpot(0, widget.asset.price)];
-      }
+
+      setState(() {
+        _priceData = chartData.asMap().entries.map((entry) {
+          return FlSpot(entry.key.toDouble(), entry.value.close);
+        }).toList();
+        _isLoading = false;
+      });
     } catch (e) {
       print('Error loading chart data: $e');
-      // Use current price as fallback - no fake historical data
-      _priceData = [FlSpot(0, widget.asset.price)];
-    } finally {
       setState(() {
+        _priceData = [];
         _isLoading = false;
       });
     }
   }
 
-  // REMOVED: _generateRealisticMockData - We only use real data from APIs
-
   Future<void> _loadFundamentals() async {
-    setState(() {
-      _isLoadingFundamentals = true;
-    });
-    
-    // Use real market data for fundamentals - no mock data
     try {
-      print('📊 Loading fundamental data for ${widget.asset.symbol}...');
-      // Get real fundamental data from Yahoo Finance or other APIs
       final fundamentalData = await EnhancedMarketDataService.getFundamentalData(widget.asset.symbol);
       
-      if (fundamentalData.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _fundamentals = fundamentalData;
           _isLoadingFundamentals = false;
         });
-        print('📊 Fundamental data loaded for ${widget.asset.symbol}: ${fundamentalData.keys.join(', ')}');
-      } else {
-        // No fundamental data available - leave as null to show "no data" state
-        setState(() {
-          _fundamentals = null;
-          _isLoadingFundamentals = false;
-        });
-        print('📊 No fundamental data available for ${widget.asset.symbol}');
       }
     } catch (e) {
       print('Error loading fundamentals for ${widget.asset.symbol}: $e');
-      // No data available on error - show "no data" state
       setState(() {
         _fundamentals = null;
         _isLoadingFundamentals = false;
@@ -142,844 +127,322 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
+        final isPositive = widget.asset.changePercent >= 0;
+        final changeColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+        
         return Scaffold(
           backgroundColor: themeProvider.background,
-          body: CustomScrollView(
-            slivers: [
-              // App Bar
-              SliverAppBar(
-                expandedHeight: 200,
-                floating: false,
-                pinned: true,
-                backgroundColor: themeProvider.background,
-                foregroundColor: themeProvider.contrast,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(
-                    widget.asset.symbol,
-                    style: TextStyle(
-                      color: themeProvider.contrast,
-                      fontWeight: FontWeight.bold,
-                    ),
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Header with back button and notifications
+                Container(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
                   ),
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          themeProvider.theme.withOpacity(0.3),
-                          themeProvider.background,
-                        ],
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.asset.name,
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: themeProvider.contrast.withOpacity(0.8),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: themeProvider.backgroundHigh,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                '\$${widget.asset.price.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  color: themeProvider.contrast,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: widget.asset.changePercent >= 0
-                                      ? Colors.green.withOpacity(0.2)
-                                      : Colors.red.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '${widget.asset.changePercent >= 0 ? '+' : ''}${widget.asset.changePercent.toStringAsFixed(2)}%',
-                                  style: TextStyle(
-                                    color: widget.asset.changePercent >= 0
-                                        ? Colors.green
-                                        : Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: Icon(
+                            Icons.arrow_back_ios,
+                            color: themeProvider.contrast,
+                            size: 20,
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const Spacer(),
+                      Text(
+                        'Detail',
+                        style: TextStyle(
+                          color: themeProvider.contrast,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: themeProvider.backgroundHigh,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.notifications_outlined,
+                          color: themeProvider.contrast,
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.favorite_border),
-                    onPressed: () {
-                      // Add to watchlist functionality
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Added ${widget.asset.symbol} to watchlist'),
-                          backgroundColor: themeProvider.theme,
+
+                // Stock header with logo
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Company logo placeholder
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1ED760), // Spotify green
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            widget.asset.symbol.substring(0, 2),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.asset.symbol,
+                              style: TextStyle(
+                                color: themeProvider.contrast,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              widget.asset.name,
+                              style: TextStyle(
+                                color: themeProvider.contrast.withOpacity(0.7),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Price display
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Row(
+                    children: [
+                      Text(
+                        '\$${widget.asset.price.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: themeProvider.contrast,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: changeColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${widget.asset.changePercent >= 0 ? '+' : ''}${widget.asset.changePercent.toStringAsFixed(2)}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Chart with purple gradient background
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF9333EA), // Purple
+                        Color(0xFF6366F1), // Indigo
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: _buildSpotifyStyleChart(themeProvider),
+                ),
+
+                // Time period selector
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: ['1D', '1W', '1M', '3M', '6M', '1Y', 'All'].map((period) {
+                      final isSelected = _selectedTimeframe == period;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedTimeframe = period;
+                            });
+                            _loadChartData();
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? themeProvider.theme : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              period,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : themeProvider.contrast.withOpacity(0.7),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
                       );
-                    },
+                    }).toList(),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.share),
-                    onPressed: () {
-                      // Share functionality
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Share feature coming soon!')),
-                      );
-                    },
-                  ),
-                ],
-              ),
-
-              // Content
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    // Company Overview Section
-                    _buildCompanyOverview(themeProvider),
-                    
-                    // Tab Bar
-                    Container(
-                      color: themeProvider.background,
-                      child: TabBar(
-                        controller: _tabController,
-                        labelColor: themeProvider.theme,
-                        unselectedLabelColor: themeProvider.contrast.withOpacity(0.6),
-                        indicatorColor: themeProvider.theme,
-                        tabs: const [
-                          Tab(text: 'Chart'),
-                          Tab(text: 'Stats'),
-                          Tab(text: 'News'),
-                        ],
-                      ),
-                    ),
-
-                    // Tab Content
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.6,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildChartTab(themeProvider),
-                          _buildStatsTab(themeProvider),
-                          _buildNewsTab(themeProvider),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 24),
+
+                // Holdings section (only show if this is a holding)
+                if (widget.isHolding && widget.holdingDetails != null)
+                  _buildHoldingsSection(themeProvider),
+
+                // Stats section (conditionally show based on holding status)
+                _buildStatsSection(themeProvider),
+
+                // About section
+                _buildAboutSection(themeProvider),
+
+                const SizedBox(height: 100), // Space for trade buttons
+              ],
+            ),
           ),
-          bottomNavigationBar: _buildTradeButton(themeProvider),
+          bottomNavigationBar: _buildTradeButtons(themeProvider),
         );
       },
     );
   }
 
-  Widget _buildChartTab(ThemeProvider themeProvider) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Timeframe selector
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: _timeframes.map((timeframe) {
-              final isSelected = _selectedTimeframe == timeframe;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedTimeframe = timeframe;
-                  });
-                  _loadChartData();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? themeProvider.theme
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: themeProvider.theme.withOpacity(0.5),
-                    ),
-                  ),
-                  child: Text(
-                    timeframe,
-                    style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : themeProvider.contrast,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          
-          const SizedBox(height: 20),
-          
-          // Chart
-          Expanded(
-            child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
-                    ),
-                  )
-                : LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) => FlLine(
-                          color: themeProvider.contrast.withOpacity(0.1),
-                          strokeWidth: 1,
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 30,
-                            interval: _priceData.length > 10 ? _priceData.length / 4 : null,
-                            getTitlesWidget: (value, meta) {
-                              if (_priceData.isEmpty) return const SizedBox();
-                              
-                              final index = value.toInt();
-                              if (index < 0 || index >= _priceData.length) return const SizedBox();
-                              
-                              String label;
-                              switch (_selectedTimeframe) {
-                                case '1D':
-                                  final hour = 9 + (index * 5 / 60).floor(); // Trading starts at 9:30 AM
-                                  final minute = (index * 5) % 60;
-                                  label = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-                                  break;
-                                case '1W':
-                                  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-                                  final dayIndex = (index / 7).floor() % days.length;
-                                  label = days[dayIndex];
-                                  break;
-                                case '1M':
-                                  label = '${index + 1}';
-                                  break;
-                                case '3M':
-                                  final month = (index / 30).floor() + 1;
-                                  label = 'M$month';
-                                  break;
-                                case '1Y':
-                                  final week = index + 1;
-                                  label = 'W$week';
-                                  break;
-                                default:
-                                  label = index.toString();
-                              }
-                              
-                              return Text(
-                                label,
-                                style: TextStyle(
-                                  color: themeProvider.contrast.withOpacity(0.6),
-                                  fontSize: 10,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                '\$${value.toStringAsFixed(0)}',
-                                style: TextStyle(
-                                  color: themeProvider.contrast.withOpacity(0.6),
-                                  fontSize: 12,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: _priceData,
-                          isCurved: false,
-                          color: widget.asset.changePercent >= 0
-                              ? Colors.green
-                              : Colors.red,
-                          barWidth: 2,
-                          isStrokeCapRound: false,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: (widget.asset.changePercent >= 0
-                                    ? Colors.green
-                                    : Colors.red)
-                                .withOpacity(0.1),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsTab(ThemeProvider themeProvider) {
-    if (_isLoadingFundamentals) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+  Widget _buildSpotifyStyleChart(ThemeProvider themeProvider) {
+    return _isLoading
+        ? const Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading Market Data...',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: themeProvider.contrast,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Fetching detailed information for ${widget.asset.symbol}',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: themeProvider.contrast.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    if (_fundamentals == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.analytics_outlined,
-              size: 64,
-              color: themeProvider.contrast.withOpacity(0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Market Data Unavailable',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: themeProvider.contrast,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Detailed market data for ${widget.asset.symbol} is not available from our data sources.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: themeProvider.contrast.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadFundamentals,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeProvider.theme,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildStatCard(
-            'Market Data',
-            [
-              StatItem('Market Cap', _formatMarketCap(_fundamentals!['marketCap'])),
-              StatItem('Volume', _formatVolume(_fundamentals!['volume'])),
-              StatItem('P/E Ratio', _fundamentals!['peRatio'].toStringAsFixed(2)),
-              StatItem('Dividend Yield', '${_fundamentals!['dividendYield'].toStringAsFixed(2)}%'),
-            ],
-            themeProvider,
-          ),
-          const SizedBox(height: 16),
-          _buildStatCard(
-            'Price Range',
-            [
-              StatItem('Day High', '\$${_fundamentals!['dayHigh'].toStringAsFixed(2)}'),
-              StatItem('Day Low', '\$${_fundamentals!['dayLow'].toStringAsFixed(2)}'),
-              StatItem('52W High', '\$${_fundamentals!['weekHigh52'].toStringAsFixed(2)}'),
-              StatItem('52W Low', '\$${_fundamentals!['weekLow52'].toStringAsFixed(2)}'),
-            ],
-            themeProvider,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNewsTab(ThemeProvider themeProvider) {
-    if (_isLoadingNews) {
-      return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
-        ),
-      );
-    }
-
-    if (_newsArticles.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.newspaper,
-              size: 64,
-              color: themeProvider.contrast.withOpacity(0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No News Available',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: themeProvider.contrast,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'News for ${widget.asset.symbol} is currently unavailable.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: themeProvider.contrast.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadNews,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeProvider.theme,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadNews,
-      color: themeProvider.theme,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _newsArticles.length,
-        itemBuilder: (context, index) {
-          final article = _newsArticles[index];
-          return _buildNewsCard(article, themeProvider);
-        },
-      ),
-    );
-  }
-
-  Widget _buildNewsCard(NewsArticle article, ThemeProvider themeProvider) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: themeProvider.backgroundHigh,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: themeProvider.theme.withOpacity(0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: themeProvider.theme.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getSentimentColor(article.sentiment).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          )
+        : _priceData.isEmpty
+            ? const Center(
                 child: Text(
-                  article.sentiment,
+                  'No chart data available',
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _getSentimentColor(article.sentiment),
+                    color: Colors.white70,
+                    fontSize: 14,
                   ),
                 ),
-              ),
-              const Spacer(),
-              Text(
-                article.timeAgo,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: themeProvider.contrast.withOpacity(0.6),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Title
-          Text(
-            article.title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: themeProvider.contrast,
-              height: 1.3,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Summary
-          Text(
-            article.summary,
-            style: TextStyle(
-              fontSize: 14,
-              color: themeProvider.contrast.withOpacity(0.8),
-              height: 1.4,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Footer
-          Row(
-            children: [
-              Icon(
-                Icons.article_outlined,
-                size: 16,
-                color: themeProvider.theme,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                article.source,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: themeProvider.theme,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () async {
-                  try {
-                    final uri = Uri.parse(article.url);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Could not open article from ${article.source}'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error opening article: $e'),
-                          backgroundColor: Colors.red,
+              )
+            : LineChart(
+                LineChartData(
+                  gridData: const FlGridData(show: false),
+                  titlesData: const FlTitlesData(show: false),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: _priceData,
+                      isCurved: true,
+                      gradient: const LinearGradient(
+                        colors: [Colors.white, Colors.white70],
+                      ),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withOpacity(0.3),
+                            Colors.white.withOpacity(0.0),
+                          ],
                         ),
-                      );
-                    }
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: themeProvider.theme.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: themeProvider.theme.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Read More',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: themeProvider.theme,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 12,
-                        color: themeProvider.theme,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getSentimentColor(String sentiment) {
-    switch (sentiment.toLowerCase()) {
-      case 'bullish':
-        return Colors.green;
-      case 'bearish':
-        return Colors.red;
-      default:
-        return Colors.orange;
-    }
-  }
-
-  Widget _buildStatCard(String title, List<StatItem> items, ThemeProvider themeProvider) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: themeProvider.backgroundHigh,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: themeProvider.theme.withOpacity(0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: themeProvider.contrast,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...items.map((item) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        color: themeProvider.contrast.withOpacity(0.7),
-                      ),
-                    ),
-                    Text(
-                      item.value,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: themeProvider.contrast,
                       ),
                     ),
                   ],
+                  minX: 0,
+                  maxX: _priceData.isNotEmpty ? _priceData.length.toDouble() - 1 : 0,
+                  minY: _priceData.isNotEmpty 
+                    ? _priceData.map((e) => e.y).reduce((a, b) => a < b ? a : b) * 0.95
+                    : 0,
+                  maxY: _priceData.isNotEmpty 
+                    ? _priceData.map((e) => e.y).reduce((a, b) => a > b ? a : b) * 1.05
+                    : 1,
                 ),
-              )),
-        ],
-      ),
-    );
+              );
   }
 
-  Widget _buildTradeButton(ThemeProvider themeProvider) {
+  Widget _buildHoldingsSection(ThemeProvider themeProvider) {
+    final holding = widget.holdingDetails!;
+    final currentPrice = widget.asset.price;
+    final pnlDollar = currentPrice - holding.avgPrice;
+    final pnlPercent = holding.avgPrice > 0 ? (pnlDollar / holding.avgPrice) * 100 : 0.0;
+    final isPositive = pnlDollar >= 0;
+    final pnlColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: themeProvider.background,
-        border: Border(
-          top: BorderSide(
-            color: themeProvider.theme.withOpacity(0.2),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () => _showTradeDialog(context, 'buy'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'BUY',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () => _showTradeDialog(context, 'sell'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'SELL',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showTradeDialog(BuildContext context, String action) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    if (authProvider.user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to trade'),
-        ),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => TradeDialog(
-        asset: widget.asset,
-        userId: authProvider.user!.id,
-        initialAction: action,
-      ),
-    );
-  }
-
-  String _formatMarketCap(double value) {
-    if (value >= 1e12) {
-      return '\$${(value / 1e12).toStringAsFixed(2)}T';
-    } else if (value >= 1e9) {
-      return '\$${(value / 1e9).toStringAsFixed(2)}B';
-    } else if (value >= 1e6) {
-      return '\$${(value / 1e6).toStringAsFixed(2)}M';
-    } else {
-      return '\$${value.toStringAsFixed(0)}';
-    }
-  }
-
-  String _formatVolume(double value) {
-    if (value >= 1e9) {
-      return '${(value / 1e9).toStringAsFixed(2)}B';
-    } else if (value >= 1e6) {
-      return '${(value / 1e6).toStringAsFixed(2)}M';
-    } else if (value >= 1e3) {
-      return '${(value / 1e3).toStringAsFixed(2)}K';
-    } else {
-      return value.toStringAsFixed(0);
-    }
-  }
-
-  Widget _buildCompanyOverview(ThemeProvider themeProvider) {
-    final description = StockDescriptionsService.getDescription(widget.asset.symbol);
-    final companyType = StockDescriptionsService.getCompanyType(widget.asset.symbol);
-    
-    return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: themeProvider.backgroundHigh,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: themeProvider.theme.withOpacity(0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: themeProvider.theme.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: themeProvider.theme.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Holdings header
           Row(
             children: [
               Container(
@@ -989,30 +452,70 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  Icons.business,
+                  Icons.account_balance_wallet,
                   color: themeProvider.theme,
-                  size: 20,
+                  size: 16,
                 ),
               ),
               const SizedBox(width: 12),
+              Text(
+                'Your Investment',
+                style: TextStyle(
+                  color: themeProvider.contrast,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Investment stats
+          Row(
+            children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'About ${widget.asset.symbol}',
+                      'Total Investment',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: themeProvider.contrast,
+                        color: themeProvider.contrast.withOpacity(0.7),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      companyType,
+                      '\$${(holding.avgPrice * holding.quantity).toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: themeProvider.theme,
+                        color: themeProvider.contrast,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Profit',
+                      style: TextStyle(
+                        color: themeProvider.contrast.withOpacity(0.7),
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${isPositive ? '+' : ''}\$${(pnlDollar * holding.quantity).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: pnlColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
@@ -1020,37 +523,115 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
               ),
             ],
           ),
-          
           const SizedBox(height: 16),
-          
-          // Description
-          Text(
-            description,
-            style: TextStyle(
-              fontSize: 15,
-              color: themeProvider.contrast.withOpacity(0.85),
-              height: 1.5,
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Key Stats Row
+
+          // Additional stats
           Row(
             children: [
               Expanded(
-                child: _buildKeyStatItem(
-                  'Market Cap',
-                  _formatMarketCap(widget.asset.price * 1000000000.0),
-                  themeProvider,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AVG FILL',
+                      style: TextStyle(
+                        color: themeProvider.contrast.withOpacity(0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${holding.avgPrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: themeProvider.contrast,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 16),
               Expanded(
-                child: _buildKeyStatItem(
-                  'Asset Type',
-                  widget.asset.type.toUpperCase(),
-                  themeProvider,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BUY ZONE',
+                      style: TextStyle(
+                        color: themeProvider.contrast.withOpacity(0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${(holding.avgPrice * 0.95).toStringAsFixed(2)} - \$${(holding.avgPrice * 1.05).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: themeProvider.contrast,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PROFIT ZONE',
+                      style: TextStyle(
+                        color: themeProvider.contrast.withOpacity(0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${(holding.avgPrice * 1.1).toStringAsFixed(2)}+',
+                      style: TextStyle(
+                        color: themeProvider.contrast,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'STOP LOSS',
+                      style: TextStyle(
+                        color: themeProvider.contrast.withOpacity(0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${(holding.avgPrice * 0.9).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: themeProvider.contrast,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1060,45 +641,313 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     );
   }
 
-  Widget _buildKeyStatItem(String label, String value, ThemeProvider themeProvider) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: themeProvider.background,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: themeProvider.theme.withOpacity(0.2),
+  Widget _buildStatsSection(ThemeProvider themeProvider) {
+    // Show different stats based on whether this is a holding or not
+    if (widget.isHolding) {
+      // For holdings, show performance-focused stats
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          children: [
+            // Performance stats row
+            Row(
+              children: [
+                _buildStatCard(
+                  themeProvider,
+                  'Market Cap',
+                  _fundamentals?['marketCap']?.toString() ?? 'N/A',
+                  Icons.public,
+                  const Color(0xFF3B82F6),
+                ),
+                const SizedBox(width: 12),
+                _buildStatCard(
+                  themeProvider,
+                  'P/E Ratio',
+                  _fundamentals?['peRatio']?.toString() ?? 'N/A',
+                  Icons.trending_up,
+                  const Color(0xFFEC4899),
+                ),
+              ],
+            ),
+          ],
         ),
+      );
+    } else {
+      // For non-holdings, show general market stats
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                _buildStatCard(
+                  themeProvider,
+                  'Volume',
+                  _fundamentals?['volume']?.toString() ?? 'N/A',
+                  Icons.bar_chart,
+                  const Color(0xFF22C55E),
+                ),
+                const SizedBox(width: 12),
+                _buildStatCard(
+                  themeProvider,
+                  '52W High',
+                  _fundamentals?['weekHigh52']?.toString() ?? 'N/A',
+                  Icons.north,
+                  const Color(0xFFEAB308),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildStatCard(
+                  themeProvider,
+                  '52W Low',
+                  _fundamentals?['weekLow52']?.toString() ?? 'N/A',
+                  Icons.south,
+                  const Color(0xFFEA580C),
+                ),
+                const SizedBox(width: 12),
+                _buildStatCard(
+                  themeProvider,
+                  'P/E Ratio',
+                  _fundamentals?['peRatio']?.toString() ?? 'N/A',
+                  Icons.analytics,
+                  const Color(0xFF8B5CF6),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _buildStatCard(ThemeProvider themeProvider, String title, String value, IconData icon, Color accentColor) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: themeProvider.backgroundHigh,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: accentColor.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: accentColor,
+                    size: 14,
+                  ),
+                ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextStyle(
+                color: themeProvider.contrast.withOpacity(0.7),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: themeProvider.contrast,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAboutSection(ThemeProvider themeProvider) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundHigh,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: themeProvider.contrast.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            'About ${widget.asset.name}',
             style: TextStyle(
-              fontSize: 12,
-              color: themeProvider.contrast.withOpacity(0.7),
-              fontWeight: FontWeight.w500,
+              color: themeProvider.contrast,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
           Text(
-            value,
+            'Netflix Inc. has built an enduring reputation for development and manufacture of engines for defense and civil aircraft.',
             style: TextStyle(
+              color: themeProvider.contrast.withOpacity(0.8),
               fontSize: 14,
-              color: themeProvider.contrast,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () {
+              // Add view more functionality
+            },
+            child: Text(
+              'View More',
+              style: TextStyle(
+                color: themeProvider.theme,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class StatItem {
-  final String label;
-  final String value;
-
-  StatItem(this.label, this.value);
+  Widget _buildTradeButtons(ThemeProvider themeProvider) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 16,
+        top: 16,
+      ),
+      decoration: BoxDecoration(
+        color: themeProvider.background,
+        border: Border(
+          top: BorderSide(
+            color: themeProvider.contrast.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Buy button
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                if (authProvider.user != null) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => TradeDialog(
+                      asset: widget.asset,
+                      userId: authProvider.user!.id,
+                      initialTab: 0, // Buy tab
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF22C55E),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'BUY',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Sell button (only show if holding)
+          if (widget.isHolding)
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  if (authProvider.user != null) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => TradeDialog(
+                        asset: widget.asset,
+                        userId: authProvider.user!.id,
+                        initialTab: 1, // Sell tab
+                        maxQuantity: widget.holdingDetails?.quantity ?? 0,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEF4444),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'SELL',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            )
+          else
+            // Watch button for non-holdings
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  // Add to watchlist functionality
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Added ${widget.asset.symbol} to watchlist'),
+                      backgroundColor: themeProvider.theme,
+                    ),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: themeProvider.theme),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'WATCH',
+                  style: TextStyle(
+                    color: themeProvider.theme,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

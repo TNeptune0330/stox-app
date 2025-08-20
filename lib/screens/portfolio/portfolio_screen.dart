@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/achievement_provider.dart';
 import '../../providers/market_data_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/watchlist_provider.dart';
 import '../../widgets/portfolio_summary_card.dart';
 import '../../widgets/achievement_banner_widget.dart';
 import '../../utils/responsive_utils.dart';
@@ -14,6 +15,8 @@ import '../../mixins/performance_optimized_mixin.dart';
 import '../main_navigation.dart';
 import '../market/trade_dialog.dart';
 import 'transaction_history.dart';
+import 'holdings_page.dart';
+import 'watchlist_page.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
@@ -32,7 +35,14 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     // Use debounced initialization to avoid unnecessary calls
     debouncedSetState(() {
       _initializePortfolioData();
+      _initializeWatchlist();
     }, delay: const Duration(milliseconds: 100));
+  }
+  
+  void _initializeWatchlist() {
+    // Initialize watchlist provider
+    final watchlistProvider = Provider.of<WatchlistProvider>(context, listen: false);
+    watchlistProvider.initialize();
   }
   
   void _initializePortfolioData() {
@@ -59,82 +69,14 @@ class _PortfolioScreenState extends State<PortfolioScreen>
           backgroundColor: themeProvider.background,
           body: CustomScrollView(
             slivers: [
-              // Header with 5-color theme
+              // Simple app bar
               SliverAppBar(
-                expandedHeight: ResponsiveUtils.isTablet(context) ? 160 : 120,
-                floating: false,
+                backgroundColor: themeProvider.background,
+                elevation: 0,
                 pinned: true,
-                backgroundColor: themeProvider.backgroundHigh,
-                foregroundColor: themeProvider.contrast,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          themeProvider.themeHigh,
-                          themeProvider.theme,
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeProvider.themeHigh.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: themeProvider.background.withOpacity(0.3),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.account_balance_wallet,
-                              size: ResponsiveUtils.getIconSize(context, 36),
-                              color: themeProvider.contrast,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'PORTFOLIO',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: themeProvider.contrast,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Consumer<PortfolioProvider>(
-                            builder: (context, portfolioProvider, child) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: themeProvider.background.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Net Worth: \$${portfolioProvider.netWorth.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: themeProvider.contrast,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                title: Text(
+                  'Portfolio',
+                  style: Theme.of(context).textTheme.headlineLarge,
                 ),
                 actions: [
                   IconButton(
@@ -147,124 +89,615 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                         ),
                       );
                     },
-                ),
-                IconButton(
-                  icon: Icon(Icons.refresh, color: themeProvider.contrast),
-                  onPressed: () {
-                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                    if (authProvider.user != null) {
-                      Provider.of<PortfolioProvider>(context, listen: false)
-                          .forceRefreshWithConnection(authProvider.user!.id);
-                    }
-                  },
-                ),
-              ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.refresh, color: themeProvider.contrast),
+                    onPressed: () {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      if (authProvider.user != null) {
+                        Provider.of<PortfolioProvider>(context, listen: false)
+                            .forceRefreshWithConnection(authProvider.user!.id);
+                      }
+                    },
+                  ),
+                ],
               ),
 
               Consumer<PortfolioProvider>(
                 builder: (context, portfolioProvider, child) {
-              if (portfolioProvider.isLoading) {
-                return const SliverFillRemaining(
-                  child: LoadingWidget(),
-                );
-              }
+                  if (portfolioProvider.isLoading) {
+                    return const SliverFillRemaining(
+                      child: LoadingWidget(),
+                    );
+                  }
 
-              if (portfolioProvider.error != null) {
-                return SliverFillRemaining(
-                  child: ErrorStateWidget(
-                    message: portfolioProvider.error!,
-                    onRetry: () {
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      if (authProvider.user != null) {
-                        portfolioProvider.loadPortfolio(authProvider.user!.id);
-                      }
-                    },
-                  ),
-                );
-              }
+                  if (portfolioProvider.error != null) {
+                    return SliverFillRemaining(
+                      child: ErrorStateWidget(
+                        message: portfolioProvider.error!,
+                        onRetry: () {
+                          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                          if (authProvider.user != null) {
+                            portfolioProvider.loadPortfolio(authProvider.user!.id);
+                          }
+                        },
+                      ),
+                    );
+                  }
 
-              return SliverList(
-                delegate: SliverChildListDelegate([
-                  // Portfolio Summary Card (clickable to show holdings)
-                  GestureDetector(
-                    onTap: () => _showHoldingsPopup(context, portfolioProvider),
-                    child: PortfolioSummaryCard(
-                      cashBalance: portfolioProvider.cashBalance,
-                      holdingsValue: portfolioProvider.holdingsValue,
-                      netWorth: portfolioProvider.netWorth,
-                      totalPnL: portfolioProvider.totalPnL,
-                      totalPnLPercentage: portfolioProvider.totalPnLPercentage,
+                  return SliverPadding(
+                    padding: const EdgeInsets.all(16),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        // Hero Wallet Card
+                        _buildWalletCard(themeProvider, portfolioProvider),
+                        const SizedBox(height: 24),
+                        
+                        // Stats Card
+                        _buildStatsCard(themeProvider, portfolioProvider),
+                        const SizedBox(height: 24),
+                        
+                        // Achievements Preview
+                        _buildAchievementsPreview(themeProvider),
+                        const SizedBox(height: 24),
+                        
+                        // Watchlist
+                        _buildWatchlist(themeProvider),
+                        const SizedBox(height: 24),
+                        
+                        // Transactions Button
+                        _buildTransactionsButton(themeProvider),
+                        const SizedBox(height: 100), // Bottom padding for nav bar
+                      ]),
                     ),
-                  ),
-
-                  // Achievement Banner
-                  const AchievementBannerWidget(),
-
-                  // Recent Achievements Preview
-                  Consumer<AchievementProvider>(
-                    builder: (context, achievementProvider, child) {
-                      final recentAchievements = achievementProvider.getRecentlyUnlocked();
-                      if (recentAchievements.isEmpty) return const SizedBox.shrink();
-                      
-                      return Container(
-                        margin: const EdgeInsets.all(16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: themeProvider.backgroundHigh,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: themeProvider.themeHigh, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: themeProvider.themeHigh.withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.emoji_events, color: themeProvider.themeHigh, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Recent Achievements',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: themeProvider.contrast,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ...recentAchievements.map((achievement) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Row(
-                                children: [
-                                  Icon(achievement.icon, color: achievement.color, size: 16),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    achievement.title,
-                                    style: TextStyle(color: themeProvider.contrast, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            )),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ]),
-              );
+                  );
                 },
               ),
             ],
           ),
         );
       },
+    );
+  }
+  
+  Widget _buildWalletCard(ThemeProvider themeProvider, PortfolioProvider portfolioProvider) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const HoldingsPage(),
+          ),
+        );
+      },
+      child: Container(
+        height: 168,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [themeProvider.themeHigh, themeProvider.theme],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.24),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Background pattern
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.16),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Balance',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '\$${portfolioProvider.netWorth.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Portfolio Value',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.16),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: const Text(
+                          'Top Up',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildStatsCard(ThemeProvider themeProvider, PortfolioProvider portfolioProvider) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundHigh,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: themeProvider.contrast.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.24),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total P&L',
+                  style: TextStyle(
+                    color: themeProvider.contrast.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: portfolioProvider.totalPnL >= 0 ? themeProvider.theme : const Color(0xFFEF4444),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    '${portfolioProvider.totalPnL >= 0 ? '+' : ''}\$${portfolioProvider.totalPnL.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Day Change',
+                  style: TextStyle(
+                    color: themeProvider.contrast.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: portfolioProvider.totalPnL >= 0 ? themeProvider.theme : const Color(0xFFEF4444),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    '${portfolioProvider.totalPnLPercentage >= 0 ? '+' : ''}${portfolioProvider.totalPnLPercentage.toStringAsFixed(2)}%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildAchievementsPreview(ThemeProvider themeProvider) {
+    return Consumer<AchievementProvider>(
+      builder: (context, achievementProvider, child) {
+        // Get only EARNED achievements (isUnlocked = true)
+        final earnedAchievements = achievementProvider.achievements
+            .where((achievement) => achievement.isUnlocked == true)
+            .take(3) // Show max 3 earned achievements
+            .toList();
+        
+        return Column(
+          children: [
+            // Section header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Achievements',
+                  style: Theme.of(context).textTheme.headlineLarge,
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Navigate to achievements tab - use a simpler approach
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    // This will pop back to main navigation and user can manually tap achievements
+                  },
+                  child: const Text(
+                    'See all',
+                    style: TextStyle(
+                      color: Color(0xFF3B82F6), // INFO color
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Achievement cards - ONLY EARNED ONES
+            if (earnedAchievements.isNotEmpty)
+              SizedBox(
+                height: 100, // Reduced height for better proportion
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: earnedAchievements.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final achievement = earnedAchievements[index];
+                    // Use colorful accents for earned achievements
+                    final colors = [
+                      const Color(0xFFEC4899), // Pink
+                      const Color(0xFFEAB308), // Yellow
+                      const Color(0xFFEA580C), // Orange
+                      const Color(0xFF06B6D4), // Cyan
+                      const Color(0xFF8B5CF6), // Purple
+                    ];
+                    final accentColor = colors[index % colors.length];
+                    
+                    return Container(
+                      width: 200, // Reduced width
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: themeProvider.backgroundHigh,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: accentColor.withOpacity(0.3)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row( // Changed to Row for more compact layout
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: accentColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              achievement.icon,
+                              color: accentColor,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  achievement.title,
+                                  style: TextStyle(
+                                    color: themeProvider.contrast,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Completed!',
+                                  style: TextStyle(
+                                    color: accentColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              )
+            else
+              Container(
+                height: 80,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: themeProvider.backgroundHigh,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: themeProvider.contrast.withOpacity(0.1)),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.emoji_events_outlined,
+                        color: themeProvider.contrast.withOpacity(0.5),
+                        size: 24,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Start trading to earn achievements!',
+                        style: TextStyle(
+                          color: themeProvider.contrast.withOpacity(0.7),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+  
+  Widget _buildWatchlist(ThemeProvider themeProvider) {
+    return Consumer<WatchlistProvider>(
+      builder: (context, watchlistProvider, child) {
+        return Column(
+          children: [
+            // Section header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Watchlist',
+                  style: Theme.of(context).textTheme.headlineLarge,
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const WatchlistPage(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'View all',
+                    style: TextStyle(
+                      color: Color(0xFF3B82F6), // INFO color
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // Loading or error state
+            if (watchlistProvider.isLoading)
+              Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  color: themeProvider.backgroundHigh,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (watchlistProvider.error != null)
+              Container(
+                height: 120,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: themeProvider.backgroundHigh,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    'Error loading watchlist',
+                    style: TextStyle(
+                      color: themeProvider.contrast.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              )
+            else
+              // Real watchlist grid
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.4,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: watchlistProvider.watchlistAssets.length.clamp(0, 4), // Max 4 items
+                itemBuilder: (context, index) {
+                  final asset = watchlistProvider.watchlistAssets[index];
+                  
+                  // Use colorful accents for variety
+                  final colors = [
+                    const Color(0xFF22C55E), // Green
+                    const Color(0xFFEC4899), // Pink
+                    const Color(0xFFEAB308), // Yellow
+                    const Color(0xFF06B6D4), // Cyan
+                  ];
+                  final accentColor = asset.changePercent >= 0 
+                      ? const Color(0xFF22C55E) 
+                      : const Color(0xFFEF4444);
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      // TODO: Navigate to asset detail or trading screen
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: themeProvider.backgroundHigh,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: colors[index % colors.length].withOpacity(0.2)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Ticker chip
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: colors[index % colors.length].withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              asset.symbol,
+                              style: TextStyle(
+                                color: colors[index % colors.length],
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          // Price
+                          Text(
+                            '\$${asset.price.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: themeProvider.contrast,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          // Percent change pill
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: accentColor,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${asset.changePercent >= 0 ? '+' : ''}${asset.changePercent.toStringAsFixed(1)}%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+  
+  Widget _buildTransactionsButton(ThemeProvider themeProvider) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TransactionHistoryScreen(),
+            ),
+          );
+        },
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: themeProvider.contrast.withOpacity(0.3)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: Text(
+          'View All Transactions',
+          style: TextStyle(
+            color: themeProvider.contrast,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 
@@ -384,7 +817,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                       padding: const EdgeInsets.all(16),
                       shrinkWrap: true,
                       itemCount: provider.portfolio.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 8),
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final holding = provider.portfolio[index];
                         

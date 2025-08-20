@@ -34,37 +34,37 @@ class _MarketScreenState extends State<MarketScreen> {
   Widget _buildWeekendBanner(ThemeProvider themeProvider) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: themeProvider.backgroundHigh,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: themeProvider.theme.withOpacity(0.3),
+          color: themeProvider.contrast.withOpacity(0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: themeProvider.theme.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.24),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: themeProvider.theme.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFFF59E0B).withOpacity(0.2), // Warning color
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.schedule,
-              color: themeProvider.theme,
-              size: 20,
+              color: Color(0xFFF59E0B),
+              size: 24,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +73,7 @@ class _MarketScreenState extends State<MarketScreen> {
                   'Markets Closed',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     color: themeProvider.contrast,
                   ),
                 ),
@@ -82,7 +82,8 @@ class _MarketScreenState extends State<MarketScreen> {
                   'Stock markets are closed on weekends. Trading will resume Monday.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: themeProvider.contrast,
+                    fontWeight: FontWeight.w600,
+                    color: themeProvider.contrast.withOpacity(0.7),
                   ),
                 ),
               ],
@@ -99,13 +100,21 @@ class _MarketScreenState extends State<MarketScreen> {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return Scaffold(
+          backgroundColor: themeProvider.background,
           body: CustomScrollView(
             slivers: [
-              AppBarTitle(
-                title: 'Market',
+              // Simple app bar with Neon Navy styling
+              SliverAppBar(
+                backgroundColor: themeProvider.background,
+                elevation: 0,
+                pinned: true,
+                title: Text(
+                  'Markets',
+                  style: Theme.of(context).textTheme.headlineLarge,
+                ),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.refresh),
+                    icon: Icon(Icons.refresh, color: themeProvider.contrast),
                     onPressed: () {
                       Provider.of<MarketDataProvider>(context, listen: false).refreshMarketData();
                     },
@@ -113,24 +122,24 @@ class _MarketScreenState extends State<MarketScreen> {
                 ],
               ),
               
-              // Search Bar
+              // Search Bar with Neon Navy styling
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Consumer<MarketDataProvider>(
                     builder: (context, marketProvider, child) {
-                      return Container(
-                        constraints: const BoxConstraints(maxWidth: double.infinity),
-                        child: TextField(
-                          controller: _searchController,
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          textInputAction: TextInputAction.search,
-                          decoration: InputDecoration(
-                            hintText: 'Enter stock ticker and press Enter...',
-                            hintStyle: TextStyle(
-                              color: themeProvider.contrast.withOpacity(0.6),
-                            ),
+                      return TextField(
+                        controller: _searchController,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText: 'Search stocks...',
+                          hintStyle: TextStyle(
+                            color: themeProvider.contrast.withOpacity(0.6),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                           prefixIcon: marketProvider.isLoading && _searchController.text.isNotEmpty
                               ? Padding(
                                   padding: const EdgeInsets.all(12.0),
@@ -159,40 +168,19 @@ class _MarketScreenState extends State<MarketScreen> {
                                   },
                                 )
                               : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: themeProvider.theme.withOpacity(0.3),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: themeProvider.theme.withOpacity(0.3),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: themeProvider.theme,
-                              width: 2,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: themeProvider.backgroundHigh,
+                          // Use theme's input decoration
                         ),
                         style: TextStyle(
                           color: themeProvider.contrast,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                         onChanged: (value) {
-                          // Update search query but don't search yet
                           marketProvider.setSearchQuery(value);
                         },
                         onSubmitted: (value) {
-                          // Search when user hits enter
                           marketProvider.performSearch();
                         },
-                        ),
                       );
                     },
                   ),
@@ -472,49 +460,139 @@ class _MarketScreenState extends State<MarketScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduced margin
       decoration: BoxDecoration(
         color: themeProvider.backgroundHigh,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: themeProvider.theme.withOpacity(0.3),
+          color: themeProvider.theme.withOpacity(0.2),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Compact Header
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12), // Reduced padding
             child: Row(
               children: [
                 Icon(
                   Icons.trending_up,
                   color: themeProvider.theme,
-                  size: 20,
+                  size: 16, // Smaller icon
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Text(
-                  '$title Top Movers',
+                  '$title',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14, // Smaller font
+                    fontWeight: FontWeight.w700,
                     color: themeProvider.contrast,
                   ),
                 ),
               ],
             ),
           ),
-          // Movers List
-          ...movers.map((asset) => Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: AssetListTile(
-              asset: asset,
-              onTap: () => _showAssetDetail(context, asset),
-            ),
+          // Compact Movers List - Show only top 2
+          ...movers.take(2).map((asset) => Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            child: _buildCompactAssetTile(asset, themeProvider),
           )),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompactAssetTile(MarketAssetModel asset, ThemeProvider themeProvider) {
+    final isPositive = asset.changePercent >= 0;
+    final changeColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    
+    return GestureDetector(
+      onTap: () => _showAssetDetail(context, asset),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: themeProvider.background.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: changeColor.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Symbol and name
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    asset.symbol,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: themeProvider.contrast,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    asset.name,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: themeProvider.contrast.withOpacity(0.6),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            // Price
+            Expanded(
+              flex: 2,
+              child: Text(
+                '\$${asset.price.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: themeProvider.contrast,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Change percentage
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: changeColor,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                    size: 8,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    '${asset.changePercent.abs().toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

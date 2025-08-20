@@ -71,6 +71,9 @@ dependencies:
   # URL Launcher for opening news articles
   url_launcher: ^6.2.4
   
+  # Typography
+  google_fonts: ^6.2.1
+  
   # Performance monitoring
   device_info_plus: ^10.1.2
   package_info_plus: ^8.0.2

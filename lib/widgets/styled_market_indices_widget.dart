@@ -57,19 +57,19 @@ class _StyledMarketIndicesWidgetState extends State<StyledMarketIndicesWidget> {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduced vertical margin
+          padding: const EdgeInsets.all(12), // Reduced padding
           decoration: BoxDecoration(
             color: themeProvider.backgroundHigh,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12), // Smaller radius
             border: Border.all(
-              color: themeProvider.theme.withOpacity(0.3),
+              color: themeProvider.theme.withOpacity(0.2),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: themeProvider.theme.withOpacity(0.1),
-                blurRadius: 8,
+                color: Colors.black.withOpacity(0.08), // Lighter shadow
+                blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -77,28 +77,28 @@ class _StyledMarketIndicesWidgetState extends State<StyledMarketIndicesWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with refresh button
+              // Compact header
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(6), // Smaller padding
                     decoration: BoxDecoration(
                       color: themeProvider.theme.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
                       Icons.trending_up,
                       color: themeProvider.theme,
-                      size: 16,
+                      size: 14, // Smaller icon
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Market Indices',
+                      'Markets',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 14, // Smaller font
+                        fontWeight: FontWeight.w700,
                         color: themeProvider.contrast,
                       ),
                     ),
@@ -107,21 +107,21 @@ class _StyledMarketIndicesWidgetState extends State<StyledMarketIndicesWidget> {
                     GestureDetector(
                       onTap: _loadRealIndicesData,
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: themeProvider.theme.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Icon(
                           Icons.refresh,
-                          size: 16,
+                          size: 12,
                           color: themeProvider.theme,
                         ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8), // Less spacing
               
               // Indices data
               if (_isLoading)
@@ -182,15 +182,15 @@ class _StyledMarketIndicesWidgetState extends State<StyledMarketIndicesWidget> {
 
   Widget _buildIndexBubble(MarketAssetModel index, ThemeProvider themeProvider) {
     final isPositive = index.changePercent >= 0;
-    final changeColor = isPositive ? Colors.green : Colors.red;
+    final changeColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
 
     return Expanded(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(horizontal: 2), // Less margin
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), // Reduced padding
         decoration: BoxDecoration(
           color: themeProvider.background.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8), // Smaller radius
           border: Border.all(
             color: changeColor.withOpacity(0.3),
             width: 1,
