@@ -152,7 +152,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
     final accentColors = [
       const Color(0xFFEC4899), // Pink for Markets
       const Color(0xFFEAB308), // Yellow for Portfolio  
-      const Color(0xFF22C55E), // Green for Achievements
+      const Color(0xFF3B82F6), // Blue for Achievements
       const Color(0xFFEA580C), // Orange for Settings
     ];
     final accentColor = accentColors[index % accentColors.length];
@@ -223,7 +223,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
                     opacity: isSelected ? 1.0 : 0.0,
                     child: Container(
                       height: 36,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         color: themeProvider.backgroundHigh,
                         borderRadius: BorderRadius.circular(18),
@@ -237,9 +237,11 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
                           label,
                           style: TextStyle(
                             color: accentColor,
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),

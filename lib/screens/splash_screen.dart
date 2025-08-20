@@ -84,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
   
   void _startShapeCycle() {
-    Timer.periodic(const Duration(milliseconds: 2000), (timer) {
+    Timer.periodic(const Duration(milliseconds: 1500), (timer) {
       if (mounted && !_reducedMotion) {
         setState(() {
           _currentShape = (_currentShape + 1) % 3; // Cycle through 0, 1, 2
@@ -110,28 +110,28 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Future<void> _initializeApp() async {
     // Step 1: Initialize Database
     await _updateStatus('Initializing database…');
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 100));
     
     final dbStats = await LocalDatabaseService.getDatabaseStats();
     print('📊 Database initialized - ${dbStats['market_assets']} assets');
     
     // Step 2: Initialize Market Data Provider
     await _updateStatus('Loading market data…');
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 150));
     
     final marketProvider = Provider.of<MarketDataProvider>(context, listen: false);
     await marketProvider.initialize();
     
     // Step 3: Initialize Auth Provider
     await _updateStatus('Checking authentication…');
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 100));
     
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.initialize();
     
     // Step 4: Initialize Portfolio Provider
     await _updateStatus('Loading portfolio…');
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 150));
     
     final portfolioProvider = Provider.of<PortfolioProvider>(context, listen: false);
     
@@ -145,7 +145,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     
     // Step 5: Final checks
     await _updateStatus('Ready to trade!');
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 100));
   }
   
   Future<void> _updateStatus(String status) async {
@@ -373,67 +373,83 @@ class _MorphingLoader extends StatelessWidget {
         builder: (context, child) {
           return Semantics(
             label: 'Loading',
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Shape morphing animation
-                if (currentShape == 0)
-                  // Green Triangle (spinning)
-                  Transform.rotate(
-                    angle: reducedMotion ? 0 : (controller.value * 2 * pi),
-                    child: Transform.scale(
-                      scale: reducedMotion 
-                          ? 0.98 + (controller.value * 0.02) // Pulse between 0.98 and 1.0
-                          : 1.0,
-                      child: CustomPaint(
-                        size: Size(size, size),
-                        painter: _TrianglePainter(
-                          color: const Color(0xFF22C55E), // Green
-                        ),
-                      ),
-                    ),
-                  )
-                else if (currentShape == 1)
-                  // Pink Circle (bouncing)
-                  Transform.translate(
-                    offset: Offset(0, reducedMotion ? 0 : sin(controller.value * 4 * pi) * 8),
-                    child: Transform.scale(
-                      scale: reducedMotion 
-                          ? 0.98 + (controller.value * 0.02)
-                          : 0.9 + (sin(controller.value * 4 * pi).abs() * 0.1),
-                      child: Container(
-                        width: size * 0.8,
-                        height: size * 0.8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEC4899), // Pink
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  // Orange Square (expanding/contracting)
-                  Transform.scale(
-                    scale: reducedMotion 
-                        ? 0.98 + (controller.value * 0.02)
-                        : 0.7 + (sin(controller.value * 3 * pi).abs() * 0.3),
-                    child: Transform.rotate(
-                      angle: reducedMotion ? 0 : (controller.value * pi / 4),
-                      child: Container(
-                        width: size * 0.7,
-                        height: size * 0.7,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEA580C), // Orange
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 800),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
                   ),
-              ],
+                );
+              },
+              child: _buildCurrentShape(size, reducedMotion, controller.value),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildCurrentShape(double size, bool reducedMotion, double animationValue) {
+    return Stack(
+      key: ValueKey(currentShape),
+      alignment: Alignment.center,
+      children: [
+        if (currentShape == 0)
+          // Orange Triangle (spinning)
+          Transform.rotate(
+            angle: reducedMotion ? 0 : (animationValue * 2 * pi),
+            child: Transform.scale(
+              scale: reducedMotion 
+                  ? 0.98 + (animationValue * 0.02)
+                  : 1.0 + (sin(animationValue * 6 * pi) * 0.05),
+              child: CustomPaint(
+                size: Size(size, size),
+                painter: _TrianglePainter(
+                  color: const Color(0xFFEA580C), // Orange
+                ),
+              ),
+            ),
+          )
+        else if (currentShape == 1)
+          // Pink Circle (bouncing)
+          Transform.translate(
+            offset: Offset(0, reducedMotion ? 0 : sin(animationValue * 4 * pi) * 8),
+            child: Transform.scale(
+              scale: reducedMotion 
+                  ? 0.98 + (animationValue * 0.02)
+                  : 0.9 + (sin(animationValue * 4 * pi).abs() * 0.1),
+              child: Container(
+                width: size * 0.8,
+                height: size * 0.8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEC4899), // Pink
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          )
+        else
+          // Blue Square (expanding/contracting)
+          Transform.scale(
+            scale: reducedMotion 
+                ? 0.98 + (animationValue * 0.02)
+                : 0.7 + (sin(animationValue * 3 * pi).abs() * 0.3),
+            child: Transform.rotate(
+              angle: reducedMotion ? 0 : (animationValue * pi / 4),
+              child: Container(
+                width: size * 0.7,
+                height: size * 0.7,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6), // Blue
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

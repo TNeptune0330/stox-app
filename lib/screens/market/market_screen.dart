@@ -506,7 +506,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
   Widget _buildCompactAssetTile(MarketAssetModel asset, ThemeProvider themeProvider) {
     final isPositive = asset.changePercent >= 0;
-    final changeColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final changeColor = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
     
     return GestureDetector(
       onTap: () => _showAssetDetail(context, asset),

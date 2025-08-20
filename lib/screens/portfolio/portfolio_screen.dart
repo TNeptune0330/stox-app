@@ -581,13 +581,13 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                   
                   // Use colorful accents for variety
                   final colors = [
-                    const Color(0xFF22C55E), // Green
+                    const Color(0xFFEA580C), // Orange
                     const Color(0xFFEC4899), // Pink
-                    const Color(0xFFEAB308), // Yellow
+                    const Color(0xFF3B82F6), // Blue
                     const Color(0xFF06B6D4), // Cyan
                   ];
                   final accentColor = asset.changePercent >= 0 
-                      ? const Color(0xFF22C55E) 
+                      ? const Color(0xFF3B82F6) // Blue for positive
                       : const Color(0xFFEF4444);
                   
                   return GestureDetector(

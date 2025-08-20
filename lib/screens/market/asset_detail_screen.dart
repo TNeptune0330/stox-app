@@ -126,7 +126,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final isPositive = widget.asset.changePercent >= 0;
-        final changeColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+        final changeColor = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
         
         return Scaffold(
           backgroundColor: themeProvider.background,
@@ -427,7 +427,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     final pnlDollar = currentPrice - holding.avgPrice;
     final pnlPercent = holding.avgPrice > 0 ? (pnlDollar / holding.avgPrice) * 100 : 0.0;
     final isPositive = pnlDollar >= 0;
-    final pnlColor = isPositive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final pnlColor = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -860,7 +860,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF22C55E),
+                backgroundColor: const Color(0xFFEA580C),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
