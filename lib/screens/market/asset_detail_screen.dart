@@ -348,10 +348,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
               ],
             ),
             bottomNavigationBar: _buildTradeButtons(themeProvider),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
   }
 
   Widget _buildOverviewTab(ThemeProvider themeProvider, Color changeColor, bool isPositive) {
@@ -590,8 +589,6 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
               ],
             ),
         );
-      },
-    );
   }
 
   Widget _buildNewsTab(ThemeProvider themeProvider) {
