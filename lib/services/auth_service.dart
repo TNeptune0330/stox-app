@@ -239,26 +239,13 @@ class AuthService {
       print('❌ Supabase authentication failed: $e');
       print('❌ This might be due to client ID configuration mismatch');
       
-      // If this is a database error, fall back to offline mode
+      // No offline fallback - authentication must work completely or fail
       if (e.toString().contains('Database error granting user') || 
           e.toString().contains('unexpected_failure')) {
-        print('🔄 Falling back to offline authentication...');
-        
-        // Create a mock user for offline mode using Google data
-        final mockUser = User(
-          id: 'offline_${DateTime.now().millisecondsSinceEpoch}',
-          appMetadata: {},
-          userMetadata: {
-            'email': _currentGoogleUser?.email ?? 'demo@stox.app',
-            'full_name': _currentGoogleUser?.displayName ?? 'Demo User',
-            'avatar_url': _currentGoogleUser?.photoUrl,
-          },
-          aud: 'authenticated',
-          createdAt: DateTime.now().toIso8601String(),
-        );
-        
-        print('✅ Created offline user profile');
-        return mockUser;
+        print('❌ Database authentication error detected');
+        print('❌ Please run the database fix script first: fix_missing_columns.sql');
+        print('❌ No offline fallback - authentication must work properly');
+        throw Exception('Database authentication error: Please fix your database schema first. Run fix_missing_columns.sql in Supabase SQL Editor.');
       }
       
       throw Exception('Supabase authentication failed: ${e.toString()}');
@@ -286,17 +273,18 @@ class AuthService {
       final supabaseUserId = user.id;
       print('🔄 Using Supabase Auth user ID: $supabaseUserId');
       
-      // If this is an offline user, create local profile
+      // Only handle real authenticated users from Supabase
       if (supabaseUserId.startsWith('offline_')) {
-        print('📱 Creating local offline user profile...');
+        throw Exception('Invalid offline user detected. Authentication must work properly.');
+      }
         
-        final fullName = user.userMetadata?['full_name'] ?? 
-                        user.userMetadata?['email']?.split('@')[0] ?? 
-                        'Demo User';
-        
-        final userData = UserModel(
-          id: supabaseUserId,
-          email: user.userMetadata?['email'] ?? 'demo@stox.app',
+      final fullName = user.userMetadata?['full_name'] ?? 
+                      user.userMetadata?['email']?.split('@')[0] ?? 
+                      'Unknown User';
+      
+      final userData = UserModel(
+        id: supabaseUserId,
+        email: user.userMetadata?['email'] ?? user.email ?? 'unknown@stox.app',
           username: fullName,
           displayName: fullName,
           avatarUrl: user.userMetadata?['avatar_url'],

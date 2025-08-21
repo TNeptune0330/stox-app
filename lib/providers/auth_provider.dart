@@ -40,30 +40,15 @@ class AuthProvider with ChangeNotifier {
         return;
       }
       
-      // Step 2: If no session, try cached user (offline mode)
-      final cachedUser = StorageService.getCachedUser();
-      if (cachedUser != null) {
-        _user = cachedUser;
-        print('AuthProvider: Using cached user (offline mode): ${_user!.email}');
-        notifyListeners();
-        return;
-      }
+      // Step 2: No offline mode - require proper authentication
+      print('AuthProvider: No active session - user must authenticate properly');
       
       print('AuthProvider: No session or cached user found - user needs to sign in');
       
     } catch (e) {
       print('AuthProvider: Error during initialization: $e');
-      // Try cached user as fallback
-      try {
-        final cachedUser = StorageService.getCachedUser();
-        if (cachedUser != null) {
-          _user = cachedUser;
-          print('AuthProvider: Using cached user as fallback: ${_user!.email}');
-        }
-      } catch (cacheError) {
-        print('AuthProvider: Cache fallback failed: $cacheError');
-        _setError('Failed to initialize auth: $e');
-      }
+      print('AuthProvider: No offline fallback - authentication must work properly');
+      _setError('Failed to initialize auth: $e');
     } finally {
       _setLoading(false);
     }
