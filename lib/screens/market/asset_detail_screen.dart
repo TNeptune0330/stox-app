@@ -592,6 +592,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
         );
       },
     );
+  }
 
   Widget _buildNewsTab(ThemeProvider themeProvider) {
     return SingleChildScrollView(
