@@ -520,12 +520,15 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
 
                 // News section at bottom
                 _buildNewsSection(themeProvider),
+
+                const SizedBox(height: 100), // Space for trade buttons
               ],
             ),
-            bottomNavigationBar: _buildTradeButtons(themeProvider),
-          );
-        },
-      );
+          ),
+          bottomNavigationBar: _buildTradeButtons(themeProvider),
+        );
+      },
+    );
   }
 
   Widget _buildNewsSection(ThemeProvider themeProvider) {
