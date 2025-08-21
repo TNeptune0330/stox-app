@@ -7,9 +7,11 @@ import '../../models/portfolio_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/portfolio_provider.dart';
+import '../../providers/watchlist_provider.dart';
 import '../../services/enhanced_market_data_service.dart';
 import '../../services/stock_descriptions_service.dart';
 import '../../services/financial_news_service.dart';
+import '../../utils/number_formatter.dart';
 import 'trade_dialog.dart';
 
 class AssetDetailScreen extends StatefulWidget {
@@ -130,9 +132,8 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
         
         return Scaffold(
           backgroundColor: themeProvider.background,
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
+          body: Column(
+            children: [
                 // Header with back button and notifications
                 Container(
                   padding: EdgeInsets.only(
@@ -168,17 +169,31 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                         ),
                       ),
                       const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: themeProvider.backgroundHigh,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.notifications_outlined,
-                          color: themeProvider.contrast,
-                          size: 20,
-                        ),
+                      Consumer<WatchlistProvider>(
+                        builder: (context, watchlistProvider, child) {
+                          final isInWatchlist = watchlistProvider.isInWatchlist(widget.asset.symbol);
+                          return GestureDetector(
+                            onTap: () async {
+                              if (isInWatchlist) {
+                                await watchlistProvider.removeFromWatchlist(widget.asset.symbol);
+                              } else {
+                                await watchlistProvider.addToWatchlist(widget.asset.symbol);
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: themeProvider.backgroundHigh,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                isInWatchlist ? Icons.favorite : Icons.favorite_border,
+                                color: isInWatchlist ? themeProvider.theme : themeProvider.contrast,
+                                size: 20,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -285,7 +300,67 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                   ),
                 ),
 
-                // Chart with purple gradient background
+                // Tab bar
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: themeProvider.backgroundHigh,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      color: themeProvider.theme,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: themeProvider.contrast.withOpacity(0.6),
+                    labelStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    tabs: const [
+                      Tab(text: 'Overview'),
+                      Tab(text: 'News'),
+                      Tab(text: 'Stats'),
+                    ],
+                  ),
+                ),
+
+                // Tab content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Overview Tab
+                      _buildOverviewTab(themeProvider, changeColor, isPositive),
+                      // News Tab
+                      _buildNewsTab(themeProvider),
+                      // Stats Tab
+                      _buildStatsTab(themeProvider),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            bottomNavigationBar: _buildTradeButtons(themeProvider),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOverviewTab(ThemeProvider themeProvider, Color changeColor, bool isPositive) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+
+          // Chart section
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -343,6 +418,164 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
 
                 const SizedBox(height: 24),
 
+                // Stock Metrics Widgets
+                if (_fundamentals != null) ...[
+                  // Daily metrics (Open, High, Low)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: themeProvider.backgroundHigh,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: themeProvider.theme.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Daily Range',
+                          style: TextStyle(
+                            color: themeProvider.contrast,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildMetricItem(
+                                'Open',
+                                NumberFormatter.formatPrice(_fundamentals!['openPrice'] ?? widget.asset.price),
+                                themeProvider,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildMetricItem(
+                                'High',
+                                NumberFormatter.formatPrice(_fundamentals!['dayHigh'] ?? widget.asset.price),
+                                themeProvider,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildMetricItem(
+                                'Low',
+                                NumberFormatter.formatPrice(_fundamentals!['dayLow'] ?? widget.asset.price),
+                                themeProvider,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // 52-week range
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: themeProvider.backgroundHigh,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: themeProvider.theme.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '52-Week Range',
+                          style: TextStyle(
+                            color: themeProvider.contrast,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildMetricItem(
+                                '52W High',
+                                NumberFormatter.formatPrice(_fundamentals!['weekHigh52'] ?? widget.asset.price),
+                                themeProvider,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildMetricItem(
+                                '52W Low',
+                                NumberFormatter.formatPrice(_fundamentals!['weekLow52'] ?? widget.asset.price),
+                                themeProvider,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Financial Ratios
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: themeProvider.backgroundHigh,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: themeProvider.theme.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Key Metrics',
+                          style: TextStyle(
+                            color: themeProvider.contrast,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildMetricItem(
+                                'P/E Ratio',
+                                NumberFormatter.formatPERatio(_fundamentals!['peRatio']),
+                                themeProvider,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildMetricItem(
+                                'Dividend Yield',
+                                NumberFormatter.formatDividendYield(_fundamentals!['dividendYield']),
+                                themeProvider,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildMetricItem(
+                                'Market Cap',
+                                NumberFormatter.formatCurrency(_fundamentals!['marketCap']?.toDouble() ?? 0),
+                                themeProvider,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildMetricItem(
+                                'Volume',
+                                NumberFormatter.formatVolume(_fundamentals!['volume']?.toDouble() ?? 0),
+                                themeProvider,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 // Holdings section (only show if this is a holding)
                 if (widget.isHolding && widget.holdingDetails != null)
                   _buildHoldingsSection(themeProvider),
@@ -356,10 +589,238 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                 const SizedBox(height: 100), // Space for trade buttons
               ],
             ),
-          ),
-          bottomNavigationBar: _buildTradeButtons(themeProvider),
         );
       },
+    );
+
+  Widget _buildNewsTab(ThemeProvider themeProvider) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          if (_isLoadingNews)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_newsArticles.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.article_outlined,
+                      size: 64,
+                      color: themeProvider.contrast.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No News Available',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: themeProvider.contrast,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Check back later for the latest news about ${widget.asset.symbol}',
+                      style: TextStyle(
+                        color: themeProvider.contrast.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _newsArticles.length,
+              itemBuilder: (context, index) {
+                final article = _newsArticles[index];
+                return _buildNewsCard(article, themeProvider);
+              },
+            ),
+          const SizedBox(height: 100), // Space for trade buttons
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNewsCard(NewsArticle article, ThemeProvider themeProvider) {
+    Color sentimentColor;
+    IconData sentimentIcon;
+    
+    switch (article.sentiment) {
+      case 'Bullish':
+        sentimentColor = const Color(0xFF3B82F6);
+        sentimentIcon = Icons.trending_up;
+        break;
+      case 'Bearish':
+        sentimentColor = const Color(0xFFEF4444);
+        sentimentIcon = Icons.trending_down;
+        break;
+      default:
+        sentimentColor = themeProvider.contrast.withOpacity(0.6);
+        sentimentIcon = Icons.remove;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: themeProvider.backgroundHigh,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: themeProvider.contrast.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with source and sentiment
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: themeProvider.theme.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  article.source,
+                  style: TextStyle(
+                    color: themeProvider.theme,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: sentimentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      sentimentIcon,
+                      size: 12,
+                      color: sentimentColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      article.sentiment,
+                      style: TextStyle(
+                        color: sentimentColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Title
+          Text(
+            article.title,
+            style: TextStyle(
+              color: themeProvider.contrast,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // Summary
+          Text(
+            article.summary,
+            style: TextStyle(
+              color: themeProvider.contrast.withOpacity(0.8),
+              fontSize: 14,
+              height: 1.4,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          
+          // Footer with time and read more
+          Row(
+            children: [
+              Text(
+                article.timeAgo,
+                style: TextStyle(
+                  color: themeProvider.contrast.withOpacity(0.6),
+                  fontSize: 12,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => _launchWebsite(article.url),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: themeProvider.theme.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.open_in_new,
+                        size: 12,
+                        color: themeProvider.theme,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Read More',
+                        style: TextStyle(
+                          color: themeProvider.theme,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsTab(ThemeProvider themeProvider) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          
+          // Holdings section (only show if this is a holding)
+          if (widget.isHolding && widget.holdingDetails != null)
+            _buildHoldingsSection(themeProvider),
+
+          // Stats section
+          _buildStatsSection(themeProvider),
+
+          const SizedBox(height: 100), // Space for trade buttons
+        ],
+      ),
     );
   }
 
@@ -775,7 +1236,63 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     );
   }
 
+  String _getCompanyDescription() {
+    final symbol = widget.asset.symbol;
+    final name = widget.asset.name;
+    
+    // Create more useful descriptions based on company ticker and name
+    final descriptions = {
+      'AAPL': 'Apple Inc. is a multinational technology company that designs, develops, and sells consumer electronics, computer software, and online services. Known for products like iPhone, iPad, Mac, Apple Watch, and services like the App Store and iCloud.',
+      'MSFT': 'Microsoft Corporation is a multinational technology company that develops, manufactures, licenses, supports, and sells computer software, consumer electronics, personal computers, and related services. Known for Windows, Office, Azure, Xbox, and LinkedIn.',
+      'GOOGL': 'Alphabet Inc. is a multinational conglomerate holding company created through Google\'s restructuring. The company operates through Google and Other Bets segments, with core business in internet search, advertising, cloud computing, and artificial intelligence.',
+      'AMZN': 'Amazon.com Inc. is a multinational technology company focusing on e-commerce, cloud computing, digital streaming, and artificial intelligence. It\'s one of the world\'s largest online retailers and cloud service providers.',
+      'TSLA': 'Tesla Inc. is an electric vehicle and clean energy company that designs, develops, manufactures, and sells fully electric vehicles, energy generation and storage systems, and related services and technologies.',
+      'META': 'Meta Platforms Inc. operates social networking platforms including Facebook, Instagram, WhatsApp, and Messenger. The company is also investing heavily in virtual and augmented reality technologies and the metaverse.',
+      'NVDA': 'NVIDIA Corporation is a multinational technology company known for designing graphics processing units (GPUs) for gaming, professional, and data center markets, as well as system on chip units (SoCs) for mobile computing and automotive applications.',
+      'NFLX': 'Netflix Inc. is a streaming entertainment service company that operates in over 190 countries, offering TV series, documentaries, and feature films across a variety of genres and languages.',
+      'CRM': 'Salesforce Inc. is a cloud-based software company that provides customer relationship management (CRM) services and a complementary suite of enterprise applications focused on customer service, marketing automation, analytics, and application development.',
+      'ADBE': 'Adobe Inc. is a multinational computer software company known for multimedia and creativity software products including Photoshop, Illustrator, After Effects, and the Adobe Creative Cloud suite.',
+    };
+    
+    // Return specific description if available, otherwise create a generic one
+    return descriptions[symbol] ?? 
+           '$name is a publicly traded company operating in the ${_inferIndustryFromName(name)} sector. The company provides products and services to customers and operates within the broader market ecosystem.';
+  }
+  
+  String _inferIndustryFromName(String name) {
+    final nameLower = name.toLowerCase();
+    
+    if (nameLower.contains('bank') || nameLower.contains('financial')) return 'financial services';
+    if (nameLower.contains('tech') || nameLower.contains('software') || nameLower.contains('systems')) return 'technology';
+    if (nameLower.contains('pharma') || nameLower.contains('bio') || nameLower.contains('health')) return 'healthcare';
+    if (nameLower.contains('energy') || nameLower.contains('oil') || nameLower.contains('gas')) return 'energy';
+    if (nameLower.contains('retail') || nameLower.contains('store') || nameLower.contains('market')) return 'retail';
+    if (nameLower.contains('auto') || nameLower.contains('motor') || nameLower.contains('vehicle')) return 'automotive';
+    if (nameLower.contains('real estate') || nameLower.contains('property')) return 'real estate';
+    if (nameLower.contains('media') || nameLower.contains('entertainment') || nameLower.contains('network')) return 'media & entertainment';
+    if (nameLower.contains('food') || nameLower.contains('restaurant') || nameLower.contains('beverage')) return 'food & beverage';
+    if (nameLower.contains('airline') || nameLower.contains('transport') || nameLower.contains('logistics')) return 'transportation';
+    
+    return 'industrial';
+  }
+
   Widget _buildAboutSection(ThemeProvider themeProvider) {
+    // Get company description from fundamentals or create a meaningful business description
+    String description = _getCompanyDescription();
+    
+    if (_fundamentals != null) {
+      // Try to get description from fundamentals data
+      description = _fundamentals!['description'] ?? 
+                   _fundamentals!['longBusinessSummary'] ?? 
+                   _fundamentals!['businessSummary'] ??
+                   description;
+    }
+    
+    // Truncate if too long for initial display
+    final shortDescription = description.length > 200 
+        ? '${description.substring(0, 200)}...' 
+        : description;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(20),
@@ -787,17 +1304,52 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'About ${widget.asset.name}',
-            style: TextStyle(
-              color: themeProvider.contrast,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            children: [
+              Text(
+                'About ${widget.asset.name}',
+                style: TextStyle(
+                  color: themeProvider.contrast,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              if (_fundamentals != null && _fundamentals!['website'] != null)
+                GestureDetector(
+                  onTap: () => _launchWebsite(_fundamentals!['website']),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: themeProvider.theme.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.language,
+                          size: 14,
+                          color: themeProvider.theme,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Website',
+                          style: TextStyle(
+                            color: themeProvider.theme,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(
-            'Netflix Inc. has built an enduring reputation for development and manufacture of engines for defense and civil aircraft.',
+            shortDescription,
             style: TextStyle(
               color: themeProvider.contrast.withOpacity(0.8),
               fontSize: 14,
@@ -805,22 +1357,52 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () {
-              // Add view more functionality
-            },
-            child: Text(
-              'View More',
-              style: TextStyle(
-                color: themeProvider.theme,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+          if (description.length > 200) ...[
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => _showFullDescription(description),
+              child: Text(
+                'Read More',
+                style: TextStyle(
+                  color: themeProvider.theme,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
+    );
+  }
+
+  void _launchWebsite(String url) async {
+    final Uri uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  void _showFullDescription(String description) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('About ${widget.asset.name}'),
+          content: SingleChildScrollView(
+            child: Text(
+              description,
+              style: const TextStyle(fontSize: 14, height: 1.5),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -843,7 +1425,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
       ),
       child: Row(
         children: [
-          // Buy button
+          // Buy button (always show)
           Expanded(
             child: ElevatedButton(
               onPressed: () {
@@ -860,7 +1442,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEA580C),
+                backgroundColor: const Color(0xFF3B82F6), // Blue for Buy
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -878,74 +1460,68 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
             ),
           ),
           const SizedBox(width: 12),
-          // Sell button (only show if holding)
-          if (widget.isHolding)
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                  if (authProvider.user != null) {
-                    showDialog(
-                      context: context,
-                      builder: (context) => TradeDialog(
-                        asset: widget.asset,
-                        userId: authProvider.user!.id,
-                        initialTab: 1, // Sell tab
-                        maxQuantity: widget.holdingDetails?.quantity ?? 0,
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFEF4444),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'SELL',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            )
-          else
-            // Watch button for non-holdings
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  // Add to watchlist functionality
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Added ${widget.asset.symbol} to watchlist'),
-                      backgroundColor: themeProvider.theme,
+          // Sell button (always show)
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                if (authProvider.user != null) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => TradeDialog(
+                      asset: widget.asset,
+                      userId: authProvider.user!.id,
+                      initialTab: 1, // Sell tab
+                      maxQuantity: widget.holdingDetails?.quantity ?? 0,
                     ),
                   );
-                },
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: themeProvider.theme),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444), // Red for Sell
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  'WATCH',
-                  style: TextStyle(
-                    color: themeProvider.theme,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'SELL',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMetricItem(String title, String value, ThemeProvider themeProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: themeProvider.contrast.withOpacity(0.7),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: themeProvider.contrast,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

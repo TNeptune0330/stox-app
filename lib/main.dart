@@ -22,6 +22,7 @@ import 'providers/portfolio_provider.dart';
 import 'providers/market_data_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/achievement_provider.dart';
+import 'providers/watchlist_provider.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
@@ -236,6 +237,7 @@ class _StoxAppState extends State<StoxApp> {
         ChangeNotifierProvider(create: (_) => MarketDataProvider()),
         ChangeNotifierProvider.value(value: _themeProvider),
         ChangeNotifierProvider(create: (_) => AchievementProvider()),
+        ChangeNotifierProvider(create: (_) => WatchlistProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

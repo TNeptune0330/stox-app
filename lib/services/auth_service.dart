@@ -238,6 +238,29 @@ class AuthService {
     } catch (e) {
       print('❌ Supabase authentication failed: $e');
       print('❌ This might be due to client ID configuration mismatch');
+      
+      // If this is a database error, fall back to offline mode
+      if (e.toString().contains('Database error granting user') || 
+          e.toString().contains('unexpected_failure')) {
+        print('🔄 Falling back to offline authentication...');
+        
+        // Create a mock user for offline mode using Google data
+        final mockUser = User(
+          id: 'offline_${DateTime.now().millisecondsSinceEpoch}',
+          appMetadata: {},
+          userMetadata: {
+            'email': _currentGoogleUser?.email ?? 'demo@stox.app',
+            'full_name': _currentGoogleUser?.displayName ?? 'Demo User',
+            'avatar_url': _currentGoogleUser?.photoUrl,
+          },
+          aud: 'authenticated',
+          createdAt: DateTime.now().toIso8601String(),
+        );
+        
+        print('✅ Created offline user profile');
+        return mockUser;
+      }
+      
       throw Exception('Supabase authentication failed: ${e.toString()}');
     }
   }
@@ -263,6 +286,55 @@ class AuthService {
       final supabaseUserId = user.id;
       print('🔄 Using Supabase Auth user ID: $supabaseUserId');
       
+      // If this is an offline user, create local profile
+      if (supabaseUserId.startsWith('offline_')) {
+        print('📱 Creating local offline user profile...');
+        
+        final fullName = user.userMetadata?['full_name'] ?? 
+                        user.userMetadata?['email']?.split('@')[0] ?? 
+                        'Demo User';
+        
+        final userData = UserModel(
+          id: supabaseUserId,
+          email: user.userMetadata?['email'] ?? 'demo@stox.app',
+          username: fullName,
+          displayName: fullName,
+          avatarUrl: user.userMetadata?['avatar_url'],
+          colorTheme: 'neon_navy',
+          isAdmin: false,
+          cashBalance: 10000.0,
+          initialBalance: 10000.0,
+          totalDeposited: 10000.0,
+          totalTrades: 0,
+          totalProfitLoss: 0.0,
+          totalFeesPaid: 0.0,
+          maxPortfolioValue: 10000.0,
+          maxSingleDayGain: 0.0,
+          maxSingleDayLoss: 0.0,
+          currentStreak: 0,
+          maxStreak: 0,
+          winRate: 0.0,
+          daysTraded: 0,
+          monthsActive: 0,
+          sectorsTraded: [],
+          assetTypesTraded: [],
+          totalAppOpens: 1,
+          totalScreenTimeMinutes: 0,
+          notificationsEnabled: true,
+          darkModeEnabled: true,
+          soundEffectsEnabled: true,
+          dailyLossLimit: 1000.0,
+          positionSizeLimit: 5000.0,
+          lastActiveDate: DateTime.now(),
+          createdAt: DateTime.now(),
+          lastLogin: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        
+        print('✅ Created offline user profile');
+        return userData;
+      }
+      
       // Check if user already exists
       final existingUser = await _supabase
           .from('users')
@@ -282,10 +354,33 @@ class AuthService {
           'id': supabaseUserId,
           'email': user.email!,
           'username': fullName,
+          'display_name': fullName,
           'avatar_url': user.userMetadata?['avatar_url'],
-          'color_theme': 'light',
+          'color_theme': 'neon_navy',
           'cash_balance': 10000.0,
+          'initial_balance': 10000.0,
+          'total_deposited': 10000.0,
           'total_trades': 0,
+          'total_profit_loss': 0.0,
+          'total_fees_paid': 0.0,
+          'max_portfolio_value': 10000.0,
+          'max_single_day_gain': 0.0,
+          'max_single_day_loss': 0.0,
+          'current_streak': 0,
+          'max_streak': 0,
+          'win_rate': 0.0,
+          'days_traded': 0,
+          'months_active': 0,
+          'sectors_traded': [],
+          'asset_types_traded': [],
+          'total_app_opens': 1,
+          'total_screen_time_minutes': 0,
+          'notifications_enabled': true,
+          'dark_mode_enabled': true,
+          'sound_effects_enabled': true,
+          'daily_loss_limit': 1000.0,
+          'position_size_limit': 5000.0,
+          'last_active_date': DateTime.now().toIso8601String(),
           'created_at': DateTime.now().toIso8601String(),
           'last_login': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),

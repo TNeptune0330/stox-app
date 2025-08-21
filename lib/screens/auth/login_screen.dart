@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/user_model.dart';
+import '../../utils/uuid_utils.dart';
 import '../main_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -20,8 +21,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _checkReducedMotion();
     _initializeAnimations();
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkReducedMotion();
   }
   
   void _checkReducedMotion() {
@@ -203,17 +209,42 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Future<void> _createDemoUser(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
-    // Create a demo user
+    // Create a demo user with proper UUID and schema-compliant data
     authProvider.setUser(
       UserModel(
-        id: 'demo_user_${DateTime.now().millisecondsSinceEpoch}',
+        id: UuidUtils.generateV4(),
         email: 'demo@stoxtrading.com',
         username: 'Demo Trader',
+        displayName: 'Demo Trader',
         avatarUrl: null,
-        colorTheme: 'light',
+        colorTheme: 'neon_navy',
         isAdmin: false,
         cashBalance: 10000.0,
+        initialBalance: 10000.0,
+        totalDeposited: 10000.0,
+        totalTrades: 0,
+        totalProfitLoss: 0.0,
+        totalFeesPaid: 0.0,
+        maxPortfolioValue: 10000.0,
+        maxSingleDayGain: 0.0,
+        maxSingleDayLoss: 0.0,
+        currentStreak: 0,
+        maxStreak: 0,
+        winRate: 0.0,
+        daysTraded: 0,
+        monthsActive: 0,
+        sectorsTraded: [],
+        assetTypesTraded: [],
+        totalAppOpens: 1,
+        totalScreenTimeMinutes: 0,
+        notificationsEnabled: true,
+        darkModeEnabled: true,
+        soundEffectsEnabled: true,
+        dailyLossLimit: 1000.0,
+        positionSizeLimit: 5000.0,
+        lastActiveDate: DateTime.now(),
         createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
         updatedAt: DateTime.now(),
       ),
     );

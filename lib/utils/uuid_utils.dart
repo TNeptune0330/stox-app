@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 class UuidUtils {
@@ -55,6 +56,22 @@ class UuidUtils {
     return googleIdToUuid(id);
   }
   
+  /// Generate a random UUID v4
+  static String generateV4() {
+    final random = Random.secure();
+    
+    // Generate 16 random bytes
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    
+    // Set version (4) and variant bits
+    bytes[6] = (bytes[6] & 0x0F) | 0x40; // Version 4
+    bytes[8] = (bytes[8] & 0x3F) | 0x80; // Variant bits
+    
+    // Convert to hex string with dashes
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20, 32)}';
+  }
+  
   /// Test function to verify UUID generation
   static void testUuidGeneration() {
     final testId = '105960795233944438369';
@@ -66,5 +83,10 @@ class UuidUtils {
     // Test consistency
     final uuid2 = googleIdToUuid(testId);
     print('Consistent: ${uuid == uuid2}');
+    
+    // Test random UUID
+    final randomUuid = generateV4();
+    print('Random UUID: $randomUuid');
+    print('Is valid UUID: ${isValidUuid(randomUuid)}');
   }
 }

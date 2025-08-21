@@ -264,90 +264,89 @@ class _WatchlistPageState extends State<WatchlistPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with symbol and remove button
+            // Header with big ticker and remove button
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    asset.symbol,
-                    style: TextStyle(
-                      color: accentColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                // Bigger, more prominent ticker symbol
+                Text(
+                  asset.symbol,
+                  style: TextStyle(
+                    color: themeProvider.contrast,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
                   ),
                 ),
                 const Spacer(),
                 GestureDetector(
                   onTap: () => _showRemoveDialog(asset, watchlistProvider),
-                  child: Icon(
-                    Icons.close,
-                    size: 16,
-                    color: themeProvider.contrast.withOpacity(0.5),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: themeProvider.contrast.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: themeProvider.contrast.withOpacity(0.7),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             
-            // Company name
+            // Company name (shortened)
             Text(
-              asset.name,
+              asset.name.length > 25 ? '${asset.name.substring(0, 25)}...' : asset.name,
               style: TextStyle(
-                color: themeProvider.contrast,
-                fontSize: 14,
+                color: themeProvider.contrast.withOpacity(0.8),
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const Spacer(),
             
-            // Price and change
-            Row(
+            // Price and change in a more compact layout
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Text(
+                  '\$${asset.price.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: themeProvider.contrast,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: changeColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: changeColor.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '\$${asset.price.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: themeProvider.contrast,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      Icon(
+                        isPositive ? Icons.trending_up : Icons.trending_down,
+                        size: 14,
+                        color: changeColor,
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
+                      const SizedBox(width: 4),
+                      Text(
+                        '${asset.changePercent >= 0 ? '+' : ''}${asset.changePercent.toStringAsFixed(2)}%',
+                        style: TextStyle(
                           color: changeColor,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                              size: 10,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${asset.changePercent >= 0 ? '+' : ''}${asset.changePercent.toStringAsFixed(1)}%',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],

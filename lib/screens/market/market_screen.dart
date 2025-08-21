@@ -128,59 +128,137 @@ class _MarketScreenState extends State<MarketScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Consumer<MarketDataProvider>(
                     builder: (context, marketProvider, child) {
-                      return TextField(
-                        controller: _searchController,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText: 'Search stocks...',
-                          hintStyle: TextStyle(
-                            color: themeProvider.contrast.withOpacity(0.6),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                      return Column(
+                        children: [
+                          TextField(
+                            controller: _searchController,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            textInputAction: TextInputAction.search,
+                            decoration: InputDecoration(
+                              hintText: 'Search stocks...',
+                              hintStyle: TextStyle(
+                                color: themeProvider.contrast.withOpacity(0.6),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              prefixIcon: marketProvider.isLoading && _searchController.text.isNotEmpty
+                                  ? Padding(
+                                      padding: const EdgeInsets.all(12.0),
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.search,
+                                      color: themeProvider.theme,
+                                    ),
+                              suffixIcon: _searchController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: Icon(
+                                        Icons.clear,
+                                        color: themeProvider.contrast.withOpacity(0.7),
+                                      ),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        marketProvider.setSearchQuery('');
+                                      },
+                                    )
+                                  : null,
+                              // Use theme's input decoration
+                            ),
+                            style: TextStyle(
+                              color: themeProvider.contrast,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            onChanged: (value) {
+                              marketProvider.setSearchQuery(value);
+                            },
+                            onSubmitted: (value) {
+                              marketProvider.performSearch();
+                            },
                           ),
-                          prefixIcon: marketProvider.isLoading && _searchController.text.isNotEmpty
-                              ? Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(themeProvider.theme),
+                          
+                          // Search instruction widget with clickable suggestions
+                          if (!marketProvider.hasSearchBeenPerformed) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: themeProvider.backgroundHigh,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: themeProvider.theme.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.search,
+                                    size: 48,
+                                    color: themeProvider.theme,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Search for Stocks',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: themeProvider.contrast,
                                     ),
                                   ),
-                                )
-                              : Icon(
-                                  Icons.search,
-                                  color: themeProvider.theme,
-                                ),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear,
-                                    color: themeProvider.contrast.withOpacity(0.7),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Tap a suggestion below or enter a ticker symbol',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: themeProvider.contrast.withOpacity(0.7),
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    marketProvider.setSearchQuery('');
-                                  },
-                                )
-                              : null,
-                          // Use theme's input decoration
-                        ),
-                        style: TextStyle(
-                          color: themeProvider.contrast,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onChanged: (value) {
-                          marketProvider.setSearchQuery(value);
-                        },
-                        onSubmitted: (value) {
-                          marketProvider.performSearch();
-                        },
+                                  const SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    children: ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'META', 'NVDA', 'NFLX']
+                                        .map((ticker) => GestureDetector(
+                                              onTap: () {
+                                                _searchController.text = ticker;
+                                                marketProvider.setSearchQuery(ticker);
+                                                marketProvider.performSearch();
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  color: themeProvider.theme.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: themeProvider.theme.withOpacity(0.3),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  ticker,
+                                                  style: TextStyle(
+                                                    color: themeProvider.theme,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ))
+                                        .toList(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       );
                     },
                   ),
@@ -338,68 +416,6 @@ class _MarketScreenState extends State<MarketScreen> {
                 // Show market movers when not searching
                 return SliverList(
                   delegate: SliverChildListDelegate([
-                    // Search prompt section
-                    Container(
-                      margin: const EdgeInsets.all(16),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: themeProvider.backgroundHigh,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: themeProvider.theme.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.search,
-                            size: 48,
-                            color: themeProvider.theme,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Search for Stocks',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: themeProvider.contrast,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Enter a ticker symbol or company name and press Enter',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: themeProvider.contrast.withOpacity(0.7),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'META']
-                                .map((ticker) => Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: themeProvider.theme.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        ticker,
-                                        style: TextStyle(
-                                          color: themeProvider.theme,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ))
-                                .toList(),
-                          ),
-                        ],
-                      ),
-                    ),
-
                     // Market Movers Sections
                     _buildMoverSection(context, themeProvider, 'NASDAQ 100', marketProvider.nasdaq100Movers),
                     _buildMoverSection(context, themeProvider, 'S&P 500', marketProvider.sp500Movers),
