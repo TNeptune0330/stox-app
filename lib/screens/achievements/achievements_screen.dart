@@ -37,10 +37,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   }
 
   List<Achievement> _getFilteredAchievements(List<Achievement> achievements) {
+    // Only show unlocked/earned achievements
+    final earnedAchievements = achievements.where((a) => a.isUnlocked).toList();
+    
     if (_selectedCategory == 'all') {
-      return achievements;
+      return earnedAchievements;
     }
-    return achievements.where((a) => a.category == _selectedCategory).toList();
+    return earnedAchievements.where((a) => a.category == _selectedCategory).toList();
   }
 
   BadgeType _getBadgeType(Achievement achievement) {
@@ -57,6 +60,214 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       default:
         return BadgeType.red;
     }
+  }
+
+  void _showAchievementDetail(Achievement achievement) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: themeProvider.backgroundHigh,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: achievement.color.withOpacity(0.3),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Large achievement badge
+                    _BadgeEmblem(
+                      type: _getBadgeType(achievement),
+                      unlocked: achievement.isUnlocked,
+                      size: 96,
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Achievement title
+                    Text(
+                      achievement.title,
+                      style: TextStyle(
+                        color: themeProvider.contrast,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Category badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: achievement.color.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: achievement.color.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        achievement.category.toUpperCase(),
+                        style: TextStyle(
+                          color: achievement.color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Achievement description
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: themeProvider.background,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: themeProvider.contrast.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Text(
+                        achievement.description,
+                        style: TextStyle(
+                          color: themeProvider.contrast.withOpacity(0.8),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Progress or completion info
+                    if (achievement.currentProgress != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: achievement.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: achievement.color.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.trending_up,
+                              color: achievement.color,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Progress',
+                                    style: TextStyle(
+                                      color: achievement.color,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${achievement.currentProgress}/${achievement.requiredValue}',
+                                    style: TextStyle(
+                                      color: themeProvider.contrast,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (achievement.isUnlocked)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: achievement.color,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  'COMPLETED!',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    
+                    // Unlock date if available
+                    if (achievement.isUnlocked && achievement.unlockedAt != null) ...[
+                      Text(
+                        'Unlocked on ${_formatDate(achievement.unlockedAt!)}',
+                        style: TextStyle(
+                          color: themeProvider.contrast.withOpacity(0.6),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    
+                    // Close button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: themeProvider.theme,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Close',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   @override
@@ -106,10 +317,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           itemCount: filteredAchievements.length,
                           itemBuilder: (context, index) {
                             final achievement = filteredAchievements[index];
-                            return _buildAchievementCard(
-                              themeProvider, 
-                              achievement, 
-                              achievement.isUnlocked
+                            return GestureDetector(
+                              onTap: () => _showAchievementDetail(achievement),
+                              child: _buildAchievementCard(
+                                themeProvider, 
+                                achievement, 
+                                achievement.isUnlocked
+                              ),
                             );
                           },
                         ),

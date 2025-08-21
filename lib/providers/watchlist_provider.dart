@@ -21,8 +21,8 @@ class WatchlistProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      // Load saved watchlist symbols
-      _watchlistSymbols = WatchlistService.getWatchlistSymbols();
+      // Load watchlist symbols from Supabase (with local fallback)
+      _watchlistSymbols = await WatchlistService.loadWatchlistFromSupabase();
       print('🔖 WatchlistProvider: Loaded ${_watchlistSymbols.length} symbols');
 
       // Load market data for watchlist symbols

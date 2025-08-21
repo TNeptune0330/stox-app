@@ -120,20 +120,18 @@ class PortfolioService {
         final marketData = await _getMarketAssetInfo(symbol);
         
         // Use the user ID directly (should be Supabase Auth user ID)
-        final result = await _supabase.rpc('execute_trade', params: {
+        final result = await _supabase.rpc('stox_execute_trade', params: {
           'user_id_param': userId,
           'symbol_param': symbol,
           'type_param': type,
           'quantity_param': quantity,
           'price_param': price,
-          'total_value_param': totalValue,
-          'sector_param': marketData['sector'],
-          'asset_type_param': marketData['type'],
+          'total_amount_param': totalValue,
         });
         
-        // Check if trade was successful
-        if (result['success'] != true) {
-          throw Exception(result['error'] ?? 'Trade execution failed');
+        // Function returns boolean directly
+        if (result != true) {
+          throw Exception('Trade execution failed - insufficient funds or shares');
         }
         
         _connectionManager.recordSuccess();

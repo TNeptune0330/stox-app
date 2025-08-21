@@ -50,11 +50,7 @@ class AchievementProvider with ChangeNotifier {
           }
         }
         
-        // Create some starter achievements for new users if none exist
-        if (_unlockedAchievements.isEmpty && _userProgress.isEmpty) {
-          print('🏆 New user detected - creating starter achievements');
-          await _createStarterAchievements(userId);
-        }
+        // New users start with no achievements - they must earn them
         
         // Sync any pending local achievements to Supabase
         await _achievementService.syncAchievementsToSupabase(userId);
@@ -63,11 +59,7 @@ class AchievementProvider with ChangeNotifier {
         _unlockedAchievements = LocalDatabaseService.getSetting<Set<String>>('unlocked_achievements') ?? <String>{};
         _userProgress = LocalDatabaseService.getSetting<Map<String, int>>('user_progress') ?? <String, int>{};
         
-        // Create starter achievements for anonymous users too
-        if (_unlockedAchievements.isEmpty && _userProgress.isEmpty) {
-          print('🏆 Anonymous user - creating local starter achievements');
-          await _createStarterAchievementsLocal();
-        }
+        // Anonymous users also start with no achievements
       }
       
       // Update achievement states based on progress
@@ -82,8 +74,7 @@ class AchievementProvider with ChangeNotifier {
       _unlockedAchievements = {};
       _userProgress = {};
       
-      // Even on error, create some basic progress for better UX
-      await _createBasicProgress();
+      // On error, users start with clean slate - no free achievements
       _updateAchievementStates();
       notifyListeners();
     }
