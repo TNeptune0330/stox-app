@@ -3,7 +3,6 @@ import 'storage_service.dart';
 
 class WatchlistService {
   static const String _watchlistKey = 'user_watchlist';
-  static const List<String> _defaultWatchlist = ['AAPL', 'GOOGL', 'MSFT', 'TSLA'];
   
   /// Get user's watchlist symbols
   static List<String> getWatchlistSymbols() {
@@ -17,8 +16,8 @@ class WatchlistService {
       print('Error loading watchlist: $e');
     }
     
-    // Return default watchlist if no saved data
-    return _defaultWatchlist;
+    // Return empty watchlist if no saved data
+    return <String>[];
   }
   
   /// Save watchlist symbols
@@ -34,18 +33,23 @@ class WatchlistService {
   
   /// Add symbol to watchlist
   static Future<void> addToWatchlist(String symbol) async {
-    final currentSymbols = getWatchlistSymbols();
-    if (!currentSymbols.contains(symbol.toUpperCase())) {
-      currentSymbols.add(symbol.toUpperCase());
+    final currentSymbols = getWatchlistSymbols().toList(); // Ensure mutable list
+    final upperSymbol = symbol.toUpperCase();
+    if (!currentSymbols.contains(upperSymbol)) {
+      currentSymbols.add(upperSymbol);
       await saveWatchlistSymbols(currentSymbols);
+      print('🔖 Added $upperSymbol to watchlist');
     }
   }
   
   /// Remove symbol from watchlist
   static Future<void> removeFromWatchlist(String symbol) async {
-    final currentSymbols = getWatchlistSymbols();
-    currentSymbols.remove(symbol.toUpperCase());
-    await saveWatchlistSymbols(currentSymbols);
+    final currentSymbols = getWatchlistSymbols().toList(); // Ensure mutable list
+    final upperSymbol = symbol.toUpperCase();
+    if (currentSymbols.remove(upperSymbol)) {
+      await saveWatchlistSymbols(currentSymbols);
+      print('🔖 Removed $upperSymbol from watchlist');
+    }
   }
   
   /// Check if symbol is in watchlist
@@ -54,6 +58,6 @@ class WatchlistService {
     return currentSymbols.contains(symbol.toUpperCase());
   }
   
-  /// Get default symbols for new users
-  static List<String> getDefaultWatchlist() => _defaultWatchlist;
+  /// Get default symbols for new users (now returns empty list)
+  static List<String> getDefaultWatchlist() => <String>[];
 }
