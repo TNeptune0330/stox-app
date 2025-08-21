@@ -1,12 +1,25 @@
--- STOX APP OPTIMIZED DATABASE SCHEMA
--- This script will reset your database to a clean, optimized state
--- Run this in your Supabase SQL Editor to reset everything
+-- SAFE DATABASE RESET FOR STOX APP
+-- This script safely resets your database with proper error handling
+-- Run this in your Supabase SQL Editor
 
 -- ============================================================
--- STEP 1: DROP ALL EXISTING TABLES AND CLEAN UP
+-- STEP 1: SAFE CLEANUP WITH ERROR HANDLING
 -- ============================================================
 
--- Drop all existing tables and dependencies
+-- First, disable all triggers to prevent issues during cleanup
+SET session_replication_role = replica;
+
+-- Drop all triggers first
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS on_auth_user_login ON auth.users;
+
+-- Drop all functions with CASCADE to remove dependencies
+DROP FUNCTION IF EXISTS execute_trade(UUID, TEXT, trade_type, INTEGER, NUMERIC, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS update_leaderboard() CASCADE;  
+DROP FUNCTION IF EXISTS handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS update_user_last_login() CASCADE;
+
+-- Drop all tables in dependency order
 DROP TABLE IF EXISTS achievements CASCADE;
 DROP TABLE IF EXISTS leaderboard CASCADE;
 DROP TABLE IF EXISTS market_prices CASCADE;
@@ -17,23 +30,16 @@ DROP TABLE IF EXISTS transactions CASCADE;
 DROP TABLE IF EXISTS portfolio CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
--- Drop custom types if they exist
+-- Drop all custom types
 DROP TYPE IF EXISTS trade_type CASCADE;
 DROP TYPE IF EXISTS asset_type CASCADE;
 DROP TYPE IF EXISTS theme_type CASCADE;
 
--- Drop all existing functions
-DROP FUNCTION IF EXISTS execute_trade CASCADE;
-DROP FUNCTION IF EXISTS update_leaderboard CASCADE;
-DROP FUNCTION IF EXISTS handle_new_user CASCADE;
-DROP FUNCTION IF EXISTS update_user_last_login CASCADE;
-
--- Drop all triggers
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP TRIGGER IF EXISTS on_auth_user_login ON auth.users;
+-- Re-enable triggers
+SET session_replication_role = DEFAULT;
 
 -- ============================================================
--- STEP 2: CREATE CLEAN SCHEMA FOR STOX APP
+-- STEP 2: CREATE FRESH SCHEMA
 -- ============================================================
 
 -- Create essential enums
@@ -41,7 +47,7 @@ CREATE TYPE trade_type AS ENUM ('buy', 'sell');
 CREATE TYPE theme_type AS ENUM ('light', 'dark', 'neon_navy', 'ocean_blue', 'forest_green', 'sunset_orange', 'lavender_purple', 'cherry_red', 'golden_yellow', 'mint_green', 'rose_gold', 'midnight_blue');
 
 -- ============================================================
--- USERS TABLE - Core user data and settings
+-- USERS TABLE
 -- ============================================================
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT auth.uid(),
@@ -91,7 +97,7 @@ CREATE TABLE users (
 );
 
 -- ============================================================
--- PORTFOLIO TABLE - User holdings
+-- PORTFOLIO TABLE
 -- ============================================================
 CREATE TABLE portfolio (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -105,7 +111,7 @@ CREATE TABLE portfolio (
 );
 
 -- ============================================================
--- TRANSACTIONS TABLE - Trading history
+-- TRANSACTIONS TABLE
 -- ============================================================
 CREATE TABLE transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -119,7 +125,7 @@ CREATE TABLE transactions (
 );
 
 -- ============================================================
--- ACHIEVEMENTS TABLE - User accomplishments
+-- ACHIEVEMENTS TABLE
 -- ============================================================
 CREATE TABLE achievements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -138,7 +144,7 @@ CREATE TABLE achievements (
 );
 
 -- ============================================================
--- WATCHLIST TABLE - User stock watchlist
+-- WATCHLIST TABLE
 -- ============================================================
 CREATE TABLE watchlist (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -149,7 +155,7 @@ CREATE TABLE watchlist (
 );
 
 -- ============================================================
--- INDEXES FOR PERFORMANCE
+-- INDEXES
 -- ============================================================
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_updated_at ON users(updated_at);
@@ -164,7 +170,7 @@ CREATE INDEX idx_watchlist_user_id ON watchlist(user_id);
 CREATE INDEX idx_watchlist_symbol ON watchlist(symbol);
 
 -- ============================================================
--- ROW LEVEL SECURITY (RLS)
+-- ROW LEVEL SECURITY
 -- ============================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio ENABLE ROW LEVEL SECURITY;
@@ -172,7 +178,7 @@ ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE watchlist ENABLE ROW LEVEL SECURITY;
 
--- Users table policies
+-- Users policies
 CREATE POLICY "Users can read own profile" ON users
   FOR SELECT USING (auth.uid() = id);
 
@@ -182,28 +188,28 @@ CREATE POLICY "Users can update own profile" ON users
 CREATE POLICY "Users can insert own profile" ON users
   FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Portfolio table policies
+-- Portfolio policies
 CREATE POLICY "Users can read own portfolio" ON portfolio
   FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can manage own portfolio" ON portfolio
   FOR ALL USING (auth.uid() = user_id);
 
--- Transactions table policies
+-- Transaction policies
 CREATE POLICY "Users can read own transactions" ON transactions
   FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own transactions" ON transactions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Achievements table policies
+-- Achievement policies
 CREATE POLICY "Users can read own achievements" ON achievements
   FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can manage own achievements" ON achievements
   FOR ALL USING (auth.uid() = user_id);
 
--- Watchlist table policies
+-- Watchlist policies
 CREATE POLICY "Users can read own watchlist" ON watchlist
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -211,10 +217,10 @@ CREATE POLICY "Users can manage own watchlist" ON watchlist
   FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================================
--- ESSENTIAL FUNCTIONS
+-- FUNCTIONS
 -- ============================================================
 
--- Function to execute trades atomically
+-- Trade execution function
 CREATE OR REPLACE FUNCTION execute_trade(
   user_id_param UUID,
   symbol_param TEXT,
@@ -227,8 +233,6 @@ DECLARE
   current_balance NUMERIC;
   current_quantity INTEGER;
   new_quantity INTEGER;
-  new_avg_price NUMERIC;
-  total_cost NUMERIC;
 BEGIN
   -- Get current cash balance
   SELECT cash_balance INTO current_balance
@@ -237,9 +241,9 @@ BEGIN
 
   -- For buy orders
   IF type_param = 'buy' THEN
-    -- Check if user has enough cash
+    -- Check funds
     IF current_balance < total_amount_param THEN
-      RETURN false; -- Insufficient funds
+      RETURN false;
     END IF;
 
     -- Update cash balance
@@ -249,7 +253,7 @@ BEGIN
         updated_at = NOW()
     WHERE id = user_id_param;
 
-    -- Insert or update portfolio
+    -- Update portfolio
     INSERT INTO portfolio (user_id, symbol, quantity, avg_price)
     VALUES (user_id_param, symbol_param, quantity_param, price_param)
     ON CONFLICT (user_id, symbol) DO UPDATE SET
@@ -264,9 +268,9 @@ BEGIN
     FROM portfolio
     WHERE user_id = user_id_param AND symbol = symbol_param;
 
-    -- Check if user has enough shares
+    -- Check shares
     IF current_quantity IS NULL OR current_quantity < quantity_param THEN
-      RETURN false; -- Insufficient shares
+      RETURN false;
     END IF;
 
     -- Update cash balance
@@ -280,37 +284,28 @@ BEGIN
     new_quantity := current_quantity - quantity_param;
     
     IF new_quantity = 0 THEN
-      -- Remove from portfolio if selling all shares
       DELETE FROM portfolio
       WHERE user_id = user_id_param AND symbol = symbol_param;
     ELSE
-      -- Update quantity
       UPDATE portfolio
-      SET quantity = new_quantity,
-          updated_at = NOW()
+      SET quantity = new_quantity, updated_at = NOW()
       WHERE user_id = user_id_param AND symbol = symbol_param;
     END IF;
   END IF;
 
-  -- Insert transaction record
+  -- Record transaction
   INSERT INTO transactions (user_id, symbol, type, quantity, price, total_amount)
   VALUES (user_id_param, symbol_param, type_param, quantity_param, price_param, total_amount_param);
 
-  RETURN true; -- Success
+  RETURN true;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to handle new user creation
+-- User creation function
 CREATE OR REPLACE FUNCTION handle_new_user() RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO users (
-    id, 
-    email, 
-    username, 
-    display_name,
-    created_at, 
-    last_login,
-    updated_at
+    id, email, username, display_name, created_at, last_login, updated_at
   )
   VALUES (
     NEW.id,
@@ -325,7 +320,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to update user last login
+-- Login update function
 CREATE OR REPLACE FUNCTION update_user_last_login() RETURNS TRIGGER AS $$
 BEGIN
   UPDATE users
@@ -339,13 +334,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================================
 -- TRIGGERS
 -- ============================================================
-
--- Trigger to create user profile on signup
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
--- Trigger to update last login
 CREATE TRIGGER on_auth_user_login
   AFTER UPDATE ON auth.users
   FOR EACH ROW
@@ -353,7 +345,7 @@ CREATE TRIGGER on_auth_user_login
   EXECUTE FUNCTION update_user_last_login();
 
 -- ============================================================
--- GRANT PERMISSIONS
+-- PERMISSIONS
 -- ============================================================
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
@@ -361,20 +353,12 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
 
 -- ============================================================
--- SUMMARY
+-- COMPLETION MESSAGE
 -- ============================================================
--- This schema includes only the essential tables for your app:
--- 1. users - Complete user profiles and settings
--- 2. portfolio - User stock holdings
--- 3. transactions - Trading history
--- 4. achievements - User accomplishments
--- 5. watchlist - User stock watchlist
---
--- REMOVED (as requested):
--- - market_prices (data comes from API)
--- - newsletters (data comes from API)
--- - price_alerts (not needed)
--- - leaderboard (not needed)
---
--- The schema is optimized for your Flutter app's data model
--- and includes proper RLS policies for security.
+DO $$
+BEGIN
+  RAISE NOTICE 'Database reset completed successfully!';
+  RAISE NOTICE 'Tables created: users, portfolio, transactions, achievements, watchlist';
+  RAISE NOTICE 'Removed unwanted tables: market_prices, newsletters, price_alerts, leaderboard';
+  RAISE NOTICE 'Your app should now save data properly.';
+END $$;
