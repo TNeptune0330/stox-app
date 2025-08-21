@@ -277,51 +277,6 @@ class AuthService {
       if (supabaseUserId.startsWith('offline_')) {
         throw Exception('Invalid offline user detected. Authentication must work properly.');
       }
-        
-      final fullName = user.userMetadata?['full_name'] ?? 
-                      user.userMetadata?['email']?.split('@')[0] ?? 
-                      'Unknown User';
-      
-      final userData = UserModel(
-        id: supabaseUserId,
-        email: user.userMetadata?['email'] ?? user.email ?? 'unknown@stox.app',
-          username: fullName,
-          displayName: fullName,
-          avatarUrl: user.userMetadata?['avatar_url'],
-          colorTheme: 'neon_navy',
-          isAdmin: false,
-          cashBalance: 10000.0,
-          initialBalance: 10000.0,
-          totalDeposited: 10000.0,
-          totalTrades: 0,
-          totalProfitLoss: 0.0,
-          totalFeesPaid: 0.0,
-          maxPortfolioValue: 10000.0,
-          maxSingleDayGain: 0.0,
-          maxSingleDayLoss: 0.0,
-          currentStreak: 0,
-          maxStreak: 0,
-          winRate: 0.0,
-          daysTraded: 0,
-          monthsActive: 0,
-          sectorsTraded: [],
-          assetTypesTraded: [],
-          totalAppOpens: 1,
-          totalScreenTimeMinutes: 0,
-          notificationsEnabled: true,
-          darkModeEnabled: true,
-          soundEffectsEnabled: true,
-          dailyLossLimit: 1000.0,
-          positionSizeLimit: 5000.0,
-          lastActiveDate: DateTime.now(),
-          createdAt: DateTime.now(),
-          lastLogin: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        
-        print('✅ Created offline user profile');
-        return userData;
-      }
       
       // Check if user already exists
       final existingUser = await _supabase
