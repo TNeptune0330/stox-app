@@ -1579,6 +1579,17 @@ class EnhancedMarketDataService {
     try {
       print('$_logPrefix 📈 Fetching historical data for $symbol ($timeframe)');
       
+      // Check cache first
+      final cacheKey = '${symbol}_$timeframe';
+      if (_chartDataCache.containsKey(cacheKey) && 
+          _chartDataCacheTime.containsKey(cacheKey)) {
+        final cacheAge = DateTime.now().difference(_chartDataCacheTime[cacheKey]!);
+        if (cacheAge < _chartDataCacheDuration) {
+          print('$_logPrefix 💾 Using cached chart data for $symbol ($timeframe)');
+          return _chartDataCache[cacheKey]!;
+        }
+      }
+      
       // Calculate date range based on timeframe
       final now = DateTime.now();
       DateTime startDate;
@@ -1673,7 +1684,12 @@ class EnhancedMarketDataService {
             }
             
             if (spots.isNotEmpty) {
-              print('$_logPrefix ✅ Got ${spots.length} data points from broader range');
+              // Cache the chart data
+              final cacheKey = '${symbol}_$timeframe';
+              _chartDataCache[cacheKey] = spots;
+              _chartDataCacheTime[cacheKey] = DateTime.now();
+              
+              print('$_logPrefix ✅ Got and cached ${spots.length} data points from broader range');
               return spots;
             }
           }
@@ -1724,9 +1740,29 @@ class EnhancedMarketDataService {
   
   /// Get fundamental data for a stock symbol
   /// Returns empty map if no data available - never returns mock data
+  // Fundamentals cache
+  static final Map<String, Map<String, dynamic>> _fundamentalsCache = {};
+  static final Map<String, DateTime> _fundamentalsCacheTime = {};
+  static const Duration _fundamentalsCacheDuration = Duration(hours: 4); // Cache for 4 hours
+
+  // Chart data cache
+  static final Map<String, List<FlSpot>> _chartDataCache = {};
+  static final Map<String, DateTime> _chartDataCacheTime = {};
+  static const Duration _chartDataCacheDuration = Duration(minutes: 15); // Cache for 15 minutes
+
   static Future<Map<String, dynamic>> getFundamentalData(String symbol) async {
     try {
       print('$_logPrefix 📊 Getting fundamental data for $symbol...');
+      
+      // Check cache first
+      if (_fundamentalsCache.containsKey(symbol) && 
+          _fundamentalsCacheTime.containsKey(symbol)) {
+        final cacheAge = DateTime.now().difference(_fundamentalsCacheTime[symbol]!);
+        if (cacheAge < _fundamentalsCacheDuration) {
+          print('$_logPrefix 💾 Using cached fundamentals for $symbol');
+          return _fundamentalsCache[symbol]!;
+        }
+      }
       
       await _waitForRateLimit();
       
@@ -1773,7 +1809,11 @@ class EnhancedMarketDataService {
               'weekLow52': meta['fiftyTwoWeekLow']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
             };
             
-            print('$_logPrefix ✅ Fundamental data loaded for $symbol: ${fundamentalData.keys.join(', ')}');
+            // Cache the fundamentals data
+            _fundamentalsCache[symbol] = fundamentalData;
+            _fundamentalsCacheTime[symbol] = DateTime.now();
+            
+            print('$_logPrefix ✅ Fundamental data loaded and cached for $symbol: ${fundamentalData.keys.join(', ')}');
             return fundamentalData;
           }
         } else {

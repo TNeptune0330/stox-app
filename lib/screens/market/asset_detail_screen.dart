@@ -32,7 +32,6 @@ class AssetDetailScreen extends StatefulWidget {
 
 class _AssetDetailScreenState extends State<AssetDetailScreen>
     with TickerProviderStateMixin {
-  late TabController _tabController;
   bool _isLoading = false;
   String _selectedTimeframe = '1D';
   List<FlSpot> _priceData = [];
@@ -46,16 +45,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _loadChartData();
     _loadFundamentals();
     _loadNews();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadChartData() async {
@@ -132,8 +124,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
         
         return Scaffold(
           backgroundColor: themeProvider.background,
-          body: Column(
-            children: [
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
                 // Header with back button and notifications
                 Container(
                   padding: EdgeInsets.only(
@@ -300,66 +293,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                   ),
                 ),
 
-                // Tab bar
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: themeProvider.backgroundHigh,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: themeProvider.theme,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: themeProvider.contrast.withOpacity(0.6),
-                    labelStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    tabs: const [
-                      Tab(text: 'Overview'),
-                      Tab(text: 'News'),
-                      Tab(text: 'Stats'),
-                    ],
-                  ),
-                ),
-
-                // Tab content
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      // Overview Tab
-                      _buildOverviewTab(themeProvider, changeColor, isPositive),
-                      // News Tab
-                      _buildNewsTab(themeProvider),
-                      // Stats Tab
-                      _buildStatsTab(themeProvider),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            bottomNavigationBar: _buildTradeButtons(themeProvider),
-          );
-        },
-      );
-  }
-
-  Widget _buildOverviewTab(ThemeProvider themeProvider, Color changeColor, bool isPositive) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-
-          // Chart section
+                // Direct content from overview tab (chart, metrics, etc.)
+                
+                // Chart section
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -417,7 +353,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
 
                 const SizedBox(height: 24),
 
-                // Stock Metrics Widgets
+                // Stock Metrics Widgets (only the new ones)
                 if (_fundamentals != null) ...[
                   // Daily metrics (Open, High, Low)
                   Container(
@@ -579,77 +515,89 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                 if (widget.isHolding && widget.holdingDetails != null)
                   _buildHoldingsSection(themeProvider),
 
-                // Stats section (conditionally show based on holding status)
-                _buildStatsSection(themeProvider),
-
                 // About section
                 _buildAboutSection(themeProvider),
 
-                const SizedBox(height: 100), // Space for trade buttons
+                // News section at bottom
+                _buildNewsSection(themeProvider),
               ],
             ),
-        );
+            bottomNavigationBar: _buildTradeButtons(themeProvider),
+          );
+        },
+      );
   }
 
-  Widget _buildNewsTab(ThemeProvider themeProvider) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          if (_isLoadingNews)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (_newsArticles.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.article_outlined,
-                      size: 64,
-                      color: themeProvider.contrast.withOpacity(0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No News Available',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: themeProvider.contrast,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Check back later for the latest news about ${widget.asset.symbol}',
-                      style: TextStyle(
-                        color: themeProvider.contrast.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _newsArticles.length,
-              itemBuilder: (context, index) {
-                final article = _newsArticles[index];
-                return _buildNewsCard(article, themeProvider);
-              },
+  Widget _buildNewsSection(ThemeProvider themeProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Latest News',
+            style: TextStyle(
+              color: themeProvider.contrast,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
             ),
-          const SizedBox(height: 100), // Space for trade buttons
-        ],
-      ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_isLoadingNews)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_newsArticles.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.article_outlined,
+                    size: 64,
+                    color: themeProvider.contrast.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No News Available',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: themeProvider.contrast,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Check back later for the latest news about ${widget.asset.symbol}',
+                    style: TextStyle(
+                      color: themeProvider.contrast.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _newsArticles.length,
+            itemBuilder: (context, index) {
+              final article = _newsArticles[index];
+              return _buildNewsCard(article, themeProvider);
+            },
+          ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -803,24 +751,6 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     );
   }
 
-  Widget _buildStatsTab(ThemeProvider themeProvider) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          
-          // Holdings section (only show if this is a holding)
-          if (widget.isHolding && widget.holdingDetails != null)
-            _buildHoldingsSection(themeProvider),
-
-          // Stats section
-          _buildStatsSection(themeProvider),
-
-          const SizedBox(height: 100), // Space for trade buttons
-        ],
-      ),
-    );
-  }
 
   Widget _buildSpotifyStyleChart(ThemeProvider themeProvider) {
     return _isLoading

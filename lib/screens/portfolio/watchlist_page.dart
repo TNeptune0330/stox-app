@@ -150,7 +150,7 @@ class _WatchlistPageState extends State<WatchlistPage> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 1.2,
+                        childAspectRatio: 1.35,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
                       ),
@@ -248,7 +248,7 @@ class _WatchlistPageState extends State<WatchlistPage> {
       },
       onLongPress: () => _showRemoveDialog(asset, watchlistProvider),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: themeProvider.backgroundHigh,
           borderRadius: BorderRadius.circular(16),
@@ -268,13 +268,17 @@ class _WatchlistPageState extends State<WatchlistPage> {
             Row(
               children: [
                 // Bigger, more prominent ticker symbol
-                Text(
-                  asset.symbol,
-                  style: TextStyle(
-                    color: themeProvider.contrast,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
+                Flexible(
+                  child: Text(
+                    asset.symbol,
+                    style: TextStyle(
+                      color: themeProvider.contrast,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const Spacer(),
@@ -295,18 +299,20 @@ class _WatchlistPageState extends State<WatchlistPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             
             // Company name (shortened)
-            Text(
-              asset.name.length > 25 ? '${asset.name.substring(0, 25)}...' : asset.name,
-              style: TextStyle(
-                color: themeProvider.contrast.withOpacity(0.8),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+            Flexible(
+              child: Text(
+                asset.name.length > 20 ? '${asset.name.substring(0, 20)}...' : asset.name,
+                style: TextStyle(
+                  color: themeProvider.contrast.withOpacity(0.8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
             const Spacer(),
             
@@ -318,11 +324,13 @@ class _WatchlistPageState extends State<WatchlistPage> {
                   '\$${asset.price.toStringAsFixed(2)}',
                   style: TextStyle(
                     color: themeProvider.contrast,
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
