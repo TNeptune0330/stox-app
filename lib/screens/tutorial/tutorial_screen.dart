@@ -303,172 +303,192 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
 
   Widget _buildTutorialPage(TutorialStep step, ThemeProvider themeProvider) {
     final bool _reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenHeight < 700;
     
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          
-          // Animated icon with gradient background
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      step.primaryColor.withOpacity(0.1),
-                      step.primaryColor.withOpacity(0.2),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: step.primaryColor.withOpacity(0.3),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  step.icon,
-                  size: 64,
-                  color: step.primaryColor,
-                ),
-              ),
-            ),
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: screenHeight - 200, // Account for app bar, buttons, indicators
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 24.0,
+            vertical: isSmallScreen ? 16.0 : 24.0,
           ),
-          
-          const SizedBox(height: 32),
-          
-          // Title with slide animation
-          SlideTransition(
-            position: _slideAnimation,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Text(
-                step.title,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: themeProvider.contrast,
-                  letterSpacing: -0.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Subtitle
-          SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-              CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
-            ),
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Text(
-                step.subtitle,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: step.primaryColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Description
-          SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-              CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
-            ),
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Text(
-                step.description,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: themeProvider.contrast.withOpacity(0.8),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 32),
-          
-          // Feature highlights
-          Expanded(
-            child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
-                CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
-              ),
-              child: FadeTransition(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: isSmallScreen ? 20 : 40),
+              
+              // Animated icon with gradient background
+              FadeTransition(
                 opacity: _fadeAnimation,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: step.features.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final feature = entry.value;
-                    
-                    return TweenAnimationBuilder<double>(
-                      duration: Duration(milliseconds: _reducedMotion ? 0 : 600 + (index * 150)),
-                      tween: Tween<double>(begin: 0.0, end: 1.0),
-                      curve: Curves.easeOutBack,
-                      builder: (context, value, child) {
-                        return Transform.scale(
-                          scale: value,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: step.primaryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: step.primaryColor.withOpacity(0.2),
-                                width: 1,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Container(
+                    width: isSmallScreen ? 100 : 140,
+                    height: isSmallScreen ? 100 : 140,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          step.primaryColor.withOpacity(0.1),
+                          step.primaryColor.withOpacity(0.2),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: step.primaryColor.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      step.icon,
+                      size: isSmallScreen ? 48 : 64,
+                      color: step.primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+              
+              SizedBox(height: isSmallScreen ? 20 : 32),
+              
+              // Title with slide animation
+              SlideTransition(
+                position: _slideAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Text(
+                    step.title,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 24 : 28,
+                      fontWeight: FontWeight.w900,
+                      color: themeProvider.contrast,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Subtitle
+              SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+                  CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+                ),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Text(
+                    step.subtitle,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 14 : 16,
+                      fontWeight: FontWeight.w600,
+                      color: step.primaryColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              
+              SizedBox(height: isSmallScreen ? 16 : 24),
+              
+              // Description
+              SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+                  CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+                ),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Text(
+                    step.description,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 14 : 16,
+                      color: themeProvider.contrast.withOpacity(0.8),
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              
+              SizedBox(height: isSmallScreen ? 20 : 32),
+              
+              // Feature highlights
+              SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+                  CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+                ),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: step.features.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final feature = entry.value;
+                      
+                      return TweenAnimationBuilder<double>(
+                        duration: Duration(milliseconds: _reducedMotion ? 0 : 600 + (index * 150)),
+                        tween: Tween<double>(begin: 0.0, end: 1.0),
+                        curve: Curves.easeOutBack,
+                        builder: (context, value, child) {
+                          return Transform.scale(
+                            scale: value,
+                            child: Container(
+                              margin: EdgeInsets.only(bottom: isSmallScreen ? 12 : 16),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isSmallScreen ? 16 : 20, 
+                                vertical: isSmallScreen ? 10 : 12
+                              ),
+                              decoration: BoxDecoration(
+                                color: step.primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: step.primaryColor.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    feature.split(' ')[0], // Emoji part
+                                    style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      feature.substring(feature.indexOf(' ') + 1),
+                                      style: TextStyle(
+                                        fontSize: isSmallScreen ? 13 : 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: themeProvider.contrast.withOpacity(0.9),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  feature.split(' ')[0], // Emoji part
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  feature.substring(feature.indexOf(' ') + 1),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: themeProvider.contrast.withOpacity(0.9),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }).toList(),
+                          );
+                        },
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
+              
+              SizedBox(height: isSmallScreen ? 20 : 40),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
