@@ -14,7 +14,11 @@ class TutorialScreen extends StatefulWidget {
 class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStateMixin {
   late PageController _pageController;
   late AnimationController _fadeController;
+  late AnimationController _scaleController;
+  late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
   
   int _currentPage = 0;
   bool _isLoading = false;
@@ -23,56 +27,47 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
     TutorialStep(
       icon: Icons.trending_up,
       title: 'Welcome to Stox!',
-      description: 'Learn stock trading without any financial risk. Practice with real market data in a safe environment.',
-      buttonText: 'Learn Trading',
-    ),
-    TutorialStep(
-      icon: Icons.attach_money,
-      title: 'Understanding Stock Prices',
-      description: 'Stock prices change based on supply and demand. When more people want to buy, prices go up. When more want to sell, prices go down.',
-      buttonText: 'Next',
-    ),
-    TutorialStep(
-      icon: Icons.shopping_cart,
-      title: 'How to Buy Stocks',
-      description: 'To buy a stock: 1) Search for it 2) Tap to view details 3) Hit "BUY" 4) Choose quantity 5) Confirm order. You now own shares!',
-      buttonText: 'Next',
-    ),
-    TutorialStep(
-      icon: Icons.sell,
-      title: 'How to Sell Stocks',
-      description: 'To sell: 1) Go to your Portfolio 2) Tap a stock you own 3) Hit "SELL" 4) Choose how many shares 5) Confirm. Cash is added to your balance!',
-      buttonText: 'Next',
-    ),
-    TutorialStep(
-      icon: Icons.bar_chart,
-      title: 'Reading Stock Charts',
-      description: 'Green means price went up, red means down. The chart shows price history. Look for trends - is it going up or down over time?',
-      buttonText: 'Next',
-    ),
-    TutorialStep(
-      icon: Icons.psychology,
-      title: 'Trading Strategy Tips',
-      description: 'Start small! Buy what you understand. Don\'t panic sell on red days. Diversify - don\'t put all money in one stock. Practice makes perfect!',
-      buttonText: 'Next',
+      subtitle: 'Learn. Trade. Profit.',
+      description: 'Master stock trading with \$100K virtual cash\nZero risk, real market data',
+      buttonText: 'Start Learning',
+      primaryColor: Color(0xFF10B981),
+      features: ['📈 Real market data', '💰 \$100K virtual cash', '🎯 Risk-free trading'],
     ),
     TutorialStep(
       icon: Icons.search,
-      title: 'Find Any Stock',
-      description: 'Search for any company, ETF, or crypto. Try "Apple", "TSLA", "SPY", or "Bitcoin". Our system finds everything from global markets!',
+      title: 'Discover Stocks',
+      subtitle: 'Find your next investment',
+      description: 'Search Apple, Tesla, Bitcoin & more\nGlobal markets at your fingertips',
       buttonText: 'Next',
+      primaryColor: Color(0xFF3B82F6),
+      features: ['🔍 Search any stock', '🌎 Global markets', '⚡ Instant results'],
+    ),
+    TutorialStep(
+      icon: Icons.swap_horiz,
+      title: 'Buy & Sell Simple',
+      subtitle: 'Trade in 3 taps',
+      description: 'Tap stock → Choose amount → Confirm\nThat\'s it! You\'re trading',
+      buttonText: 'Next',
+      primaryColor: Color(0xFFEA580C),
+      features: ['📱 3-tap trading', '⚡ Instant orders', '💡 Smart suggestions'],
     ),
     TutorialStep(
       icon: Icons.account_balance_wallet,
-      title: 'Your Virtual Portfolio',
-      description: 'Start with \$100,000 virtual cash. Track your performance, see profits/losses, and learn without risk. Perfect for beginners!',
+      title: 'Track Performance',
+      subtitle: 'Watch your wealth grow',
+      description: 'Real-time portfolio tracking\nGreen profits, learn from losses',
       buttonText: 'Next',
+      primaryColor: Color(0xFF8B5CF6),
+      features: ['📊 Live tracking', '📈 Profit/loss charts', '🎯 Performance insights'],
     ),
     TutorialStep(
       icon: Icons.emoji_events,
-      title: 'Earn Achievements',
-      description: 'Complete challenges like "First Trade", "Profit Maker", "Diversified Portfolio". Unlock achievements as you master trading skills!',
+      title: 'Ready to Trade!',
+      subtitle: 'Your journey begins',
+      description: 'Unlock achievements as you learn\nBecome a trading master',
       buttonText: 'Start Trading',
+      primaryColor: Color(0xFFEAB308),
+      features: ['🏆 Earn achievements', '📚 Learn by doing', '🚀 Build wealth'],
     ),
   ];
 
@@ -80,29 +75,73 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
   void initState() {
     super.initState();
     _pageController = PageController();
+    
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: Motion.slow,
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    _scaleController = AnimationController(
+      duration: Motion.med,
+      vsync: this,
     );
-    _fadeController.forward();
+    _slideController = AnimationController(
+      duration: Motion.med,
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Motion.easeOut),
+    );
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Motion.spring),
+    );
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+      CurvedAnimation(parent: _slideController, curve: Motion.easeOut),
+    );
+    
+    _startAnimations();
+  }
+
+  void _startAnimations() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _fadeController.forward();
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        _scaleController.forward();
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _slideController.forward();
+      }
+    });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _fadeController.dispose();
+    _scaleController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
   void _nextPage() {
     if (_currentPage < _tutorialSteps.length - 1) {
+      // Reset animations for the next page
+      _scaleController.reset();
+      _slideController.reset();
+      
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+        duration: Motion.med,
+        curve: Motion.easeOut,
+      ).then((_) {
+        // Restart animations for the new page
+        _startAnimations();
+      });
     } else {
       _completeTutorial();
     }
@@ -159,19 +198,24 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
           body: SafeArea(
             child: Column(
               children: [
-                // Skip button
+                // Skip button with animation
                 Align(
                   alignment: Alignment.topRight,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: TextButton(
-                      onPressed: _isLoading ? null : _skipTutorial,
-                      child: Text(
-                        'Skip',
-                        style: TextStyle(
-                          color: themeProvider.theme,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: TextButton.icon(
+                        onPressed: _isLoading ? null : _skipTutorial,
+                        icon: const Icon(Icons.close, size: 18),
+                        label: const Text('Skip'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: themeProvider.contrast.withOpacity(0.7),
+                          backgroundColor: themeProvider.backgroundHigh,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                       ),
                     ),
@@ -201,38 +245,51 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
                 // Page indicators
                 _buildPageIndicators(themeProvider),
                 
-                // Next/Complete button
+                // Next/Complete button with dynamic styling
                 Padding(
                   padding: const EdgeInsets.all(24.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: themeProvider.theme,
-                        foregroundColor: Colors.white,
-                        elevation: 8,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  child: SlideTransition(
+                    position: Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+                      CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+                    ),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _nextPage,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _tutorialSteps[_currentPage].primaryColor,
+                            foregroundColor: Colors.white,
+                            elevation: 12,
+                            shadowColor: _tutorialSteps[_currentPage].primaryColor.withOpacity(0.4),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : AnimatedSwitcher(
+                                  duration: Motion.med,
+                                  child: Text(
+                                    _tutorialSteps[_currentPage].buttonText,
+                                    key: ValueKey(_currentPage),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              _tutorialSteps[_currentPage].buttonText,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                     ),
                   ),
                 ),
@@ -245,103 +302,205 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
   }
 
   Widget _buildTutorialPage(TutorialStep step, ThemeProvider themeProvider) {
+    final bool _reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    
     return Padding(
-      padding: const EdgeInsets.all(32.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icon
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: themeProvider.theme.withOpacity(0.1),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: themeProvider.theme.withOpacity(0.3),
-                width: 3,
+          const SizedBox(height: 40),
+          
+          // Animated icon with gradient background
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      step.primaryColor.withOpacity(0.1),
+                      step.primaryColor.withOpacity(0.2),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: step.primaryColor.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  step.icon,
+                  size: 64,
+                  color: step.primaryColor,
+                ),
               ),
-            ),
-            child: Icon(
-              step.icon,
-              size: 80,
-              color: themeProvider.theme,
             ),
           ),
           
-          const SizedBox(height: 48),
+          const SizedBox(height: 32),
           
-          // Title
-          Text(
-            step.title,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: themeProvider.contrast,
+          // Title with slide animation
+          SlideTransition(
+            position: _slideAnimation,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Text(
+                step.title,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: themeProvider.contrast,
+                  letterSpacing: -0.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-            textAlign: TextAlign.center,
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Subtitle
+          SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+              CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+            ),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Text(
+                step.subtitle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: step.primaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
           
           const SizedBox(height: 24),
           
           // Description
-          Text(
-            step.description,
-            style: TextStyle(
-              fontSize: 18,
-              color: themeProvider.contrast.withOpacity(0.8),
-              height: 1.6,
+          SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+              CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
             ),
-            textAlign: TextAlign.center,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Text(
+                step.description,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: themeProvider.contrast.withOpacity(0.8),
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
           
-          // Practice button for trading steps
-          if (_currentPage >= 2 && _currentPage <= 4) ...[
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => const MainNavigation(),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeProvider.theme.withOpacity(0.1),
-                foregroundColor: themeProvider.theme,
-                side: BorderSide(color: themeProvider.theme),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 32),
+          
+          // Feature highlights
+          Expanded(
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+                CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+              ),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: step.features.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final feature = entry.value;
+                    
+                    return TweenAnimationBuilder<double>(
+                      duration: Duration(milliseconds: _reducedMotion ? 0 : 600 + (index * 150)),
+                      tween: Tween<double>(begin: 0.0, end: 1.0),
+                      curve: Curves.easeOutBack,
+                      builder: (context, value, child) {
+                        return Transform.scale(
+                          scale: value,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: step.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: step.primaryColor.withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  feature.split(' ')[0], // Emoji part
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  feature.substring(feature.indexOf(' ') + 1),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: themeProvider.contrast.withOpacity(0.9),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }).toList(),
                 ),
               ),
-              icon: const Icon(Icons.play_arrow),
-              label: const Text(
-                'Try Interactive Practice',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 
   Widget _buildPageIndicators(ThemeProvider themeProvider) {
+    final currentStep = _tutorialSteps[_currentPage];
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(_tutorialSteps.length, (index) {
+          final isActive = _currentPage == index;
           return AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: _currentPage == index ? 24 : 8,
+            duration: Motion.med,
+            curve: Motion.spring,
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            width: isActive ? 32 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color: _currentPage == index 
-                  ? themeProvider.theme 
-                  : themeProvider.theme.withOpacity(0.3),
+              gradient: isActive ? LinearGradient(
+                colors: [currentStep.primaryColor, currentStep.primaryColor.withOpacity(0.7)],
+              ) : null,
+              color: isActive ? null : currentStep.primaryColor.withOpacity(0.3),
               borderRadius: BorderRadius.circular(4),
+              boxShadow: isActive ? [
+                BoxShadow(
+                  color: currentStep.primaryColor.withOpacity(0.4),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ] : null,
             ),
           );
         }),
@@ -353,13 +512,19 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
 class TutorialStep {
   final IconData icon;
   final String title;
+  final String subtitle;
   final String description;
   final String buttonText;
+  final Color primaryColor;
+  final List<String> features;
 
   const TutorialStep({
     required this.icon,
     required this.title,
+    required this.subtitle,
     required this.description,
     required this.buttonText,
+    required this.primaryColor,
+    required this.features,
   });
 }
