@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/storage_service.dart';
 import '../main_navigation.dart';
-import 'trading_simulation_screen.dart';
 
 class TutorialScreen extends StatefulWidget {
   const TutorialScreen({super.key});
@@ -300,9 +299,9 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.of(context).push(
+                Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (context) => const TradingSimulationScreen(),
+                    builder: (context) => const MainNavigation(),
                   ),
                 );
               },
