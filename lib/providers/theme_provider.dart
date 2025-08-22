@@ -11,7 +11,8 @@ class NeonNavyColors {
   // Primary Colors
   static const Color primary = Color(0xFF3B82F6);        // Electric blue
   static const Color primaryDim = Color(0xFF2563EB);
-  static const Color error = Color(0xFFEF4444);          // Modern red
+  static const Color success = Color(0xFF10B981);        // Green for gains
+  static const Color error = Color(0xFFEF4444);          // Red for losses
   static const Color warning = Color(0xFFF59E0B);
   static const Color info = Color(0xFF3B82F6);           // Blue accents/links
   
@@ -150,11 +151,11 @@ class ThemeProvider with ChangeNotifier {
       dividerColor: NeonNavyColors.strokeDark,
       appBarColor: NeonNavyColors.surfaceDark,
       bottomNavColor: NeonNavyColors.surfaceDark,
-      successColor: NeonNavyColors.primary,
+      successColor: NeonNavyColors.success,
       errorColor: NeonNavyColors.error,
       warningColor: NeonNavyColors.warning,
       infoColor: NeonNavyColors.info,
-      positiveColor: NeonNavyColors.primary,
+      positiveColor: NeonNavyColors.success,
       negativeColor: NeonNavyColors.error,
       shadowColor: Colors.black,
       borderColor: NeonNavyColors.strokeDark,

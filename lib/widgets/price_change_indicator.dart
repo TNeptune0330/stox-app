@@ -15,7 +15,7 @@ class PriceChangeIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = change >= 0;
-    final color = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFE74C3C); // Blue for positive, red for negative
+    final color = isPositive ? const Color(0xFF10B981) : const Color(0xFFE74C3C); // Green for positive, red for negative
     final formattedChange = '${isPositive ? '+' : ''}${change.toStringAsFixed(2)}%';
 
     return Row(

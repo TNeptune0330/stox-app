@@ -120,7 +120,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final isPositive = widget.asset.changePercent >= 0;
-        final changeColor = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
+        final changeColor = isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
         
         return Scaffold(
           backgroundColor: themeProvider.background,

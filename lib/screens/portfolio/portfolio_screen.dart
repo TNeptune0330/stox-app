@@ -302,7 +302,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: portfolioProvider.totalPnL >= 0 ? themeProvider.theme : const Color(0xFFEF4444),
+                    color: portfolioProvider.totalPnL >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -334,7 +334,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: portfolioProvider.totalPnL >= 0 ? themeProvider.theme : const Color(0xFFEF4444),
+                    color: portfolioProvider.totalPnL >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
