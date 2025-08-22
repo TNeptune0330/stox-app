@@ -48,6 +48,74 @@ class NeonNavyColors {
   static const Color accentViolet = Color(0xFF7C3AED);   // Violet
 }
 
+// Slide direction enum for page transitions
+enum SlideDirection { fromRight, fromLeft, fromTop, fromBottom }
+
+// Motion Design System Tokens
+class Motion {
+  // Durations - Made even slower for better visibility
+  static const fast = Duration(milliseconds: 400);
+  static const med  = Duration(milliseconds: 600);
+  static const slow = Duration(milliseconds: 800);
+  static const loop = Duration(milliseconds: 1000);
+
+  // Curves
+  static const easeOut = Curves.easeOutCubic;
+  static const easeInOut = Curves.easeInOutCubic;
+  static const spring = Curves.easeOutBack; // subtle overshoot
+
+  // Distances
+  static const slideY = 16.0; // px
+  static const slideX = 12.0;
+}
+
+// Triangular spinner for loading states
+class TriSpinner extends StatefulWidget {
+  final double size;
+  final Color? color;
+  const TriSpinner({super.key, this.size = 40, this.color});
+  @override State<TriSpinner> createState() => _TriSpinnerState();
+}
+
+class _TriSpinnerState extends State<TriSpinner> with SingleTickerProviderStateMixin {
+  late final ctrl = AnimationController(vsync: this, duration: Motion.loop)..repeat();
+  
+  @override void dispose() { ctrl.dispose(); super.dispose(); }
+  
+  @override Widget build(BuildContext context) {
+    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final color = widget.color ?? Theme.of(context).colorScheme.primary;
+    
+    return AnimatedBuilder(
+      animation: ctrl,
+      builder: (_, __) => Transform.rotate(
+        angle: (reducedMotion ? 0.0 : ctrl.value) * 6.28318,
+        child: CustomPaint(
+          size: Size.square(widget.size), 
+          painter: _TrianglePainter(color),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrianglePainter extends CustomPainter {
+  final Color color;
+  _TrianglePainter(this.color);
+  
+  @override void paint(Canvas c, Size s) {
+    final p = Paint()..color = color;
+    final path = Path()
+      ..moveTo(s.width/2, 0)
+      ..lineTo(s.width, s.height)
+      ..lineTo(0, s.height)
+      ..close();
+    c.drawPath(path, p);
+  }
+  
+  @override bool shouldRepaint(covariant _TrianglePainter old) => old.color != color;
+}
+
 class ThemeProvider with ChangeNotifier {
   final UserSettingsService _settingsService = UserSettingsService();
   String _selectedTheme = 'neonNavy';

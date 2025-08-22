@@ -62,7 +62,7 @@ class _SupportScreenState extends State<SupportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Support request submitted successfully!'),
+            content: Text('✅ Mail app opened with your support request!'),
             backgroundColor: Colors.green,
           ),
         );

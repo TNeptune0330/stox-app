@@ -7,6 +7,8 @@ import '../providers/theme_provider.dart';
 import '../providers/achievement_provider.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../widgets/animated_screen.dart';
+import '../widgets/staggered_dialog_content.dart';
 import 'market/market_screen.dart';
 import 'portfolio/portfolio_screen.dart';
 import 'achievements/achievements_screen.dart';
@@ -23,12 +25,14 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
   int _currentIndex = 1; // Default to Portfolio screen
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  late PageController _pageController;
   
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 220),
+      duration: Motion.med,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(
@@ -36,7 +40,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeOutCubic,
+      curve: Motion.spring,
     ));
     
     // Delay initialization to avoid calling during build
@@ -48,6 +52,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
   @override
   void dispose() {
     _animationController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
   
@@ -101,9 +106,10 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
           body: Column(
             children: [
               Expanded(
-                child: IndexedStack(
-                  index: _currentIndex,
-                  children: _screens,
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(), // Disable swipe
+                  children: _screens.map((screen) => AnimatedScreen(child: screen)).toList(),
                 ),
               ),
               // Banner Ad
@@ -147,6 +153,84 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
     );
   }
   
+  bool get _reducedMotion => MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+  // Enhanced page route transitions
+  static Route<T> createSlideRoute<T>(Widget page, {SlideDirection direction = SlideDirection.fromRight}) {
+    Offset getOffset() {
+      switch (direction) {
+        case SlideDirection.fromRight:
+          return const Offset(1.0, 0.0);
+        case SlideDirection.fromLeft:
+          return const Offset(-1.0, 0.0);
+        case SlideDirection.fromTop:
+          return const Offset(0.0, -1.0);
+        case SlideDirection.fromBottom:
+          return const Offset(0.0, 1.0);
+      }
+    }
+
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, _) => page,
+      transitionDuration: Motion.med,
+      reverseTransitionDuration: Motion.med,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        final curve = CurvedAnimation(parent: animation, curve: Motion.easeOut);
+        final reverseCurve = CurvedAnimation(parent: secondaryAnimation, curve: Motion.easeOut);
+        
+        if (reducedMotion) {
+          return FadeTransition(opacity: curve, child: child);
+        }
+        
+        final slideOffset = Tween(begin: getOffset(), end: Offset.zero).animate(curve);
+        final reverseSlideOffset = Tween(begin: Offset.zero, end: getOffset() * -0.3).animate(reverseCurve);
+        
+        return SlideTransition(
+          position: slideOffset,
+          child: SlideTransition(
+            position: reverseSlideOffset,
+            child: FadeTransition(
+              opacity: Tween(begin: 0.0, end: 1.0).animate(curve),
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Enhanced animated dialog helper with staggered content
+  static Future<T?> showAnimatedDialog<T>(BuildContext context, Widget child) {
+    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    
+    return showGeneralDialog<T>(
+      context: context,
+      barrierLabel: 'Dialog',
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.4),
+      transitionDuration: reducedMotion ? Motion.fast : Motion.slow,
+      pageBuilder: (_, __, ___) => SafeArea(child: StaggeredDialogContent(child: child)),
+      transitionBuilder: (_, a, __, c) {
+        final t = CurvedAnimation(parent: a, curve: Motion.easeOut);
+        final scale = Tween(begin: 0.94, end: 1.0).animate(t);
+        final slide = Tween(begin: const Offset(0, 0.1), end: Offset.zero).animate(t);
+        
+        if (reducedMotion) {
+          return FadeTransition(opacity: t, child: c);
+        }
+        
+        return FadeTransition(
+          opacity: t,
+          child: SlideTransition(
+            position: slide,
+            child: ScaleTransition(scale: scale, child: c),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildNavItem(ThemeProvider themeProvider, int index, IconData icon, String label, bool isSelected) {
     // Define accent colors for each tab
     final accentColors = [
@@ -166,14 +250,22 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
               _animationController.forward().then((_) {
                 _animationController.reverse();
               });
+              
+              final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+              _pageController.animateToPage(
+                index,
+                duration: reducedMotion ? Motion.fast : Motion.med,
+                curve: Motion.easeOut,
+              );
+              
               setState(() {
                 _currentIndex = index;
               });
             }
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
+            duration: Motion.med,
+            curve: Motion.easeOut,
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
@@ -184,8 +276,10 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Circular button with colored accent
-                Transform.scale(
-                  scale: isSelected ? _scaleAnimation.value : 1.0,
+                AnimatedScale(
+                  scale: isSelected ? (_reducedMotion ? 1.0 : _scaleAnimation.value) : 0.95,
+                  duration: _reducedMotion ? Motion.fast : Motion.med,
+                  curve: Motion.spring,
                   child: Container(
                     width: 48,
                     height: 48,
@@ -219,7 +313,7 @@ class _MainNavigationState extends State<MainNavigation> with TickerProviderStat
                 if (isSelected) ...[
                   const SizedBox(width: 8),
                   AnimatedOpacity(
-                    duration: const Duration(milliseconds: 220),
+                    duration: _reducedMotion ? Motion.fast : Motion.med,
                     opacity: isSelected ? 1.0 : 0.0,
                     child: Container(
                       height: 36,

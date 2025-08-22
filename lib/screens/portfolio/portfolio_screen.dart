@@ -28,6 +28,26 @@ class PortfolioScreen extends StatefulWidget {
 class _PortfolioScreenState extends State<PortfolioScreen> 
     with PerformanceOptimizedMixin, TickerProviderStateMixin {
   
+  bool get _reducedMotion => MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+  // Animated page route helper
+  Route<T> _fadeSlideRoute<T>(Widget page) => PageRouteBuilder<T>(
+    transitionDuration: _reducedMotion ? Motion.fast : Motion.med,
+    reverseTransitionDuration: _reducedMotion ? Motion.fast : Motion.med,
+    pageBuilder: (_, __, ___) => page,
+    transitionsBuilder: (_, a, __, child) {
+      final curved = CurvedAnimation(parent: a, curve: Motion.easeOut, reverseCurve: Curves.easeOut);
+      if (_reducedMotion) {
+        return FadeTransition(opacity: curved, child: child);
+      }
+      final offset = Tween(begin: const Offset(0, 0.06), end: Offset.zero).animate(curved);
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(position: offset, child: child),
+      );
+    },
+  );
+  
   @override
   void initState() {
     super.initState();
@@ -84,9 +104,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => const TransactionHistoryScreen(),
-                        ),
+                        _fadeSlideRoute(const TransactionHistoryScreen()),
                       );
                     },
                   ),
@@ -130,23 +148,38 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         // Hero Wallet Card
-                        _buildWalletCard(themeProvider, portfolioProvider),
+                        _AnimatedListItem(
+                          index: 0,
+                          child: _buildWalletCard(themeProvider, portfolioProvider),
+                        ),
                         const SizedBox(height: 24),
                         
                         // Stats Card
-                        _buildStatsCard(themeProvider, portfolioProvider),
+                        _AnimatedListItem(
+                          index: 1,
+                          child: _buildStatsCard(themeProvider, portfolioProvider),
+                        ),
                         const SizedBox(height: 24),
                         
                         // Achievements Preview
-                        _buildAchievementsPreview(themeProvider),
+                        _AnimatedListItem(
+                          index: 2,
+                          child: _buildAchievementsPreview(themeProvider),
+                        ),
                         const SizedBox(height: 24),
                         
                         // Watchlist
-                        _buildWatchlist(themeProvider),
+                        _AnimatedListItem(
+                          index: 3,
+                          child: _buildWatchlist(themeProvider),
+                        ),
                         const SizedBox(height: 24),
                         
                         // Transactions Button
-                        _buildTransactionsButton(themeProvider),
+                        _AnimatedListItem(
+                          index: 4,
+                          child: _buildTransactionsButton(themeProvider),
+                        ),
                         const SizedBox(height: 100), // Bottom padding for nav bar
                       ]),
                     ),
@@ -161,12 +194,10 @@ class _PortfolioScreenState extends State<PortfolioScreen>
   }
   
   Widget _buildWalletCard(ThemeProvider themeProvider, PortfolioProvider portfolioProvider) {
-    return GestureDetector(
+    return _Pressable(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const HoldingsPage(),
-          ),
+          _fadeSlideRoute(const HoldingsPage()),
         );
       },
       child: Container(
@@ -221,33 +252,13 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     ),
                   ),
                   const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Portfolio Value',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.16),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: const Text(
-                          'Top Up',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Portfolio Value',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -1032,6 +1043,121 @@ class _PortfolioScreenState extends State<PortfolioScreen>
         initialTab: 1, // Start on sell tab
         maxQuantity: holding.quantity,
       ),
+    );
+  }
+}
+
+// Animated list item with staggered entry
+class _AnimatedListItem extends StatefulWidget {
+  final Widget child;
+  final int index;
+  const _AnimatedListItem({super.key, required this.child, required this.index});
+  @override State<_AnimatedListItem> createState() => _AnimatedListItemState();
+}
+
+class _AnimatedListItemState extends State<_AnimatedListItem> 
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    _controller = AnimationController(
+      duration: Motion.med, // Will be updated after frame
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Motion.easeOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Motion.easeOut,
+    ));
+    
+    // Delay initialization to avoid MediaQuery during initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        _controller.duration = reducedMotion ? Motion.fast : Motion.med;
+        
+        // Stagger the animations based on index
+        Future.delayed(Duration(milliseconds: widget.index * 200), () {
+          if (mounted) _controller.forward();
+        });
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    
+    if (reducedMotion) {
+      return widget.child;
+    }
+    
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: widget.child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Pressable button with micro-motion
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  const _Pressable({super.key, required this.child, required this.onTap});
+  @override State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(
+    duration: Motion.fast, 
+    vsync: this, 
+    lowerBound: .98, 
+    upperBound: 1.0,
+  )..value = 1.0;
+  
+  @override void dispose() { _c.dispose(); super.dispose(); }
+  
+  @override Widget build(BuildContext context) {
+    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    
+    return GestureDetector(
+      onTapDown: (_) => reducedMotion ? null : _c.reverse(),
+      onTapUp:   (_) => reducedMotion ? null : _c.forward(),
+      onTapCancel: () => reducedMotion ? null : _c.forward(),
+      onTap: widget.onTap,
+      child: reducedMotion 
+          ? widget.child
+          : ScaleTransition(scale: _c, child: widget.child),
     );
   }
 }

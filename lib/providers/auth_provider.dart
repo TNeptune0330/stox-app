@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
+import '../utils/app_logger.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -24,14 +25,13 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     
     try {
-      print('AuthProvider: Initializing with persistent session support...');
+      AppLogger.auth('Initializing with persistent session support');
       
       // Step 1: Try to restore session from Supabase with automatic refresh
       final restoredUser = await _authService.restoreSession();
       if (restoredUser != null) {
         _user = restoredUser;
-        print('AuthProvider: Session restored successfully: ${_user!.email}');
-        print('AuthProvider: User will stay logged in indefinitely');
+        AppLogger.auth('Session restored for ${_user!.email}');
         
         // Set up automatic session refresh timer
         _startSessionRefreshTimer();
@@ -41,9 +41,9 @@ class AuthProvider with ChangeNotifier {
       }
       
       // Step 2: No offline mode - require proper authentication
-      print('AuthProvider: No active session - user must authenticate properly');
+      AppLogger.auth('No active session found', level: LogLevel.debug);
       
-      print('AuthProvider: No session or cached user found - user needs to sign in');
+      AppLogger.auth('Authentication required', level: LogLevel.debug);
       
     } catch (e) {
       print('AuthProvider: Error during initialization: $e');

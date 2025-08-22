@@ -50,7 +50,10 @@ class AchievementProvider with ChangeNotifier {
           }
         }
         
-        // New users start with no achievements - they must earn them
+        // Give new users a few starter achievements for demo purposes
+        if (_unlockedAchievements.isEmpty && userId != null) {
+          await _createDemoAchievements(userId);
+        }
         
         // Sync any pending local achievements to Supabase
         await _achievementService.syncAchievementsToSupabase(userId);
@@ -77,6 +80,28 @@ class AchievementProvider with ChangeNotifier {
       // On error, users start with clean slate - no free achievements
       _updateAchievementStates();
       notifyListeners();
+    }
+  }
+
+  /// Create demo achievements for testing
+  Future<void> _createDemoAchievements(String userId) async {
+    try {
+      // Give some demo achievements to show the difference between locked/unlocked
+      _unlockedAchievements.add('first_trade');
+      _unlockedAchievements.add('early_bird');
+      _unlockedAchievements.add('paper_hands');
+      
+      // Set some progress on other achievements
+      _userProgress['first_trade'] = 1;
+      _userProgress['ten_trades'] = 5; // Progress towards 10 trades
+      _userProgress['hundred_trades'] = 5; // Progress towards 100 trades
+      _userProgress['first_profit'] = 500; // Progress towards $1000 profit
+      _userProgress['early_bird'] = 1;
+      _userProgress['paper_hands'] = 1;
+      
+      print('🏆 Created demo achievements for testing');
+    } catch (e) {
+      print('🏆 Failed to create demo achievements: $e');
     }
   }
 
@@ -482,5 +507,97 @@ class AchievementProvider with ChangeNotifier {
       final currentConsumer = _userProgress['consumer_staples'] ?? 0;
       await updateProgress('consumer_staples', currentConsumer + 1);
     }
+  }
+
+  // Additional missing tracking methods
+  Future<void> recordLongHold(int days) async {
+    await updateProgress('value_investor', days);
+  }
+
+  Future<void> recordProfitableStreak(int streak) async {
+    await updateProgress('perfectionist', streak);
+  }
+
+  Future<void> recordSameDayBuySell() async {
+    final currentDayTrades = _userProgress['day_trader'] ?? 0;
+    await updateProgress('day_trader', currentDayTrades + 1);
+  }
+
+  Future<void> recordSwingTrade() async {
+    final currentSwingTrades = _userProgress['swing_trader'] ?? 0;
+    await updateProgress('swing_trader', currentSwingTrades + 1);
+  }
+
+  Future<void> recordQuickSale() async {
+    await updateProgress('paper_hands', 1);
+  }
+
+  Future<void> recordMultiMillionaire(double netWorth) async {
+    if (netWorth >= 10000000) {
+      await updateProgress('multi_millionaire', netWorth.toInt());
+    }
+    if (netWorth >= 1000000000) {
+      await updateProgress('billionaire', netWorth.toInt());
+    }
+  }
+
+  Future<void> recordSectorDiversification(int sectorCount) async {
+    await updateProgress('sector_rotator', sectorCount);
+  }
+
+  Future<void> recordLimitOrder() async {
+    final currentLimitOrders = _userProgress['market_maker'] ?? 0;
+    await updateProgress('market_maker', currentLimitOrders + 1);
+  }
+
+  Future<void> recordMarketCrashHolding(double crashPercentage) async {
+    if (crashPercentage >= 30) {
+      await updateProgress('iron_stomach', crashPercentage.toInt());
+    }
+  }
+
+  Future<void> recordContrarian() async {
+    await updateProgress('contrarian', 1);
+  }
+
+  Future<void> recordVolatilityTrade() async {
+    await updateProgress('volatility_surfer', 1);
+  }
+
+  Future<void> recordEarningsPlay() async {
+    final currentEarningsPlays = _userProgress['earnings_player'] ?? 0;
+    await updateProgress('earnings_player', currentEarningsPlays + 1);
+  }
+
+  Future<void> recordOptionsTrade() async {
+    final currentOptionstrades = _userProgress['options_trader'] ?? 0;
+    await updateProgress('options_trader', currentOptionstrades + 1);
+  }
+
+  Future<void> recordBearMarketSurvival() async {
+    await updateProgress('bear_market', 1);
+  }
+
+  Future<void> recordSocialFollowing(int followCount) async {
+    await updateProgress('social_trader', followCount);
+  }
+
+  Future<void> recordResearch() async {
+    final currentResearch = _userProgress['research_master'] ?? 0;
+    await updateProgress('research_master', currentResearch + 1);
+  }
+
+  Future<void> recordNewsRead() async {
+    final currentNews = _userProgress['news_junkie'] ?? 0;
+    await updateProgress('news_junkie', currentNews + 1);
+  }
+
+  Future<void> recordChartAnalysis() async {
+    final currentCharts = _userProgress['chart_master'] ?? 0;
+    await updateProgress('chart_master', currentCharts + 1);
+  }
+
+  Future<void> recordMarketTimingSuccess() async {
+    await updateProgress('market_timer', 1);
   }
 }

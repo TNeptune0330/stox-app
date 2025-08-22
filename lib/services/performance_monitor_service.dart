@@ -276,19 +276,21 @@ class PerformanceMonitorService {
     }
   }
   
-  /// Start periodic performance reporting
+  /// Start periodic performance reporting (reduced verbosity)
   static void _startPeriodicReporting() {
     _reportTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      final report = getPerformanceReport();
-      print('$_logPrefix 📊 Performance Report:');
-      print('  • Cache hit rate: ${report['cache_stats']['hit_rate_percent']}%');
-      print('  • Network requests: ${report['network_stats']['total_requests']}');
-      print('  • Average network latency: ${report['network_stats']['average_latency_ms']}ms');
-      
-      final metrics = report['metrics'] as Map<String, dynamic>;
-      for (final entry in metrics.entries.take(5)) {
-        final stats = entry.value as Map<String, dynamic>;
-        print('  • ${entry.key}: avg ${stats['avg']}ms (p95: ${stats['p95']}ms)');
+      if (kDebugMode) {
+        final report = getPerformanceReport();
+        final cacheHitRate = report['cache_stats']['hit_rate_percent'];
+        final networkRequests = report['network_stats']['total_requests'];
+        
+        // Only log if there are significant performance issues
+        if (cacheHitRate < 50) {
+          print('$_logPrefix ⚠️ Low cache hit rate: $cacheHitRate%');
+        }
+        if (networkRequests > 100) {
+          print('$_logPrefix ⚠️ High network requests: $networkRequests in 5min');
+        }
       }
     });
   }

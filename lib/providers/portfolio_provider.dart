@@ -246,6 +246,7 @@ class PortfolioProvider with ChangeNotifier {
           
           // Update net worth achievement
           await achievementProvider.recordNetWorth(netWorth);
+          await achievementProvider.recordMultiMillionaire(netWorth);
           
           // Record sector-specific achievements
           if (type == 'buy') {

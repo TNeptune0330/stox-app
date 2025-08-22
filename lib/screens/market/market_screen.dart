@@ -6,6 +6,7 @@ import '../../providers/theme_provider.dart';
 import '../../models/market_asset_model.dart';
 import '../../widgets/asset_list_tile.dart';
 import '../../widgets/styled_market_indices_widget.dart';
+import '../../widgets/staggered_list.dart';
 import '../main_navigation.dart';
 import 'trade_dialog.dart';
 import 'asset_detail_screen.dart';
@@ -404,9 +405,12 @@ class _MarketScreenState extends State<MarketScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final asset = marketProvider.filteredAssets[index];
-                      return AssetListTile(
-                        asset: asset,
-                        onTap: () => _showAssetDetail(context, asset),
+                      return _AnimatedListItem(
+                        index: index,
+                        child: AssetListTile(
+                          asset: asset,
+                          onTap: () => _showAssetDetail(context, asset),
+                        ),
                       );
                     },
                     childCount: marketProvider.filteredAssets.length,
@@ -414,13 +418,22 @@ class _MarketScreenState extends State<MarketScreen> {
                 );
               } else {
                 // Show market movers when not searching
+                final moverSections = [
+                  _buildMoverSection(context, themeProvider, 'NASDAQ 100', marketProvider.nasdaq100Movers),
+                  _buildMoverSection(context, themeProvider, 'S&P 500', marketProvider.sp500Movers),
+                  _buildMoverSection(context, themeProvider, 'DOW JONES', marketProvider.dowJonesMovers),
+                ];
+                
                 return SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Market Movers Sections
-                    _buildMoverSection(context, themeProvider, 'NASDAQ 100', marketProvider.nasdaq100Movers),
-                    _buildMoverSection(context, themeProvider, 'S&P 500', marketProvider.sp500Movers),
-                    _buildMoverSection(context, themeProvider, 'DOW JONES', marketProvider.dowJonesMovers),
-                  ]),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      return _AnimatedListItem(
+                        index: index,
+                        child: moverSections[index],
+                      );
+                    },
+                    childCount: moverSections.length,
+                  ),
                 );
               }
             },
@@ -639,6 +652,91 @@ class _MarketScreenState extends State<MarketScreen> {
         asset: asset,
         userId: authProvider.user!.id,
       ),
+    );
+  }
+}
+
+// Animated list item with staggered entry
+class _AnimatedListItem extends StatefulWidget {
+  final Widget child;
+  final int index;
+  const _AnimatedListItem({required this.child, required this.index});
+  @override State<_AnimatedListItem> createState() => _AnimatedListItemState();
+}
+
+class _AnimatedListItemState extends State<_AnimatedListItem> 
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    _controller = AnimationController(
+      duration: Motion.med, // Will be updated after frame
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Motion.easeOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Motion.easeOut,
+    ));
+    
+    // Delay initialization to avoid MediaQuery during initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        _controller.duration = reducedMotion ? Motion.fast : Motion.med;
+        
+        // Stagger the animations based on index
+        Future.delayed(Duration(milliseconds: widget.index * 200), () {
+          if (mounted) _controller.forward();
+        });
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        if (reducedMotion) {
+          return FadeTransition(
+            opacity: _fadeAnimation,
+            child: widget.child,
+          );
+        }
+        
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: widget.child,
+          ),
+        );
+      },
     );
   }
 }

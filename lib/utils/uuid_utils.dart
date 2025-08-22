@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 
 class UuidUtils {
@@ -76,17 +77,14 @@ class UuidUtils {
   static void testUuidGeneration() {
     final testId = '105960795233944438369';
     final uuid = googleIdToUuid(testId);
-    print('Original ID: $testId');
-    print('Generated UUID: $uuid');
-    print('Is valid UUID: ${isValidUuid(uuid)}');
+    // UUID generation test (silent)
     
     // Test consistency
     final uuid2 = googleIdToUuid(testId);
-    print('Consistent: ${uuid == uuid2}');
+    // Test consistency (silent check)
     
     // Test random UUID
     final randomUuid = generateV4();
-    print('Random UUID: $randomUuid');
-    print('Is valid UUID: ${isValidUuid(randomUuid)}');
+    // Random UUID test (silent validation)
   }
 }

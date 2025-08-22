@@ -45,11 +45,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // User Header Section
-                    _buildUserHeader(themeProvider),
+                    _AnimatedSettingsItem(index: 0, child: _buildUserHeader(themeProvider)),
                     const SizedBox(height: 32),
                     
                     // Settings Items
-                    _buildSettingsItem(
+                    _AnimatedSettingsItem(index: 1, child: _buildSettingsItem(
                       themeProvider,
                       Icons.description,
                       'Terms of Use',
@@ -64,10 +64,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         );
                       },
-                    ),
+                    )),
                     const SizedBox(height: 8),
                     
-                    _buildSettingsItem(
+                    _AnimatedSettingsItem(index: 2, child: _buildSettingsItem(
                       themeProvider,
                       Icons.privacy_tip,
                       'Privacy Policy',
@@ -82,10 +82,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         );
                       },
-                    ),
+                    )),
                     const SizedBox(height: 8),
                     
-                    _buildSettingsItem(
+                    _AnimatedSettingsItem(index: 3, child: _buildSettingsItem(
                       themeProvider,
                       Icons.help_outline,
                       'Help & Support',
@@ -96,16 +96,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         );
                       },
-                    ),
+                    )),
                     const SizedBox(height: 8),
                     
-                    _buildSettingsItem(
+                    _AnimatedSettingsItem(index: 4, child: _buildSettingsItem(
                       themeProvider,
                       Icons.logout,
                       'Logout',
                       () => _showSignOutDialog(context, themeProvider),
                       isDestructive: true,
-                    ),
+                    )),
                     
                     const SizedBox(height: 100), // Bottom padding for nav bar
                   ]),
@@ -495,6 +495,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Animated settings item with staggered entry
+class _AnimatedSettingsItem extends StatefulWidget {
+  final Widget child;
+  final int index;
+  const _AnimatedSettingsItem({required this.child, required this.index});
+  @override State<_AnimatedSettingsItem> createState() => _AnimatedSettingsItemState();
+}
+
+class _AnimatedSettingsItemState extends State<_AnimatedSettingsItem> 
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    _controller = AnimationController(
+      duration: Motion.med, // Will be updated after frame
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Motion.easeOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.1, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Motion.spring,
+    ));
+    
+    // Delay initialization to avoid MediaQuery during initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        _controller.duration = reducedMotion ? Motion.fast : Motion.med;
+        
+        // Stagger the animations based on index
+        Future.delayed(Duration(milliseconds: widget.index * 200), () {
+          if (mounted) _controller.forward();
+        });
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        if (reducedMotion) {
+          return FadeTransition(
+            opacity: _fadeAnimation,
+            child: widget.child,
+          );
+        }
+        
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: widget.child,
+          ),
+        );
+      },
     );
   }
 }
