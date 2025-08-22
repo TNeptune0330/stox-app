@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../main_navigation.dart';
+import '../../services/storage_service.dart';
 import '../legal/legal_document_screen.dart';
 import '../tutorial/tutorial_screen.dart';
 import 'profile_edit_screen.dart';
-import 'color_picker_screen.dart';
 import '../../widgets/profile_picture_widget.dart';
-import '../admin/analytics_screen.dart';
 import '../support/support_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -19,7 +17,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isThemeExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +97,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 8),
                     
                     _AnimatedSettingsItem(index: 4, child: _buildSettingsItem(
+                      themeProvider,
+                      Icons.school_outlined,
+                      'Replay Tutorial',
+                      () => _replayTutorial(context),
+                    )),
+                    const SizedBox(height: 8),
+                    
+                    _AnimatedSettingsItem(index: 5, child: _buildSettingsItem(
                       themeProvider,
                       Icons.logout,
                       'Logout',
@@ -262,7 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   size: 60,
                   showEditButton: false,
                   onImageChanged: () {
-                    authProvider.notifyListeners();
+                    // Profile image changed - handled by provider internally
                   },
                 ),
                 const SizedBox(width: 16),
@@ -417,6 +422,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.arrow_forward_ios,
               color: themeProvider.theme,
               size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _replayTutorial(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) => AlertDialog(
+          backgroundColor: themeProvider.backgroundHigh,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: themeProvider.theme.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: themeProvider.theme.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.school_outlined,
+                  color: themeProvider.theme,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Replay Tutorial',
+                style: TextStyle(
+                  color: themeProvider.contrast,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Would you like to go through the app tutorial again? This will help you refresh your knowledge about trading features.',
+            style: TextStyle(
+              color: themeProvider.contrast.withOpacity(0.8),
+              fontSize: 16,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: themeProvider.contrast.withOpacity(0.7),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                
+                // Reset tutorial completion status
+                await StorageService.setTutorialCompleted(false);
+                
+                // Navigate to tutorial screen
+                if (context.mounted) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const TutorialScreen(),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themeProvider.theme,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              icon: const Icon(Icons.play_arrow, size: 18),
+              label: const Text(
+                'Start Tutorial',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
