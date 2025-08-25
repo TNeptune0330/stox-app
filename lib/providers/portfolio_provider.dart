@@ -195,28 +195,38 @@ class PortfolioProvider with ChangeNotifier {
     AchievementProvider? achievementProvider,
   }) async {
     print('💱 Executing trade: $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
+    print('💰 Current cash balance: \${cashBalance.toStringAsFixed(2)}');
+    print('📊 User ID: $userId');
     _setLoading(true);
     _clearError();
     
     try {
       final totalCost = quantity * price;
+      print('💱 Trade cost: \${totalCost.toStringAsFixed(2)}');
       
       // Pre-validate trade
       if (type == 'buy') {
+        print('🔍 Checking if user can afford trade...');
         final canAfford = await _portfolioService.canAffordTrade(userId, totalCost);
+        print('💰 Can afford trade: $canAfford');
         if (!canAfford) {
+          print('❌ Trade rejected: Insufficient funds');
           _setError('Insufficient funds. Need \$${totalCost.toStringAsFixed(2)} but only have \$${cashBalance.toStringAsFixed(2)}');
           return false;
         }
       } else if (type == 'sell') {
+        print('🔍 Checking shares owned for sell order...');
         final sharesOwned = await _portfolioService.getSharesOwned(userId, symbol);
+        print('📊 Shares owned: $sharesOwned, need: $quantity');
         if (sharesOwned < quantity) {
+          print('❌ Trade rejected: Insufficient shares');
           _setError('Insufficient shares. Need $quantity but only have $sharesOwned');
           return false;
         }
       }
 
       // Execute the trade
+      print('🚀 Executing trade via PortfolioService...');
       final success = await _portfolioService.executeTrade(
         userId: userId,
         symbol: symbol,
@@ -224,6 +234,8 @@ class PortfolioProvider with ChangeNotifier {
         quantity: quantity,
         price: price,
       );
+      
+      print('📊 Trade execution result: $success');
 
       if (success) {
         print('✅ Trade executed successfully');

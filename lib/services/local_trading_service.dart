@@ -18,8 +18,10 @@ class LocalTradingService {
     required int quantity,
     required double price,
   }) async {
+    print('💰 LocalTradingService.executeTrade: Starting $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
     try {
       final totalValue = quantity * price;
+      print('💱 Total trade value: \$${totalValue.toStringAsFixed(2)}');
       
       // Get current user and validate
       final user = await StorageService.getCachedUser();
@@ -27,6 +29,8 @@ class LocalTradingService {
         print('❌ No cached user found');
         return false;
       }
+      
+      print('💰 Current user cash balance: \$${user.cashBalance.toStringAsFixed(2)}');
 
       // Validate trade
       if (type == 'buy' && user.cashBalance < totalValue) {
@@ -47,12 +51,15 @@ class LocalTradingService {
           ? user.cashBalance - totalValue
           : user.cashBalance + totalValue;
       
+      print('💰 Updating cash balance: \${user.cashBalance.toStringAsFixed(2)} → \${newCashBalance.toStringAsFixed(2)}');
+      
       final updatedUser = user.copyWith(
         cashBalance: newCashBalance,
         updatedAt: DateTime.now(),
       );
       
       await StorageService.cacheUser(updatedUser);
+      print('💾 Cached updated user with new balance: \${newCashBalance.toStringAsFixed(2)}');
 
       // Create transaction record
       final transaction = TransactionModel(
@@ -68,12 +75,15 @@ class LocalTradingService {
 
       // Save transaction locally
       await saveTransaction(transaction);
+      print('💾 Transaction saved locally: ${transaction.type} ${transaction.quantity} ${transaction.symbol}');
 
       // Update portfolio
       await updatePortfolio(userId, symbol, type, quantity, price);
+      print('📊 Portfolio updated for ${symbol}');
 
       // Save as pending trade for sync later
       await savePendingTrade(transaction);
+      print('📤 Trade saved as pending for sync');
 
       print('✅ Local trade executed: $type $quantity $symbol at \$${price.toStringAsFixed(2)}');
       print('✅ New cash balance: \$${newCashBalance.toStringAsFixed(2)}');

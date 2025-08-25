@@ -111,8 +111,11 @@ class PortfolioService {
     required int quantity,
     required double price,
   }) async {
+    print('🚀 PortfolioService.executeTrade: Starting $type $quantity $symbol');
+    
     // Try Supabase first if connection allows
     if (_connectionManager.shouldRetry) {
+      print('🌐 Attempting Supabase trade execution...');
       try {
         final totalValue = quantity * price;
         
@@ -146,13 +149,16 @@ class PortfolioService {
     // Fallback to local trading
     print('🔄 Executing trade locally...');
     // Use the user ID directly (should be Supabase Auth user ID)
-    return await LocalTradingService.executeTrade(
+    final localResult = await LocalTradingService.executeTrade(
       userId: userId,
       symbol: symbol,
       type: type,
       quantity: quantity,
       price: price,
     );
+    
+    print('📊 Local trade result: $localResult');
+    return localResult;
   }
 
   Future<double> calculatePortfolioValue(String userId) async {
