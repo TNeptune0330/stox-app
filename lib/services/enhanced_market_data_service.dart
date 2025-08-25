@@ -1807,6 +1807,8 @@ class EnhancedMarketDataService {
               'dayLow': meta['regularMarketDayLow']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
               'weekHigh52': meta['fiftyTwoWeekHigh']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
               'weekLow52': meta['fiftyTwoWeekLow']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
+              'openPrice': meta['regularMarketOpen']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
+              'previousClose': meta['previousClose']?.toDouble() ?? meta['regularMarketPrice']?.toDouble() ?? 0.0,
             };
             
             // Cache the fundamentals data
