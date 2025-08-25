@@ -11,6 +11,7 @@ import 'services/local_database_service.dart';
 import 'services/revenue_admob_service.dart';
 import 'services/storage_service.dart';
 import 'services/connection_manager.dart';
+import 'services/sync_service.dart';
 import 'services/financial_news_service.dart';
 import 'services/optimized_cache_service.dart';
 import 'services/optimized_network_service.dart';
@@ -138,11 +139,48 @@ void _initializeNonCriticalServices() async {
     FinancialNewsService.updateDailyNews();
     print('✅ Daily news update initiated (background)');
     
+    // Initialize sync service for data synchronization
+    _initializeSyncService();
+    print('✅ Sync service initialization started (background)');
+    
     // Periodic market data updates disabled - using search-driven approach
     print('✅ Market data: No periodic updates - search-driven only');
   } catch (e) {
     print('⚠️ Non-critical service initialization failed: $e');
     // Don't crash app for non-critical services
+  }
+}
+
+/// Initialize sync service with proper error handling
+void _initializeSyncService() async {
+  try {
+    // Wait a bit for user auth to complete
+    await Future.delayed(Duration(seconds: 2));
+    
+    // Try to get current user and start sync if available
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    
+    if (user != null) {
+      print('🔄 Starting initial sync for user: ${user.id}');
+      
+      // Perform initial sync
+      final syncSuccess = await SyncService.performFullSync(user.id);
+      if (syncSuccess) {
+        print('✅ Initial sync completed successfully');
+      } else {
+        print('⚠️ Initial sync completed with some issues - will retry later');
+      }
+      
+      // Set up auto-sync for future connection changes
+      await SyncService.autoSyncOnConnection(user.id);
+      print('✅ Auto-sync configured for future connections');
+    } else {
+      print('⚠️ No authenticated user found - sync will start after login');
+    }
+  } catch (e) {
+    print('❌ Sync service initialization failed: $e');
+    // Don't crash app for sync service failures
   }
 }
 

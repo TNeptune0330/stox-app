@@ -28,24 +28,22 @@ class SyncService {
       // Process each pending trade
       for (final trade in pendingTrades) {
         try {
-          // Execute trade on Supabase using the stored procedure
-          final result = await _supabase.rpc('execute_trade', params: {
+          // Execute trade on Supabase using the corrected stored procedure
+          final result = await _supabase.rpc('stox_execute_trade', params: {
             'user_id_param': userId,
             'symbol_param': trade.symbol,
             'type_param': trade.type,
             'quantity_param': trade.quantity,
             'price_param': trade.price,
-            'total_value_param': trade.totalAmount,
-            'sector_param': null, // Trade model doesn't have sector
-            'asset_type_param': 'stock', // Default to stock
+            'total_amount_param': trade.totalAmount,
           });
           
-          if (result != null && result['success'] == true) {
+          if (result == true) {
             syncedCount++;
             print('✅ Synced trade: ${trade.symbol} ${trade.type} ${trade.quantity}');
           } else {
             failedTrades.add('${trade.symbol} ${trade.type}');
-            print('❌ Failed to sync trade: ${trade.symbol} - ${result?['error']}');
+            print('❌ Failed to sync trade: ${trade.symbol} - Function returned false');
           }
           
         } catch (e) {
@@ -117,7 +115,7 @@ class SyncService {
         return true;
       }
       
-      // Upsert each holding
+      // Upsert each holding with correct schema
       for (final holding in portfolio) {
         await _supabase
             .from('portfolio')
@@ -126,7 +124,6 @@ class SyncService {
               'symbol': holding.symbol,
               'quantity': holding.quantity,
               'avg_price': holding.avgPrice,
-              'total_invested': holding.totalValue,
               'updated_at': DateTime.now().toIso8601String(),
             });
       }

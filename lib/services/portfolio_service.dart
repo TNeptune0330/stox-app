@@ -7,6 +7,7 @@ import '../services/connection_manager.dart';
 import '../services/local_trading_service.dart';
 import '../services/enhanced_market_data_service.dart';
 import '../services/finnhub_limiter_service.dart';
+import '../services/sync_service.dart';
 import '../utils/uuid_utils.dart';
 
 class PortfolioService {
@@ -158,6 +159,19 @@ class PortfolioService {
     );
     
     print('📊 Local trade result: $localResult');
+    
+    // If local trade succeeded, try to sync immediately
+    if (localResult) {
+      print('🔄 Triggering immediate sync after successful local trade...');
+      SyncService.performFullSync(userId).then((syncResult) {
+        if (syncResult) {
+          print('✅ Post-trade sync completed successfully');
+        } else {
+          print('⚠️ Post-trade sync failed - data will be synced later');
+        }
+      });
+    }
+    
     return localResult;
   }
 
