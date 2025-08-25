@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.stox"
+    namespace = "com.pradhancode.stoxtrader"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -30,7 +30,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.stoxapp.trading_simulator"
+        applicationId = "com.pradhancode.stoxtrader"
         minSdk = 21
         targetSdk = 34
         versionCode = 1
