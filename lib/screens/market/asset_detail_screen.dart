@@ -803,41 +803,21 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                   ],
                   extraLinesData: ExtraLinesData(
                     horizontalLines: _fundamentals != null ? [
-                      // Opening price baseline
+                      // Opening price baseline (no label)
                       if (_fundamentals!['openPrice'] != null)
                         HorizontalLine(
                           y: double.parse((_fundamentals!['openPrice'] as double).toStringAsFixed(2)),
                           color: Colors.white.withOpacity(0.6),
                           strokeWidth: 2,
                           dashArray: [5, 5],
-                          label: HorizontalLineLabel(
-                            show: true,
-                            alignment: Alignment.topRight,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            labelResolver: (line) => 'Open: \$${line.y.toStringAsFixed(2)}',
-                          ),
                         ),
-                      // Previous day's closing price baseline
+                      // Previous day's closing price baseline (no label)
                       if (_fundamentals!['previousClose'] != null)
                         HorizontalLine(
                           y: double.parse((_fundamentals!['previousClose'] as double).toStringAsFixed(2)),
                           color: Colors.orange.withOpacity(0.7),
                           strokeWidth: 2,
                           dashArray: [8, 4],
-                          label: HorizontalLineLabel(
-                            show: true,
-                            alignment: Alignment.bottomRight,
-                            style: const TextStyle(
-                              color: Colors.orange,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            labelResolver: (line) => 'Prev Close: \$${line.y.toStringAsFixed(2)}',
-                          ),
                         ),
                     ] : [],
                   ),

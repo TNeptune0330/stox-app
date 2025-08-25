@@ -115,7 +115,7 @@ class SyncService {
         return true;
       }
       
-      // Upsert each holding with correct schema
+      // Upsert each holding with conflict resolution
       for (final holding in portfolio) {
         await _supabase
             .from('portfolio')
@@ -125,7 +125,8 @@ class SyncService {
               'quantity': holding.quantity,
               'avg_price': holding.avgPrice,
               'updated_at': DateTime.now().toIso8601String(),
-            });
+            }, 
+            onConflict: 'user_id,symbol');
       }
       
       print('✅ Portfolio synced successfully (${portfolio.length} holdings)');
