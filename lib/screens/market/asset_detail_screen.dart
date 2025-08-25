@@ -780,7 +780,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: _priceData,
+                      spots: _priceData.map((spot) => FlSpot(spot.x, double.parse(spot.y.toStringAsFixed(2)))).toList(),
                       isCurved: true,
                       gradient: const LinearGradient(
                         colors: [Colors.white, Colors.white70],
@@ -801,13 +801,33 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                       ),
                     ),
                   ],
+                  extraLinesData: ExtraLinesData(
+                    horizontalLines: _fundamentals != null && _fundamentals!['openPrice'] != null ? [
+                      HorizontalLine(
+                        y: double.parse((_fundamentals!['openPrice'] as double).toStringAsFixed(2)),
+                        color: Colors.white.withOpacity(0.6),
+                        strokeWidth: 2,
+                        dashArray: [5, 5],
+                        label: HorizontalLineLabel(
+                          show: true,
+                          alignment: Alignment.topRight,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          labelResolver: (line) => 'Open: \$${line.y.toStringAsFixed(2)}',
+                        ),
+                      ),
+                    ] : [],
+                  ),
                   minX: 0,
                   maxX: _priceData.isNotEmpty ? _priceData.length.toDouble() - 1 : 0,
                   minY: _priceData.isNotEmpty 
-                    ? _priceData.map((e) => e.y).reduce((a, b) => a < b ? a : b) * 0.95
+                    ? double.parse((_priceData.map((e) => e.y).reduce((a, b) => a < b ? a : b) * 0.95).toStringAsFixed(2))
                     : 0,
                   maxY: _priceData.isNotEmpty 
-                    ? _priceData.map((e) => e.y).reduce((a, b) => a > b ? a : b) * 1.05
+                    ? double.parse((_priceData.map((e) => e.y).reduce((a, b) => a > b ? a : b) * 1.05).toStringAsFixed(2))
                     : 1,
                 ),
               );
