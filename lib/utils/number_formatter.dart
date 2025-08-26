@@ -2,15 +2,15 @@ class NumberFormatter {
   /// Format numbers with commas and k/m/b abbreviations
   static String formatLargeNumber(double number) {
     if (number >= 1000000000000) {
-      return '${(number / 1000000000000).toStringAsFixed(1)}T';
+      return '${(number / 1000000000000).toStringAsFixed(2)}T';
     } else if (number >= 1000000000) {
-      return '${(number / 1000000000).toStringAsFixed(1)}B';
+      return '${(number / 1000000000).toStringAsFixed(2)}B';
     } else if (number >= 1000000) {
-      return '${(number / 1000000).toStringAsFixed(1)}M';
+      return '${(number / 1000000).toStringAsFixed(2)}M';
     } else if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}K';
+      return '${(number / 1000).toStringAsFixed(2)}K';
     } else {
-      return number.toStringAsFixed(0);
+      return number.toStringAsFixed(2);
     }
   }
 
@@ -21,13 +21,13 @@ class NumberFormatter {
     } else if (amount >= 1000000000) {
       return '\$${(amount / 1000000000).toStringAsFixed(2)}B';
     } else if (amount >= 1000000) {
-      return '\$${(amount / 1000000).toStringAsFixed(1)}M';
+      return '\$${(amount / 1000000).toStringAsFixed(2)}M';
     } else if (amount >= 1000) {
-      return '\$${(amount / 1000).toStringAsFixed(1)}K';
+      return '\$${(amount / 1000).toStringAsFixed(2)}K';
     } else if (amount >= 1) {
       return '\$${amount.toStringAsFixed(2)}';
     } else {
-      return '\$${amount.toStringAsFixed(4)}';
+      return '\$${amount.toStringAsFixed(2)}';
     }
   }
 

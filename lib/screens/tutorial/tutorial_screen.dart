@@ -77,26 +77,26 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
     _pageController = PageController();
     
     _fadeController = AnimationController(
-      duration: Motion.slow,
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     _scaleController = AnimationController(
-      duration: Motion.med,
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     _slideController = AnimationController(
-      duration: Motion.med,
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Motion.easeOut),
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
     );
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _scaleController, curve: Motion.spring),
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
     );
     _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-      CurvedAnimation(parent: _slideController, curve: Motion.easeOut),
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOut),
     );
     
     _startAnimations();
@@ -136,8 +136,8 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
       _slideController.reset();
       
       _pageController.nextPage(
-        duration: Motion.med,
-        curve: Motion.easeOut,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOut,
       ).then((_) {
         // Restart animations for the new page
         _startAnimations();
@@ -250,7 +250,7 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
                   padding: const EdgeInsets.all(24.0),
                   child: SlideTransition(
                     position: Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
-                      CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+                      CurvedAnimation(parent: _slideController, curve: Curves.easeOut)
                     ),
                     child: FadeTransition(
                       opacity: _fadeAnimation,
@@ -278,7 +278,7 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
                                   ),
                                 )
                               : AnimatedSwitcher(
-                                  duration: Motion.med,
+                                  duration: const Duration(milliseconds: 600),
                                   child: Text(
                                     _tutorialSteps[_currentPage].buttonText,
                                     key: ValueKey(_currentPage),
@@ -381,7 +381,7 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
               // Subtitle
               SlideTransition(
                 position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-                  CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+                  CurvedAnimation(parent: _slideController, curve: Curves.easeOut)
                 ),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
@@ -402,7 +402,7 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
               // Description
               SlideTransition(
                 position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-                  CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+                  CurvedAnimation(parent: _slideController, curve: Curves.easeOut)
                 ),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
@@ -423,7 +423,7 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
               // Feature highlights
               SlideTransition(
                 position: Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
-                  CurvedAnimation(parent: _slideController, curve: Motion.easeOut)
+                  CurvedAnimation(parent: _slideController, curve: Curves.easeOut)
                 ),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
@@ -503,8 +503,8 @@ class _TutorialScreenState extends State<TutorialScreen> with TickerProviderStat
         children: List.generate(_tutorialSteps.length, (index) {
           final isActive = _currentPage == index;
           return AnimatedContainer(
-            duration: Motion.med,
-            curve: Motion.spring,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.elasticOut,
             margin: const EdgeInsets.symmetric(horizontal: 6),
             width: isActive ? 32 : 8,
             height: 8,
