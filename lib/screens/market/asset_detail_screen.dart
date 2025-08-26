@@ -802,35 +802,101 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                     ),
                   ],
                   extraLinesData: ExtraLinesData(
-                    horizontalLines: _fundamentals != null ? [
-                      // Opening price baseline (no label)
-                      if (_fundamentals!['openPrice'] != null)
-                        HorizontalLine(
-                          y: double.parse((_fundamentals!['openPrice'] as double).toStringAsFixed(2)),
-                          color: Colors.white.withOpacity(0.6),
-                          strokeWidth: 2,
-                          dashArray: [5, 5],
-                        ),
-                      // Previous day's closing price baseline (no label)
-                      if (_fundamentals!['previousClose'] != null)
-                        HorizontalLine(
-                          y: double.parse((_fundamentals!['previousClose'] as double).toStringAsFixed(2)),
-                          color: Colors.orange.withOpacity(0.7),
-                          strokeWidth: 2,
-                          dashArray: [8, 4],
-                        ),
-                    ] : [],
+                    horizontalLines: _fundamentals != null ? _getVisibleReferenceLines() : [],
                   ),
                   minX: 0,
                   maxX: _priceData.isNotEmpty ? _priceData.length.toDouble() - 1 : 0,
                   minY: _priceData.isNotEmpty 
-                    ? double.parse((_priceData.map((e) => e.y).reduce((a, b) => a < b ? a : b) * 0.95).toStringAsFixed(2))
+                    ? _calculateDynamicMinY(_priceData)
                     : 0,
                   maxY: _priceData.isNotEmpty 
-                    ? double.parse((_priceData.map((e) => e.y).reduce((a, b) => a > b ? a : b) * 1.05).toStringAsFixed(2))
+                    ? _calculateDynamicMaxY(_priceData)
                     : 1,
                 ),
               );
+  }
+
+  List<HorizontalLine> _getVisibleReferenceLines() {
+    if (_priceData.isEmpty || _fundamentals == null) return [];
+    
+    final minY = _calculateDynamicMinY(_priceData);
+    final maxY = _calculateDynamicMaxY(_priceData);
+    final lines = <HorizontalLine>[];
+    
+    // Opening price baseline (only show if within visible range)
+    if (_fundamentals!['openPrice'] != null) {
+      final openPrice = double.parse((_fundamentals!['openPrice'] as double).toStringAsFixed(2));
+      if (openPrice >= minY && openPrice <= maxY) {
+        lines.add(HorizontalLine(
+          y: openPrice,
+          color: Colors.white.withOpacity(0.6),
+          strokeWidth: 2,
+          dashArray: [5, 5],
+        ));
+      }
+    }
+    
+    // Previous day's closing price baseline (only show if within visible range)
+    if (_fundamentals!['previousClose'] != null) {
+      final previousClose = double.parse((_fundamentals!['previousClose'] as double).toStringAsFixed(2));
+      if (previousClose >= minY && previousClose <= maxY) {
+        lines.add(HorizontalLine(
+          y: previousClose,
+          color: Colors.orange.withOpacity(0.7),
+          strokeWidth: 2,
+          dashArray: [8, 4],
+        ));
+      }
+    }
+    
+    return lines;
+  }
+
+  double _calculateDynamicMinY(List<FlSpot> priceData) {
+    if (priceData.isEmpty) return 0;
+    
+    final prices = priceData.map((e) => e.y).toList();
+    final minPrice = prices.reduce((a, b) => a < b ? a : b);
+    final maxPrice = prices.reduce((a, b) => a > b ? a : b);
+    final range = maxPrice - minPrice;
+    
+    // If range is very small (flat line), add minimal padding
+    if (range < maxPrice * 0.01) {
+      return double.parse((minPrice * 0.999).toStringAsFixed(2));
+    }
+    
+    // Dynamic padding: smaller padding for larger ranges to maximize visual impact
+    // For small ranges, use more padding to avoid extreme scaling
+    final paddingPercent = range < maxPrice * 0.02 ? 0.15 : // Small range: 15% padding
+                          range < maxPrice * 0.05 ? 0.10 : // Medium range: 10% padding  
+                          range < maxPrice * 0.10 ? 0.05 : // Large range: 5% padding
+                          0.02; // Very large range: 2% padding
+    
+    final dynamicMin = minPrice - (range * paddingPercent);
+    return double.parse((dynamicMin > 0 ? dynamicMin : minPrice * 0.98).toStringAsFixed(2));
+  }
+
+  double _calculateDynamicMaxY(List<FlSpot> priceData) {
+    if (priceData.isEmpty) return 1;
+    
+    final prices = priceData.map((e) => e.y).toList();
+    final minPrice = prices.reduce((a, b) => a < b ? a : b);
+    final maxPrice = prices.reduce((a, b) => a > b ? a : b);
+    final range = maxPrice - minPrice;
+    
+    // If range is very small (flat line), add minimal padding
+    if (range < maxPrice * 0.01) {
+      return double.parse((maxPrice * 1.001).toStringAsFixed(2));
+    }
+    
+    // Dynamic padding: matches the minY calculation for consistency
+    final paddingPercent = range < maxPrice * 0.02 ? 0.15 : // Small range: 15% padding
+                          range < maxPrice * 0.05 ? 0.10 : // Medium range: 10% padding
+                          range < maxPrice * 0.10 ? 0.05 : // Large range: 5% padding  
+                          0.02; // Very large range: 2% padding
+    
+    final dynamicMax = maxPrice + (range * paddingPercent);
+    return double.parse(dynamicMax.toStringAsFixed(2));
   }
 
   Widget _buildHoldingsSection(ThemeProvider themeProvider) {
