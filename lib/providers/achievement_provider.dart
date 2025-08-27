@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import '../models/achievement_model.dart';
 import '../services/local_database_service.dart';
 import '../services/achievement_service.dart';
+import '../services/connection_manager.dart';
 
 class AchievementProvider with ChangeNotifier {
   final AchievementService _achievementService = AchievementService();
+  final ConnectionManager _connectionManager = ConnectionManager();
   List<Achievement> _achievements = [];
   Map<String, int> _userProgress = {};
   Set<String> _unlockedAchievements = {};
@@ -50,13 +52,13 @@ class AchievementProvider with ChangeNotifier {
           }
         }
         
-        // Give new users a few starter achievements for demo purposes
-        if (_unlockedAchievements.isEmpty && userId != null) {
-          await _createDemoAchievements(userId);
-        }
+        // New users start with clean slate - no automatic demo achievements
         
         // Sync any pending local achievements to Supabase
         await _achievementService.syncAchievementsToSupabase(userId);
+        
+        // Process any pending unlocks that were delayed due to network issues
+        await processPendingUnlocks();
       } else {
         // Fallback to local storage only
         _unlockedAchievements = LocalDatabaseService.getSetting<Set<String>>('unlocked_achievements') ?? <String>{};
@@ -194,9 +196,16 @@ class AchievementProvider with ChangeNotifier {
         await LocalDatabaseService.saveSetting('user_progress', _userProgress);
       }
       
-      // Check if achievement should be unlocked
+      // Check if achievement should be unlocked (only when online or for local-only users)
       if (progress >= achievement.requiredValue && !_unlockedAchievements.contains(achievementId)) {
-        await unlockAchievement(achievementId);
+        // Only unlock if we're online or if this is a local-only user
+        if (_connectionManager.isOnline || _currentUserId == null) {
+          await unlockAchievement(achievementId);
+        } else {
+          print('⚠️ Achievement $achievementId ready to unlock but waiting for connection');
+          // Save that this achievement is ready to unlock when connection is restored
+          await LocalDatabaseService.saveSetting('pending_unlock_$achievementId', true);
+        }
       }
       
       _updateAchievementStates();
@@ -599,5 +608,35 @@ class AchievementProvider with ChangeNotifier {
 
   Future<void> recordMarketTimingSuccess() async {
     await updateProgress('market_timer', 1);
+  }
+
+  /// Process achievements that were pending unlock due to network issues
+  Future<void> processPendingUnlocks() async {
+    if (_currentUserId == null || !_connectionManager.isOnline) return;
+
+    try {
+      print('🔄 Processing pending achievement unlocks...');
+      final allAchievements = Achievement.getAchievements();
+      
+      for (final achievement in allAchievements) {
+        final pendingKey = 'pending_unlock_${achievement.id}';
+        final isPending = LocalDatabaseService.getSetting<bool>(pendingKey) ?? false;
+        
+        if (isPending && !_unlockedAchievements.contains(achievement.id)) {
+          // Check if the progress still meets the requirement
+          final currentProgress = _userProgress[achievement.id] ?? 0;
+          if (currentProgress >= achievement.requiredValue) {
+            await unlockAchievement(achievement.id);
+            // Remove the pending flag
+            await LocalDatabaseService.deleteSetting(pendingKey);
+            print('✅ Processed pending unlock: ${achievement.title}');
+          }
+        }
+      }
+      
+      print('✅ Finished processing pending unlocks');
+    } catch (e) {
+      print('❌ Failed to process pending unlocks: $e');
+    }
   }
 }

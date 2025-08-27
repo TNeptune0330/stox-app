@@ -35,9 +35,10 @@ class AchievementService {
         return response['success'] == true;
       },
       () async {
-        // Fallback to local storage
+        // During network failure, save progress locally but don't trigger immediate unlocks
         await LocalDatabaseService.saveSetting('progress_$achievementId', progress);
-        print('📱 Achievement progress saved locally: $achievementId ($progress/$target)');
+        print('📱 Achievement progress saved locally (will sync when online): $achievementId ($progress/$target)');
+        // Return true for progress tracking, but unlock logic will be controlled separately
         return true;
       },
     ) ?? false;
@@ -71,12 +72,10 @@ class AchievementService {
         return response['success'] == true;
       },
       () async {
-        // Fallback to local storage
-        final unlockedAchievements = LocalDatabaseService.getSetting<Set<String>>('unlocked_achievements') ?? <String>{};
-        unlockedAchievements.add(achievement.id);
-        await LocalDatabaseService.saveSetting('unlocked_achievements', unlockedAchievements);
-        print('📱 Achievement unlocked locally: ${achievement.title}');
-        return true;
+        // During network failures, don't automatically unlock achievements
+        // Only save locally without triggering unlock notifications
+        print('⚠️ Network failure: Achievement ${achievement.title} will be synced when connection is restored');
+        return false; // Don't trigger unlock UI during network failures
       },
     ) ?? false;
   }

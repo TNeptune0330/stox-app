@@ -42,19 +42,35 @@ CREATE INDEX IF NOT EXISTS idx_user_settings_key ON public.user_settings(setting
 ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 
--- 7. RLS Policies for user_achievements
-CREATE POLICY "Users can read own achievements" ON public.user_achievements
-    FOR SELECT USING (auth.uid() = user_id);
+-- 7. RLS Policies for user_achievements (with IF NOT EXISTS equivalent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_achievements' AND policyname = 'Users can read own achievements') THEN
+        CREATE POLICY "Users can read own achievements" ON public.user_achievements
+            FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+END $$;
 
-CREATE POLICY "Users can manage own achievements" ON public.user_achievements
-    FOR ALL USING (auth.uid() = user_id);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_achievements' AND policyname = 'Users can manage own achievements') THEN
+        CREATE POLICY "Users can manage own achievements" ON public.user_achievements
+            FOR ALL USING (auth.uid() = user_id);
+    END IF;
+END $$;
 
--- 8. RLS Policies for user_settings  
-CREATE POLICY "Users can read own settings" ON public.user_settings
-    FOR SELECT USING (auth.uid() = user_id);
+-- 8. RLS Policies for user_settings (with IF NOT EXISTS equivalent)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_settings' AND policyname = 'Users can read own settings') THEN
+        CREATE POLICY "Users can read own settings" ON public.user_settings
+            FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+END $$;
 
-CREATE POLICY "Users can manage own settings" ON public.user_settings
-    FOR ALL USING (auth.uid() = user_id);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_settings' AND policyname = 'Users can manage own settings') THEN
+        CREATE POLICY "Users can manage own settings" ON public.user_settings
+            FOR ALL USING (auth.uid() = user_id);
+    END IF;
+END $$;
 
 -- 9. Create function to update achievement progress
 CREATE OR REPLACE FUNCTION public.update_achievement_progress(

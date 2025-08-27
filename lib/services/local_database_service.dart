@@ -264,6 +264,11 @@ class LocalDatabaseService {
     return value as T?;
   }
   
+  static Future<void> deleteSetting(String key) async {
+    await _settingsBox.delete(key);
+    print('🗑️ Setting deleted: $key');
+  }
+  
   // Trading Operations
   static Future<bool> executeTrade({
     required String symbol,
