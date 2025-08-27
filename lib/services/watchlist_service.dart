@@ -122,18 +122,22 @@ class WatchlistService {
       final user = _supabase.auth.currentUser;
       if (user == null) {
         print('🔖 No authenticated user, using local watchlist');
-        return getWatchlistSymbols();
+        final localSymbols = getWatchlistSymbols();
+        print('🔖 Local watchlist has ${localSymbols.length} symbols: ${localSymbols.join(", ")}');
+        return localSymbols;
       }
       
       print('🔖 Loading watchlist from Supabase for user: ${user.id}');
       final response = await _supabase
           .from('watchlist')
-          .select('symbol')
+          .select('symbol, added_at')
           .eq('user_id', user.id)
           .order('added_at', ascending: false);
       
+      print('🔖 Supabase watchlist response: $response');
+      
       final symbols = response.map<String>((item) => item['symbol'] as String).toList();
-      print('🔖 Loaded ${symbols.length} symbols from Supabase watchlist');
+      print('🔖 Loaded ${symbols.length} symbols from Supabase watchlist: ${symbols.join(", ")}');
       
       // Sync with local storage
       await saveWatchlistSymbols(symbols);
@@ -141,8 +145,11 @@ class WatchlistService {
       return symbols;
     } catch (e) {
       print('❌ Error loading watchlist from Supabase: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
       // Fallback to local storage
-      return getWatchlistSymbols();
+      final localSymbols = getWatchlistSymbols();
+      print('🔖 Fallback to local watchlist: ${localSymbols.length} symbols');
+      return localSymbols;
     }
   }
 }
