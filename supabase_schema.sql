@@ -67,15 +67,29 @@ CREATE TABLE leaderboard (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Achievements table
-CREATE TABLE achievements (
+-- User achievements table (tracks progress and unlocked achievements)
+CREATE TABLE user_achievements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  achievement_type TEXT NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT NOT NULL,
-  icon TEXT NOT NULL,
-  unlocked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  achievement_id TEXT NOT NULL,
+  progress INTEGER DEFAULT 0,
+  target INTEGER DEFAULT 1,
+  progress_data JSONB DEFAULT '{}',
+  unlocked_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, achievement_id)
+);
+
+-- User settings table (stores user preferences)
+CREATE TABLE user_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  setting_key TEXT NOT NULL,
+  setting_value JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, setting_key)
 );
 
 -- Create indexes for performance
@@ -87,14 +101,18 @@ CREATE INDEX idx_transactions_timestamp ON transactions(timestamp);
 CREATE INDEX idx_market_prices_type ON market_prices(type);
 CREATE INDEX idx_market_prices_updated ON market_prices(last_updated);
 CREATE INDEX idx_leaderboard_rank ON leaderboard(rank);
-CREATE INDEX idx_achievements_user_id ON achievements(user_id);
+CREATE INDEX idx_user_achievements_user_id ON user_achievements(user_id);
+CREATE INDEX idx_user_achievements_achievement_id ON user_achievements(achievement_id);
+CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
+CREATE INDEX idx_user_settings_key ON user_settings(setting_key);
 
 -- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
-ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_achievements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for users table
 CREATE POLICY "Users can read own profile" ON users
@@ -127,11 +145,18 @@ CREATE POLICY "Anyone can read leaderboard" ON leaderboard
 CREATE POLICY "Users can update own leaderboard entry" ON leaderboard
   FOR ALL USING (auth.uid() = user_id);
 
--- RLS Policies for achievements
-CREATE POLICY "Users can read own achievements" ON achievements
+-- RLS Policies for user_achievements
+CREATE POLICY "Users can read own achievements" ON user_achievements
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage own achievements" ON achievements
+CREATE POLICY "Users can manage own achievements" ON user_achievements
+  FOR ALL USING (auth.uid() = user_id);
+
+-- RLS Policies for user_settings
+CREATE POLICY "Users can read own settings" ON user_settings
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own settings" ON user_settings
   FOR ALL USING (auth.uid() = user_id);
 
 -- Market prices is public read (no RLS needed)
@@ -263,6 +288,46 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Function to update achievement progress
+CREATE OR REPLACE FUNCTION update_achievement_progress(
+  user_id_param UUID,
+  achievement_id_param TEXT,
+  progress_param INTEGER,
+  target_param INTEGER,
+  progress_data_param JSONB DEFAULT '{}'
+) RETURNS JSONB AS $$
+DECLARE
+  result JSONB;
+BEGIN
+  -- Insert or update achievement progress
+  INSERT INTO user_achievements (
+    user_id, achievement_id, progress, target, progress_data, updated_at
+  ) VALUES (
+    user_id_param, achievement_id_param, progress_param, target_param, progress_data_param, NOW()
+  )
+  ON CONFLICT (user_id, achievement_id) DO UPDATE SET
+    progress = EXCLUDED.progress,
+    target = EXCLUDED.target,
+    progress_data = EXCLUDED.progress_data,
+    updated_at = NOW();
+
+  -- Check if achievement should be unlocked
+  IF progress_param >= target_param THEN
+    UPDATE user_achievements
+    SET unlocked_at = NOW()
+    WHERE user_id = user_id_param 
+    AND achievement_id = achievement_id_param 
+    AND unlocked_at IS NULL;
+    
+    result := '{"success": true, "unlocked": true}'::jsonb;
+  ELSE
+    result := '{"success": true, "unlocked": false}'::jsonb;
+  END IF;
+  
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Function to handle user creation
 CREATE OR REPLACE FUNCTION handle_new_user() RETURNS TRIGGER AS $$
 BEGIN
@@ -321,3 +386,4 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION update_achievement_progress TO authenticated;
