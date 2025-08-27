@@ -905,7 +905,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     final pnlDollar = currentPrice - holding.avgPrice;
     final pnlPercent = holding.avgPrice > 0 ? (pnlDollar / holding.avgPrice) * 100 : 0.0;
     final isPositive = pnlDollar >= 0;
-    final pnlColor = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
+    final pnlColor = isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

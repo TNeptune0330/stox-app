@@ -72,7 +72,10 @@ DO $$ BEGIN
     END IF;
 END $$;
 
--- 9. Create function to update achievement progress
+-- 9. Drop existing function to prevent conflicts
+DROP FUNCTION IF EXISTS public.update_achievement_progress(uuid,text,integer,integer,jsonb);
+
+-- 10. Create function to update achievement progress
 CREATE OR REPLACE FUNCTION public.update_achievement_progress(
     user_id_param UUID,
     achievement_id_param TEXT,
@@ -118,7 +121,7 @@ $$;
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION public.update_achievement_progress TO authenticated;
 
--- 10. Grant permissions on new tables
+-- 11. Grant permissions on new tables
 GRANT ALL ON public.user_achievements TO authenticated;
 GRANT ALL ON public.user_settings TO authenticated;
 

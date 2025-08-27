@@ -598,7 +598,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     const Color(0xFF06B6D4), // Cyan
                   ];
                   final accentColor = asset.changePercent >= 0 
-                      ? const Color(0xFF3B82F6) // Blue for positive
+                      ? const Color(0xFF10B981) // Green for positive
                       : const Color(0xFFEF4444);
                   
                   return GestureDetector(
@@ -867,7 +867,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                         
                         // Determine colors
                         final isPositive = pnlDollar >= 0;
-                        final pnlColor = isPositive ? Colors.green : Colors.red;
+                        final pnlColor = isPositive ? const Color(0xFF10B981) : Colors.red;
                         
                         return GestureDetector(
                           onTap: () {

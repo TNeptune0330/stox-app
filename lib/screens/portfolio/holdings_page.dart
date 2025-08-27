@@ -171,12 +171,12 @@ class _HoldingsPageState extends State<HoldingsPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: portfolioProvider.totalPnL >= 0 
-                          ? const Color(0xFF3B82F6).withOpacity(0.2)
+                          ? const Color(0xFF10B981).withOpacity(0.2)
                           : const Color(0xFFEF4444).withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: portfolioProvider.totalPnL >= 0 
-                            ? const Color(0xFF3B82F6)
+                            ? const Color(0xFF10B981)
                             : const Color(0xFFEF4444),
                         ),
                       ),
@@ -184,7 +184,7 @@ class _HoldingsPageState extends State<HoldingsPage> {
                         '${portfolioProvider.totalPnL >= 0 ? '+' : ''}\$${portfolioProvider.totalPnL.toStringAsFixed(2)}',
                         style: TextStyle(
                           color: portfolioProvider.totalPnL >= 0 
-                            ? const Color(0xFF3B82F6)
+                            ? const Color(0xFF10B981)
                             : const Color(0xFFEF4444),
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -212,12 +212,12 @@ class _HoldingsPageState extends State<HoldingsPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: portfolioProvider.totalPnLPercentage >= 0 
-                          ? const Color(0xFF3B82F6).withOpacity(0.2)
+                          ? const Color(0xFF10B981).withOpacity(0.2)
                           : const Color(0xFFEF4444).withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: portfolioProvider.totalPnLPercentage >= 0 
-                            ? const Color(0xFF3B82F6)
+                            ? const Color(0xFF10B981)
                             : const Color(0xFFEF4444),
                         ),
                       ),
@@ -225,7 +225,7 @@ class _HoldingsPageState extends State<HoldingsPage> {
                         '${portfolioProvider.totalPnLPercentage >= 0 ? '+' : ''}${portfolioProvider.totalPnLPercentage.toStringAsFixed(2)}%',
                         style: TextStyle(
                           color: portfolioProvider.totalPnLPercentage >= 0 
-                            ? const Color(0xFF3B82F6)
+                            ? const Color(0xFF10B981)
                             : const Color(0xFFEF4444),
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -396,7 +396,7 @@ class _HoldingsPageState extends State<HoldingsPage> {
         final pnlDollar = currentPrice - holding.avgPrice;
         final pnlPercent = holding.avgPrice > 0 ? (pnlDollar / holding.avgPrice) * 100 : 0.0;
         final isPositive = pnlDollar >= 0;
-        final pnlColor = isPositive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
+        final pnlColor = isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
         
         // Use colorful accents for variety
         final colors = [
