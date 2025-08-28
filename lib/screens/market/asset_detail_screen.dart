@@ -1006,13 +1006,13 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     
     double niceInterval;
     if (normalized <= 1) {
-      niceInterval = 1 * magnitude;
+      niceInterval = (1 * magnitude).toDouble();
     } else if (normalized <= 2) {
-      niceInterval = 2 * magnitude;
+      niceInterval = (2 * magnitude).toDouble();
     } else if (normalized <= 5) {
-      niceInterval = 5 * magnitude;
+      niceInterval = (5 * magnitude).toDouble();
     } else {
-      niceInterval = 10 * magnitude;
+      niceInterval = (10 * magnitude).toDouble();
     }
     
     return niceInterval.toDouble();
