@@ -1,0 +1,114 @@
+# GitHub Pages Configuration for Stox Trader Support
+title: "Stox Trader — Support"
+description: "Comprehensive support documentation for Stox Trader - the stock market simulator app"
+url: "https://takshpradhan.github.io"  # Update this to your GitHub Pages URL
+baseurl: "/stox"  # Update this to match your repository name
+
+# Theme
+theme: minima
+remote_theme: pages-themes/minimal@v0.2.0
+
+# Site settings
+author: "Stox Trader Support Team"
+email: "pradhancode@gmail.com"
+lang: "en-US"
+
+# Navigation
+header_pages:
+  - index.md
+  - privacy.md
+  - terms.md
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# SEO and metadata
+twitter:
+  username: stoxtrader
+  card: summary
+
+logo: /assets/images/stox-logo.png  # Add your logo if available
+
+social:
+  name: Stox Trader
+  links:
+    - https://github.com/takshpradhan/stox
+
+# Collections
+collections_dir: collections
+
+# Exclude files
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+
+# Include files
+include:
+  - _pages
+  - _redirects
+
+# Sass
+sass:
+  sass_dir: _sass
+  style: compressed
+
+# Timezone
+timezone: America/Los_Angeles
+
+# Permalink structure
+permalink: /:categories/:title/
+
+# Default front matter
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+      author: "Stox Trader Support"
+
+# Custom variables
+version: "1.0.0"
+app_name: "Stox Trader"
+support_email: "pradhancode@gmail.com"
+last_updated: "August 28, 2025"
+
+# GitHub metadata
+github:
+  repository_url: https://github.com/takshpradhan/stox
+  owner_name: takshpradhan
+  repository_name: stox
+
+# Google Analytics (add your tracking ID if needed)
+# google_analytics: GA_TRACKING_ID
+
+# Footer customization
+footer_content: "© 2025 Stox Trader. All rights reserved. | <a href='./privacy.html'>Privacy</a> | <a href='./terms.html'>Terms</a>"
+
+# Show excerpts on homepage
+show_excerpts: true
+
+# Date format
+date_format: "%B %d, %Y"
+
+# Liquid options
+liquid:
+  error_mode: warn
+  strict_filters: false
+  strict_variables: false
