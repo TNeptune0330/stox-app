@@ -822,47 +822,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 30,
-                        interval: _priceData.isNotEmpty ? (_priceData.length - 1) / 5 : 1,
+                        interval: _calculateTimeInterval(),
                         getTitlesWidget: (value, meta) {
-                          if (_priceData.isEmpty) return const SizedBox.shrink();
-                          
-                          final index = value.toInt();
-                          if (index < 0 || index >= _priceData.length) {
-                            return const SizedBox.shrink();
-                          }
-                          
-                          // Format time based on selected timeframe
-                          String timeLabel = '';
-                          switch (_selectedTimeframe) {
-                            case '1D':
-                              final hour = (index * 6.5 / _priceData.length * 24).round();
-                              timeLabel = '${hour.toString().padLeft(2, '0')}:00';
-                              break;
-                            case '1W':
-                              final day = (index * 7 / _priceData.length).round();
-                              final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                              timeLabel = days[day % 7];
-                              break;
-                            case '1M':
-                              final day = (index * 30 / _priceData.length).round() + 1;
-                              timeLabel = day.toString();
-                              break;
-                            case '3M':
-                            case '1Y':
-                              final month = (index * (_selectedTimeframe == '3M' ? 3 : 12) / _priceData.length).round() + 1;
-                              final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                              timeLabel = months[(month - 1) % 12];
-                              break;
-                          }
-                          
-                          return Text(
-                            timeLabel,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 10,
-                            ),
-                          );
+                          return _getTimeLabel(value);
                         },
                       ),
                     ),
@@ -1658,6 +1620,94 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
           ),
         ),
       ],
+    );
+  }
+
+  double _calculateTimeInterval() {
+    if (_priceData.isEmpty) return 1;
+    
+    // Show exactly 6 marks for proper spacing
+    return (_priceData.length - 1) / 5;
+  }
+
+  Widget _getTimeLabel(double value) {
+    if (_priceData.isEmpty) return const SizedBox.shrink();
+    
+    final index = value.toInt();
+    if (index < 0 || index >= _priceData.length) {
+      return const SizedBox.shrink();
+    }
+    
+    String timeLabel = '';
+    final now = DateTime.now();
+    
+    switch (_selectedTimeframe) {
+      case '1D':
+        // Show market hours: 9:30 AM to 4:00 PM (6.5 hours)
+        final marketStart = DateTime(now.year, now.month, now.day, 9, 30);
+        final totalMinutes = 6.5 * 60; // 390 minutes
+        final minuteIncrement = (index / (_priceData.length - 1)) * totalMinutes;
+        final currentTime = marketStart.add(Duration(minutes: minuteIncrement.round()));
+        
+        final hour = currentTime.hour;
+        final minute = currentTime.minute;
+        
+        if (hour == 12) {
+          timeLabel = '${hour}:${minute.toString().padLeft(2, '0')} PM';
+        } else if (hour > 12) {
+          timeLabel = '${hour - 12}:${minute.toString().padLeft(2, '0')} PM';
+        } else {
+          timeLabel = '${hour}:${minute.toString().padLeft(2, '0')} AM';
+        }
+        break;
+        
+      case '5D':
+      case '1W':
+        final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+        final dayIndex = (index * days.length / _priceData.length).floor();
+        timeLabel = days[dayIndex.clamp(0, days.length - 1)];
+        break;
+        
+      case '1M':
+        final dayNum = (index * 30 / _priceData.length).round() + 1;
+        timeLabel = '$dayNum';
+        break;
+        
+      case '6M':
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        final monthIndex = (index * 6 / _priceData.length).floor();
+        timeLabel = months[monthIndex.clamp(0, months.length - 1)];
+        break;
+        
+      case '1Y':
+        final months = ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov'];
+        final monthIndex = (index * 6 / _priceData.length).floor();
+        timeLabel = months[monthIndex.clamp(0, months.length - 1)];
+        break;
+        
+      case 'YTD':
+        final monthsSinceJan = DateTime.now().month - 1;
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final monthIndex = (index * monthsSinceJan / _priceData.length).floor();
+        timeLabel = months[monthIndex.clamp(0, monthsSinceJan)];
+        break;
+        
+      case '5Y':
+      case 'Max':
+        final yearRange = _selectedTimeframe == '5Y' ? 5 : 10;
+        final currentYear = DateTime.now().year;
+        final yearIndex = (index * yearRange / _priceData.length).floor();
+        timeLabel = (currentYear - yearRange + yearIndex + 1).toString();
+        break;
+    }
+    
+    return Text(
+      timeLabel,
+      style: const TextStyle(
+        color: Colors.white70,
+        fontSize: 10,
+      ),
     );
   }
 }
