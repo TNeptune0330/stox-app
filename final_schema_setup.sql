@@ -220,11 +220,22 @@ SET is_completed = (current_progress >= target_progress)
 WHERE is_completed IS NULL OR is_completed = false;
 
 -- ============================================================================
--- 4. REMOVE MARKET_PRICES TABLE (AS REQUESTED)
+-- 4. REMOVE UNUSED TABLES AND COLUMNS
 -- ============================================================================
 
 -- Drop the market_prices table since it's no longer needed
 DROP TABLE IF EXISTS public.market_prices CASCADE;
+
+-- Remove sector-related columns from users table (no longer needed after removing sector achievements)
+ALTER TABLE public.users DROP COLUMN IF EXISTS sectors_traded;
+ALTER TABLE public.users DROP COLUMN IF EXISTS asset_types_traded;
+
+-- Remove other unused tracking columns
+ALTER TABLE public.users DROP COLUMN IF EXISTS months_active;
+ALTER TABLE public.users DROP COLUMN IF EXISTS total_app_opens;
+ALTER TABLE public.users DROP COLUMN IF EXISTS total_screen_time_minutes;
+ALTER TABLE public.users DROP COLUMN IF EXISTS max_single_day_gain;
+ALTER TABLE public.users DROP COLUMN IF EXISTS max_single_day_loss;
 
 -- ============================================================================
 -- 5. CLEAN UP OLD SECTOR-BASED ACHIEVEMENTS
