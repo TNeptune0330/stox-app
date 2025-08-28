@@ -309,12 +309,30 @@ class AchievementProvider with ChangeNotifier {
 
   // Methods to track various user actions
   Future<void> recordTrade() async {
-    await updateProgress('first_trade', 1);
-    final currentTrades = _userProgress['ten_trades'] ?? 0;
-    await updateProgress('ten_trades', currentTrades + 1);
-    await updateProgress('hundred_trades', currentTrades + 1);
-    await updateProgress('thousand_trades', currentTrades + 1);
-    await updateProgress('legendary_trader', currentTrades + 1);
+    // Sync trade-based achievements with database trade count
+    await syncTradeAchievements();
+  }
+  
+  /// Sync trade achievements with the database total_trades count
+  Future<void> syncTradeAchievements() async {
+    if (_currentUserId == null) return;
+    
+    try {
+      // Get trade count from database using our SQL function
+      final response = await _achievementService.getUserTradeCount(_currentUserId!);
+      final tradeCount = response ?? 0;
+      
+      // Update all trade-based achievement progress
+      await updateProgress('first_trade', tradeCount >= 1 ? 1 : 0);
+      await updateProgress('ten_trades', tradeCount);
+      await updateProgress('hundred_trades', tradeCount);
+      await updateProgress('thousand_trades', tradeCount);
+      await updateProgress('legendary_trader', tradeCount);
+      
+      print('🏆 Synced trade achievements: $tradeCount total trades');
+    } catch (e) {
+      print('❌ Error syncing trade achievements: $e');
+    }
   }
 
   Future<void> recordProfit(double profit) async {

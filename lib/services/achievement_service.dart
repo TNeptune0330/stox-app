@@ -80,6 +80,44 @@ class AchievementService {
     ) ?? false;
   }
 
+  // Get user's current trade count from database
+  Future<int?> getUserTradeCount(String userId) async {
+    return await _connectionManager.executeWithFallback<int>(
+      () async {
+        final response = await _supabase.rpc('get_user_trade_count', params: {
+          'user_id_param': UuidUtils.ensureUuidFormat(userId),
+        });
+        
+        _connectionManager.recordSuccess();
+        print('✅ Retrieved trade count from database: $response');
+        return response as int?;
+      },
+      () async {
+        print('📱 Network failure: Cannot retrieve trade count');
+        return null;
+      },
+    );
+  }
+
+  // Sync trade achievements with database
+  Future<Map<String, dynamic>?> syncTradeAchievements(String userId) async {
+    return await _connectionManager.executeWithFallback<Map<String, dynamic>>(
+      () async {
+        final response = await _supabase.rpc('sync_trade_achievements', params: {
+          'user_id_param': UuidUtils.ensureUuidFormat(userId),
+        });
+        
+        _connectionManager.recordSuccess();
+        print('✅ Synced trade achievements from database');
+        return response;
+      },
+      () async {
+        print('📱 Network failure: Cannot sync trade achievements');
+        return null;
+      },
+    );
+  }
+
   // Load user achievements from Supabase
   Future<Map<String, dynamic>> loadUserAchievements(String userId) async {
     print('🏆 AchievementService: Loading achievements for user $userId');

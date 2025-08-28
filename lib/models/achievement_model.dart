@@ -64,6 +64,15 @@ class Achievement {
         requiredValue: 1000,
         category: 'trading',
       ),
+      Achievement(
+        id: 'legendary_trader',
+        title: 'Legendary Trader',
+        description: 'Complete 10,000 trades',
+        icon: Icons.military_tech,
+        color: const Color(0xFF8e44ad),
+        requiredValue: 10000,
+        category: 'trading',
+      ),
 
       // Profit Achievements
       Achievement(
@@ -122,7 +131,7 @@ class Achievement {
         icon: Icons.diamond_outlined,
         color: const Color(0xFF3498db),
         requiredValue: 30,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'diversified',
@@ -131,7 +140,7 @@ class Achievement {
         icon: Icons.scatter_plot,
         color: const Color(0xFF16a085),
         requiredValue: 10,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'crypto_king',
@@ -140,7 +149,7 @@ class Achievement {
         icon: Icons.currency_bitcoin,
         color: const Color(0xFFf39c12),
         requiredValue: 10000,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'paper_hands',
@@ -149,7 +158,7 @@ class Achievement {
         icon: Icons.flash_on,
         color: const Color(0xFFe74c3c),
         requiredValue: 1,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'early_bird',
@@ -158,7 +167,7 @@ class Achievement {
         icon: Icons.wb_sunny,
         color: const Color(0xFFf39c12),
         requiredValue: 1,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'night_owl',
@@ -167,7 +176,7 @@ class Achievement {
         icon: Icons.nightlight,
         color: const Color(0xFF6b46c1),
         requiredValue: 1,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'weekend_warrior',
@@ -176,7 +185,7 @@ class Achievement {
         icon: Icons.weekend,
         color: const Color(0xFF059669),
         requiredValue: 5,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'high_roller',
@@ -185,7 +194,7 @@ class Achievement {
         icon: Icons.casino,
         color: const Color(0xFFdc2626),
         requiredValue: 50000,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'penny_pincher',
@@ -194,7 +203,7 @@ class Achievement {
         icon: Icons.savings,
         color: const Color(0xFF059669),
         requiredValue: 1000,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'tech_giant',
@@ -203,7 +212,7 @@ class Achievement {
         icon: Icons.computer,
         color: const Color(0xFF3b82f6),
         requiredValue: 5,
-        category: 'special',
+        category: 'sectors',
       ),
       Achievement(
         id: 'energy_investor',
@@ -212,7 +221,7 @@ class Achievement {
         icon: Icons.bolt,
         color: const Color(0xFFf59e0b),
         requiredValue: 3,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'healthcare_hero',
@@ -221,7 +230,7 @@ class Achievement {
         icon: Icons.health_and_safety,
         color: const Color(0xFF10b981),
         requiredValue: 3,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'financial_wizard',
@@ -230,7 +239,7 @@ class Achievement {
         icon: Icons.account_balance,
         color: const Color(0xFF8b5cf6),
         requiredValue: 3,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'dividend_hunter',
@@ -239,7 +248,7 @@ class Achievement {
         icon: Icons.monetization_on,
         color: const Color(0xFF059669),
         requiredValue: 5,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'value_investor',
@@ -248,7 +257,7 @@ class Achievement {
         icon: Icons.trending_up,
         color: const Color(0xFF6366f1),
         requiredValue: 90,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'momentum_trader',
@@ -257,7 +266,7 @@ class Achievement {
         icon: Icons.speed,
         color: const Color(0xFFf59e0b),
         requiredValue: 20,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'swing_trader',
@@ -266,7 +275,7 @@ class Achievement {
         icon: Icons.swap_horiz,
         color: const Color(0xFF8b5cf6),
         requiredValue: 50,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'market_timer',
@@ -275,7 +284,7 @@ class Achievement {
         icon: Icons.schedule,
         color: const Color(0xFF10b981),
         requiredValue: 1,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'risk_taker',
@@ -284,7 +293,7 @@ class Achievement {
         icon: Icons.warning,
         color: const Color(0xFFdc2626),
         requiredValue: 50,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'conservative',
@@ -293,7 +302,7 @@ class Achievement {
         icon: Icons.shield,
         color: const Color(0xFF6b7280),
         requiredValue: 30,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'comeback_kid',
@@ -302,7 +311,7 @@ class Achievement {
         icon: Icons.arrow_upward,
         color: const Color(0xFF059669),
         requiredValue: 50,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'loss_leader',
@@ -311,7 +320,7 @@ class Achievement {
         icon: Icons.trending_down,
         color: const Color(0xFFdc2626),
         requiredValue: 10000,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'day_trader',
@@ -320,7 +329,7 @@ class Achievement {
         icon: Icons.today,
         color: const Color(0xFFf59e0b),
         requiredValue: 100,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'blue_chip',
@@ -329,7 +338,7 @@ class Achievement {
         icon: Icons.star,
         color: const Color(0xFF3b82f6),
         requiredValue: 10,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'small_cap',
@@ -338,7 +347,7 @@ class Achievement {
         icon: Icons.explore,
         color: const Color(0xFF8b5cf6),
         requiredValue: 5,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'international',
@@ -347,7 +356,7 @@ class Achievement {
         icon: Icons.public,
         color: const Color(0xFF06b6d4),
         requiredValue: 3,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'meme_lord',
@@ -356,7 +365,7 @@ class Achievement {
         icon: Icons.sentiment_very_satisfied,
         color: const Color(0xFFf59e0b),
         requiredValue: 3,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'etf_fan',
@@ -365,7 +374,7 @@ class Achievement {
         icon: Icons.account_tree,
         color: const Color(0xFF10b981),
         requiredValue: 5,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'options_trader',
@@ -374,7 +383,7 @@ class Achievement {
         icon: Icons.tune,
         color: const Color(0xFF8b5cf6),
         requiredValue: 10,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'volatility_surfer',
@@ -383,7 +392,7 @@ class Achievement {
         icon: Icons.waves,
         color: const Color(0xFF06b6d4),
         requiredValue: 1,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'earnings_player',
@@ -392,7 +401,7 @@ class Achievement {
         icon: Icons.announcement,
         color: const Color(0xFFf59e0b),
         requiredValue: 5,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'sector_rotator',
@@ -401,7 +410,7 @@ class Achievement {
         icon: Icons.rotate_right,
         color: const Color(0xFF8b5cf6),
         requiredValue: 8,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'market_maker',
@@ -410,7 +419,7 @@ class Achievement {
         icon: Icons.settings,
         color: const Color(0xFF6b7280),
         requiredValue: 1000,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'iron_stomach',
@@ -419,7 +428,7 @@ class Achievement {
         icon: Icons.fitness_center,
         color: const Color(0xFF374151),
         requiredValue: 30,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'bull_market',
@@ -428,7 +437,7 @@ class Achievement {
         icon: Icons.trending_up,
         color: const Color(0xFF059669),
         requiredValue: 100,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'bear_market',
@@ -437,7 +446,7 @@ class Achievement {
         icon: Icons.trending_down,
         color: const Color(0xFF6b7280),
         requiredValue: 1,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'contrarian',
@@ -446,7 +455,7 @@ class Achievement {
         icon: Icons.arrow_back,
         color: const Color(0xFF8b5cf6),
         requiredValue: 1,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'social_trader',
@@ -455,7 +464,7 @@ class Achievement {
         icon: Icons.group,
         color: const Color(0xFF06b6d4),
         requiredValue: 10,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'research_master',
@@ -464,7 +473,7 @@ class Achievement {
         icon: Icons.library_books,
         color: const Color(0xFF6366f1),
         requiredValue: 100,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'news_junkie',
@@ -473,7 +482,7 @@ class Achievement {
         icon: Icons.newspaper,
         color: const Color(0xFF374151),
         requiredValue: 500,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'chart_master',
@@ -482,7 +491,7 @@ class Achievement {
         icon: Icons.analytics,
         color: const Color(0xFF10b981),
         requiredValue: 1000,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'algorithm_beater',
@@ -491,7 +500,7 @@ class Achievement {
         icon: Icons.smart_toy,
         color: const Color(0xFFf59e0b),
         requiredValue: 20,
-        category: 'special',
+        category: 'portfolio',
       ),
       Achievement(
         id: 'multi_millionaire',
@@ -536,7 +545,7 @@ class Achievement {
         icon: Icons.emoji_events,
         color: const Color(0xFFf59e0b),
         requiredValue: 1,
-        category: 'special',
+        category: 'portfolio',
       ),
     ];
   }
