@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -301,12 +302,15 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                   padding: const EdgeInsets.all(16),
                   height: 200,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF9333EA), // Purple
-                        Color(0xFF6366F1), // Indigo
+                      colors: widget.asset.changePercent >= 0 ? [
+                        const Color(0xFF059669), // Green
+                        const Color(0xFF10B981), // Light green
+                      ] : [
+                        const Color(0xFFDC2626), // Red
+                        const Color(0xFFEF4444), // Light red
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
@@ -802,7 +806,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 50,
-                        interval: null,
+                        interval: _priceData.isNotEmpty ? _calculatePriceInterval() : null,
                         getTitlesWidget: (value, meta) {
                           return Text(
                             '\$${value.toStringAsFixed(0)}',
@@ -983,6 +987,35 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
     
     final dynamicMax = maxPrice + (range * paddingPercent);
     return double.parse(dynamicMax.toStringAsFixed(2));
+  }
+
+  double _calculatePriceInterval() {
+    if (_priceData.isEmpty) return 1.0;
+    
+    final minY = _calculateDynamicMinY(_priceData);
+    final maxY = _calculateDynamicMaxY(_priceData);
+    final range = maxY - minY;
+    
+    // Calculate interval to show approximately 4-6 price markers
+    final targetIntervals = 5;
+    final rawInterval = range / targetIntervals;
+    
+    // Round to nice numbers (1, 2, 5, 10, 20, 50, etc.)
+    final magnitude = math.pow(10, (math.log(rawInterval) / math.ln10).floor());
+    final normalized = rawInterval / magnitude;
+    
+    double niceInterval;
+    if (normalized <= 1) {
+      niceInterval = 1 * magnitude;
+    } else if (normalized <= 2) {
+      niceInterval = 2 * magnitude;
+    } else if (normalized <= 5) {
+      niceInterval = 5 * magnitude;
+    } else {
+      niceInterval = 10 * magnitude;
+    }
+    
+    return niceInterval.toDouble();
   }
 
   Widget _buildHoldingsSection(ThemeProvider themeProvider) {
