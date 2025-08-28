@@ -113,9 +113,9 @@ class AchievementService {
       },
       () async {
         print('📱 Network failure: Cannot sync trade achievements');
-        return null;
+        return <String, dynamic>{};
       },
-    );
+    ) ?? <String, dynamic>{};
   }
 
   // Load user achievements from Supabase
