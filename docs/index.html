@@ -10,6 +10,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:image" content="/assets/og-stox-showcase.png" />
   <meta name="theme-color" content="#3B82F6" />
+  <link rel="icon" href="/assets/logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -60,12 +61,16 @@
   <!-- Navigation -->
   <nav class="w-full bg-white/70 dark:bg-neon-surfaceDark/70 backdrop-blur border-b border-slate-200 dark:border-neon-strokeDark sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="#" class="text-xl font-bold text-neon-primary">Stox Trader</a>
+      <div class="flex items-center gap-2">
+        <img src="/assets/logo.png" alt="Stox Trader Logo" class="h-8 w-8">
+        <a href="#" class="text-xl font-bold text-neon-primary">Stox Trader</a>
+      </div>
       <div class="flex items-center gap-6 text-sm">
         <a href="#features" class="hover:underline">Features</a>
         <a href="#screenshots" class="hover:underline">Screenshots</a>
         <a href="#faq" class="hover:underline">FAQ</a>
         <a href="#support" class="hover:underline">Support</a>
+        <a href="#policies" class="hover:underline">Legal</a>
         <button id="themeBtn" class="px-2 py-1 rounded border border-slate-300 dark:border-neon-strokeDark">☀︎/☾</button>
       </div>
     </div>
@@ -157,7 +162,7 @@
   <!-- FAQ -->
   <section id="faq" class="py-20">
     <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-3xl font-semibold text-center mb-12 text-neon-accentGreen">Frequently Asked Questions</h2>
+      <h2 class="text-3xl font-semibold text-center mb-12 text-neon-badgeGreen">Frequently Asked Questions</h2>
       <div class="max-w-3xl mx-auto space-y-3" id="accordion"></div>
     </div>
   </section>
@@ -180,11 +185,315 @@
         <div class="p-6 rounded-2xl ring-2 ring-neon-accentOrange bg-white dark:bg-neon-surfaceDark">
           <h3 class="font-semibold mb-4 text-neon-accentOrange">Policies & Legal</h3>
           <ul class="space-y-2 text-sm">
-            <li><a href="#" class="underline text-neon-accentOrange">Terms of Use</a></li>
-            <li><a href="#" class="underline text-neon-accentOrange">Privacy Policy</a></li>
-            <li><a href="#" class="underline text-neon-accentOrange">Data Handling</a></li>
+            <li><a href="#policies" class="underline text-neon-accentOrange">Privacy Policy</a></li>
+            <li><a href="#policies-terms" class="underline text-neon-accentOrange">Terms of Service</a></li>
           </ul>
           <p class="mt-4 text-xs text-slate-500">Educational use only. No real money involved.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Policies -->
+  <section id="policies" class="py-20">
+    <div class="max-w-6xl mx-auto px-4 space-y-16">
+      <div>
+        <h2 class="text-3xl font-semibold text-center mb-8 text-neon-primary">Privacy Policy</h2>
+        <div class="prose dark:prose-invert max-w-none bg-white dark:bg-neon-surfaceDark p-6 rounded-2xl ring-1 ring-slate-200 dark:ring-neon-strokeDark overflow-y-auto max-h-[40rem]">
+<pre class="whitespace-pre-wrap text-sm">PRIVACY POLICY
+
+Effective Date: January 21, 2025
+
+INTRODUCTION
+
+This Privacy Policy describes how Stox Trading Simulator collects, uses, and protects information when you use our mobile application. This policy applies to all users of the application and explains your privacy rights and how the law protects you.
+
+The Stox Trading Simulator is an educational stock market simulation application designed for learning purposes only. No real money or actual securities transactions occur within this application.
+
+INFORMATION WE COLLECT
+
+Personal Information You Provide
+When you create an account using Google Sign-In, we collect basic profile information including your email address and display name. You may also provide additional profile information such as a username or profile picture within the application settings.
+
+Automatically Collected Information
+We automatically collect certain technical information when you use our application, including:
+- Device type and operating system version
+- Application version and usage statistics
+- Performance data such as crash reports and error logs
+- General usage patterns and feature interactions
+
+We do not collect precise location data or access your device's camera, microphone, or contacts without explicit permission.
+
+Information from Third Parties
+We receive basic profile information when you sign in through Google, subject to Google's privacy policy. We also obtain real-time market data from financial information providers for educational purposes within the application.
+
+HOW WE USE YOUR INFORMATION
+
+Primary Uses
+We use collected information to:
+- Provide and maintain the application functionality
+- Create and manage your user account and preferences
+- Save your virtual trading history and achievements
+- Improve application features and user experience
+- Provide customer support when requested
+
+Communications
+We may contact you regarding:
+- Important application updates or changes
+- Response to support requests
+- Educational content related to financial markets (only if you opt in)
+
+We will not send promotional emails without your explicit consent, and you may unsubscribe from any communications at any time.
+
+Legal and Safety Uses
+We may use information to:
+- Comply with applicable laws and legal obligations
+- Protect against fraud, abuse, or security threats
+- Enforce our Terms of Service
+- Protect the rights and safety of users and third parties
+
+INFORMATION SHARING
+
+We Do Not Sell Your Information
+We never sell, rent, or trade your personal information to third parties for commercial purposes. Your virtual trading data and personal information remain private.
+
+Limited Sharing Circumstances
+We may share information only in these specific situations:
+
+Service Providers: We work with trusted companies that help us operate the application, such as cloud hosting services and analytics providers. These companies are contractually required to protect your information and may only use it to provide services to us.
+
+Legal Requirements: We may disclose information when required by law, court order, or government request, or to protect legal rights and safety.
+
+Business Transfers: If our company is acquired or merged, user information may be transferred as part of that transaction. Users will be notified of any such changes.
+
+With Your Consent: We may share information when you explicitly agree to such sharing.
+
+Third-Party Services
+Our application integrates with:
+- Google Sign-In services, governed by Google's privacy policy
+- Financial data providers for market information
+- Analytics services that help us understand application usage patterns
+- Cloud storage services for data backup and synchronization
+
+DATA SECURITY
+
+We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. These measures include:
+- Encryption of data in transit and at rest
+- Secure authentication protocols
+- Regular security assessments and updates
+- Limited access to personal information on a need-to-know basis
+
+However, no internet transmission or electronic storage method is completely secure. While we strive to protect your information, we cannot guarantee absolute security.
+
+DATA RETENTION
+
+We retain personal information for as long as necessary to provide application services or as required by law. Specifically:
+- Account information is retained until you delete your account
+- Usage analytics may be retained in aggregated form for application improvement
+- Some information may be retained to comply with legal obligations
+- Cached data may remain on your device until manually cleared
+
+You can delete your account and request removal of associated data through the application settings or by contacting us directly.
+
+YOUR PRIVACY RIGHTS
+
+Access and Control
+You have the right to:
+- Access and review your personal information
+- Update or correct your account information
+- Delete your account and associated data
+- Export your data (contact us for assistance)
+- Control communication preferences and notifications
+
+Regional Privacy Rights
+Depending on your location, you may have additional rights under applicable privacy laws:
+
+California Residents (CCPA): Right to know what personal information we collect, right to delete personal information, right to opt out of sale (we do not sell information), and right to non-discriminatory treatment.
+
+European Union Residents (GDPR): Right to access, rectify, erase, restrict processing, data portability, object to processing, and withdraw consent.
+
+Other Jurisdictions: Rights as provided under applicable local privacy laws.
+
+To exercise these rights, contact us using the information provided below.
+
+CHILDREN'S PRIVACY
+
+Our application is designed for users aged 13 and older. We do not knowingly collect personal information from children under 13. If we become aware that we have collected information from a child under 13, we will delete it promptly.
+
+Parents who believe their child under 13 has provided personal information to us should contact us immediately.
+
+INTERNATIONAL DATA TRANSFERS
+
+Our application is operated from the United States. If you access our application from outside the United States, your information may be transferred to, stored, and processed in the United States or other countries where our service providers are located.
+
+We ensure appropriate safeguards are in place for international data transfers in accordance with applicable privacy laws.
+
+UPDATES TO THIS POLICY
+
+We may update this Privacy Policy periodically to reflect changes in our practices, technology, or legal requirements. We will notify users of significant changes by:
+- Posting the updated policy in the application
+- Updating the "Effective Date" at the top of this policy
+- Providing additional notice for material changes, when required
+
+Continued use of the application after policy updates constitutes acceptance of the revised policy.
+
+CONTACT INFORMATION
+
+If you have questions, concerns, or requests regarding this Privacy Policy or your personal information, please contact us:
+
+Email: privacy@stoxtrading.app
+Support: support@stoxtrading.app
+Website: www.stoxtrading.com
+
+Data Protection Officer (for GDPR-related inquiries): dpo@stoxtrading.app
+
+We aim to respond to privacy inquiries within 30 days.
+
+THIRD-PARTY LINKS
+
+Our application may contain links to third-party websites or services. This Privacy Policy does not apply to those external sites. We encourage you to review the privacy policies of any third-party sites you visit.
+
+CALIFORNIA "SHINE THE LIGHT" DISCLOSURE
+
+California residents may request information about our disclosure of personal information to third parties for direct marketing purposes. We do not share personal information with third parties for their direct marketing purposes.
+
+FINAL NOTES
+
+This Privacy Policy is effective as of the date listed above and applies to all users of the Stox Trading Simulator application. 
+
+Remember that this application is designed for educational purposes only. Virtual trading performance does not guarantee real-world investment success. Always consult qualified financial advisors before making actual investment decisions.
+
+By using our application, you acknowledge that you have read, understood, and agree to be bound by this Privacy Policy.
+
+Last updated: January 21, 2025</pre>
+        </div>
+      </div>
+      <div id="policies-terms">
+        <h2 class="text-3xl font-semibold text-center mb-8 text-neon-primary">Terms of Service</h2>
+        <div class="prose dark:prose-invert max-w-none bg-white dark:bg-neon-surfaceDark p-6 rounded-2xl ring-1 ring-slate-200 dark:ring-neon-strokeDark overflow-y-auto max-h-[40rem]">
+<pre class="whitespace-pre-wrap text-sm">TERMS OF SERVICE
+
+Effective Date: January 21, 2025
+
+ACCEPTANCE OF TERMS
+
+These Terms of Service govern your use of the Stox Trading Simulator mobile application. By downloading, installing, or using this application, you agree to be bound by these terms. If you do not agree to these terms, please do not use the application.
+
+DESCRIPTION OF SERVICE
+
+Stox is a stock market simulation application designed for educational purposes. The application provides users with a virtual trading environment where they can practice investment strategies without financial risk. All trades within the application are simulated and involve no actual money or securities.
+
+Key features include:
+- Virtual portfolio management with a starting balance of $10,000 in simulated currency
+- Real-time market data for educational purposes
+- Trading simulation tools and analytics
+- Achievement tracking and progress monitoring
+- Educational resources about financial markets
+
+USER ACCOUNTS AND REGISTRATION
+
+Account Creation
+Users may access the application through Google Sign-In authentication or use the demo mode. All information provided during registration must be accurate and current. Users are responsible for maintaining the confidentiality of their account credentials.
+
+Account Responsibilities
+You are solely responsible for all activities occurring under your account. You must immediately notify us of any unauthorized account access. Sharing account credentials with third parties is prohibited.
+
+ACCEPTABLE USE
+
+Permitted Activities
+This application is intended for educational and entertainment purposes only. Users may practice trading strategies, learn about financial markets, and explore investment concepts in a risk-free environment.
+
+Prohibited Activities
+Users may not:
+- Use the application for illegal or unauthorized purposes
+- Attempt to gain unauthorized access to application systems or data
+- Interfere with or disrupt normal application functionality
+- Use automated systems, bots, or scripts to access the application
+- Reverse engineer, decompile, or attempt to extract source code
+- Provide investment advice to others based on application performance
+
+VIRTUAL TRADING DISCLAIMER
+
+Educational Purpose Only
+All trading activities within this application are purely simulated. No real money is involved in any transactions, and no actual securities are bought or sold. Virtual performance results do not predict or guarantee real-world investment success.
+
+Market Data
+Market information is provided by third-party sources and may be delayed or subject to errors. We do not warrant the accuracy, completeness, or timeliness of any market data. This information is provided solely for educational purposes.
+
+Not Investment Advice
+Nothing in this application constitutes financial, investment, or trading advice. Users should consult qualified financial advisors before making real investment decisions. Past virtual performance does not indicate future real-world results.
+
+INTELLECTUAL PROPERTY
+
+Application Ownership
+This application and all associated content, including but not limited to software, text, graphics, logos, and user interface elements, are owned by us and protected by copyright and other intellectual property laws.
+
+User Content
+Users retain ownership of any content they create within the application. By using the application, users grant us a non-exclusive license to use, display, and distribute user-generated content solely for application functionality purposes.
+
+PRIVACY AND DATA PROTECTION
+
+Data Collection and Use
+We collect and process user information as described in our Privacy Policy. This includes account information, application usage data, and device information necessary for application functionality.
+
+Third-Party Services
+The application integrates with Google authentication services and third-party market data providers. These services operate under their own privacy policies and terms of use.
+
+DATA SECURITY
+
+We implement industry-standard security measures to protect user data. However, no system can guarantee complete security. Users should take appropriate precautions to protect their devices and account information.
+
+DISCLAIMERS AND LIMITATIONS
+
+Service Availability
+The application is provided on an "as is" basis without warranties of any kind. We do not guarantee uninterrupted or error-free operation. Service availability may be affected by maintenance, updates, or technical issues.
+
+Limitation of Liability
+To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, consequential, or punitive damages arising from application use. Our total liability for any claim shall not exceed the amount paid by the user for application access, if any.
+
+UPDATES AND MODIFICATIONS
+
+Application Updates
+We may release updates to improve functionality, fix bugs, or add new features. Some updates may require user acceptance of modified terms. Continued use of the application after updates constitutes acceptance of any changes.
+
+Service Changes
+We reserve the right to modify, suspend, or discontinue the application or any features at any time with or without notice. We are not liable for any service modifications or discontinuation.
+
+TERMINATION
+
+User Termination
+Users may stop using the application at any time and may request account deletion through application settings or by contacting support.
+
+Our Termination Rights
+We may suspend or terminate user accounts for violations of these terms, illegal activities, or other reasons at our sole discretion. Upon termination, users must cease all application use.
+
+CHILDREN AND MINORS
+
+This application is designed for users aged 13 and older. Users under 18 should have parental guidance when learning about financial topics. We do not knowingly collect personal information from children under 13.
+
+GOVERNING LAW
+
+These terms are governed by the laws of the jurisdiction where our company is incorporated. Any disputes shall be resolved in the appropriate courts of that jurisdiction.
+
+CONTACT INFORMATION
+
+For questions about these Terms of Service, contact us at:
+Email: support@stoxtrading.app
+Website: www.stoxtrading.com
+
+MODIFICATIONS TO TERMS
+
+We may update these terms periodically. Updated terms will be posted in the application with a new effective date. Continued use after updates constitutes acceptance of the modified terms.
+
+SEVERABILITY
+
+If any provision of these terms is found unenforceable, the remaining provisions will continue in full force and effect.
+
+ENTIRE AGREEMENT
+
+These Terms of Service, together with our Privacy Policy, constitute the complete agreement between users and our company regarding application use.
+
+Last updated: January 21, 2025</pre>
         </div>
       </div>
     </div>
@@ -217,7 +526,7 @@
     // Year
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // FAQ
+    // FAQ/Accordion
     const faqs = [
       { q: 'Is Stox Trader free?', a: 'Yes, Stox Trader is completely free to use. All trades are simulated with virtual cash.' },
       { q: 'Are stock prices real‑time?', a: 'Data may include standard exchange delays. Use them for practice only, not for real trading decisions.' },
@@ -228,3 +537,23 @@
 
     const acc = document.getElementById('accordion');
     faqs.forEach((item, idx) => {
+      const id = `faq-${idx}`;
+      const card = document.createElement('div');
+      card.className = 'rounded-xl ring-1 ring-slate-200 dark:ring-neon-strokeDark bg-white dark:bg-neon-surfaceDark';
+      card.innerHTML = `
+        <button class="w-full text-left p-4 flex items-center justify-between" aria-expanded="false" aria-controls="${id}">
+          <span class="font-medium">${item.q}</span>
+          <svg class="size-5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+        </button>
+        <div id="${id}" class="px-4 pb-4 hidden text-sm text-slate-600 dark:text-neon-textSecondary">${item.a}</div>`;
+      const btn = card.querySelector('button');
+      const panel = card.querySelector(`#${id}`);
+      btn.addEventListener('click', () => {
+        const isHidden = panel.classList.toggle('hidden');
+        btn.setAttribute('aria-expanded', String(!isHidden));
+      });
+      acc.appendChild(card);
+    });
+  </script>
+</body>
+</html>
