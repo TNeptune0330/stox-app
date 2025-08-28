@@ -293,6 +293,9 @@ class PortfolioProvider with ChangeNotifier {
           
           final cashPercentage = (cashBalance / netWorth) * 100;
           await achievementProvider.recordCashPercentage(cashPercentage);
+          
+          // Explicitly check and unlock eligible achievements after all progress is recorded
+          await achievementProvider.checkAndUnlockEligibleAchievements();
         }
         
         // Trigger ad after trade

@@ -10,6 +10,7 @@ class AchievementProvider with ChangeNotifier {
   List<Achievement> _achievements = [];
   Map<String, int> _userProgress = {};
   Set<String> _unlockedAchievements = {};
+  Map<String, DateTime> _unlockedTimestamps = {};
   String? _currentUserId;
 
   List<Achievement> get achievements => _achievements;
@@ -63,6 +64,17 @@ class AchievementProvider with ChangeNotifier {
         // Fallback to local storage only
         _unlockedAchievements = LocalDatabaseService.getSetting<Set<String>>('unlocked_achievements') ?? <String>{};
         _userProgress = LocalDatabaseService.getSetting<Map<String, int>>('user_progress') ?? <String, int>{};
+        
+        // Load unlock timestamps
+        final timestampData = LocalDatabaseService.getSetting<Map<String, String>>('unlock_timestamps') ?? <String, String>{};
+        _unlockedTimestamps = {};
+        for (final entry in timestampData.entries) {
+          try {
+            _unlockedTimestamps[entry.key] = DateTime.parse(entry.value);
+          } catch (e) {
+            print('Error parsing timestamp for ${entry.key}: $e');
+          }
+        }
         
         // Anonymous users also start with no achievements
       }
@@ -170,7 +182,7 @@ class AchievementProvider with ChangeNotifier {
         requiredValue: achievement.requiredValue,
         category: achievement.category,
         isUnlocked: isUnlocked,
-        unlockedAt: isUnlocked ? DateTime.now() : null,
+        unlockedAt: isUnlocked ? _unlockedTimestamps[achievement.id] : null,
         currentProgress: progress,
       );
     }
@@ -196,17 +208,10 @@ class AchievementProvider with ChangeNotifier {
         await LocalDatabaseService.saveSetting('user_progress', _userProgress);
       }
       
-      // Check if achievement should be unlocked (only when online or for local-only users)
-      if (progress >= achievement.requiredValue && !_unlockedAchievements.contains(achievementId)) {
-        // Only unlock if we're online or if this is a local-only user
-        if (_connectionManager.isOnline || _currentUserId == null) {
-          await unlockAchievement(achievementId);
-        } else {
-          print('⚠️ Achievement $achievementId ready to unlock but waiting for connection');
-          // Save that this achievement is ready to unlock when connection is restored
-          await LocalDatabaseService.saveSetting('pending_unlock_$achievementId', true);
-        }
-      }
+      // DO NOT auto-unlock achievements - they should only be unlocked manually by the user
+      // This prevents achievements from unlocking by themselves during network failures or data syncing
+      
+      // Just save progress - achievement unlocking must be triggered explicitly by user actions
       
       _updateAchievementStates();
       notifyListeners();
@@ -215,10 +220,54 @@ class AchievementProvider with ChangeNotifier {
     }
   }
 
+  /// Manually check and unlock achievements that meet their requirements
+  /// This should be called explicitly after user actions, not automatically
+  Future<void> checkAndUnlockEligibleAchievements() async {
+    if (_currentUserId == null && !_connectionManager.isOnline) {
+      print('🏆 Skipping achievement check - offline and no user');
+      return;
+    }
+    
+    try {
+      final eligibleAchievements = <String>[];
+      
+      for (final achievement in _achievements) {
+        final progress = _userProgress[achievement.id] ?? 0;
+        
+        // Check if achievement is eligible for unlock
+        if (progress >= achievement.requiredValue && !_unlockedAchievements.contains(achievement.id)) {
+          eligibleAchievements.add(achievement.id);
+        }
+      }
+      
+      // Only unlock if we're online or if this is a local-only user
+      if (_connectionManager.isOnline || _currentUserId == null) {
+        for (final achievementId in eligibleAchievements) {
+          await unlockAchievement(achievementId);
+          print('🏆 Manually unlocked eligible achievement: $achievementId');
+        }
+      } else {
+        // Save achievements as pending for when connection is restored
+        for (final achievementId in eligibleAchievements) {
+          await LocalDatabaseService.saveSetting('pending_unlock_$achievementId', true);
+          print('⚠️ Achievement $achievementId queued for unlock when online');
+        }
+      }
+      
+      if (eligibleAchievements.isNotEmpty) {
+        _updateAchievementStates();
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ Error checking eligible achievements: $e');
+    }
+  }
+
   Future<void> unlockAchievement(String achievementId) async {
     try {
       if (!_unlockedAchievements.contains(achievementId)) {
         _unlockedAchievements.add(achievementId);
+        _unlockedTimestamps[achievementId] = DateTime.now();
         
         // Find the achievement definition
         final achievement = _achievements.firstWhere((a) => a.id == achievementId);
@@ -233,6 +282,13 @@ class AchievementProvider with ChangeNotifier {
           // Fallback to local storage
           await LocalDatabaseService.saveSetting('unlocked_achievements', _unlockedAchievements);
         }
+        
+        // Save timestamps to local storage
+        final timestampData = <String, String>{};
+        for (final entry in _unlockedTimestamps.entries) {
+          timestampData[entry.key] = entry.value.toIso8601String();
+        }
+        await LocalDatabaseService.saveSetting('unlock_timestamps', timestampData);
         
         // Show achievement notification
         _showAchievementNotification(achievementId);
