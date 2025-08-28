@@ -260,20 +260,7 @@ class PortfolioProvider with ChangeNotifier {
           await achievementProvider.recordNetWorth(netWorth);
           await achievementProvider.recordMultiMillionaire(netWorth);
           
-          // Record sector-specific achievements
-          if (type == 'buy') {
-            await achievementProvider.recordTechStockPurchase(symbol);
-            await achievementProvider.recordEnergyStockPurchase(symbol);
-            await achievementProvider.recordHealthcareStockPurchase(symbol);
-            await achievementProvider.recordFinancialStockPurchase(symbol);
-            await achievementProvider.recordMemeStockPurchase(symbol);
-            await achievementProvider.recordSP500StockPurchase(symbol);
-            await achievementProvider.recordETFPurchase(symbol);
-            await achievementProvider.recordDividendStockPurchase(symbol);
-            await achievementProvider.recordSmallCapPurchase(symbol);
-            await achievementProvider.recordInternationalPurchase(symbol);
-            await achievementProvider.recordConsumerStockPurchase(symbol);
-          }
+          // Sector-specific achievements removed - now focusing on trading behavior only
           
           // Record high-value trade
           await achievementProvider.recordHighValueTrade(totalCost);

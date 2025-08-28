@@ -361,10 +361,7 @@ class AchievementProvider with ChangeNotifier {
     await updateProgress('diversified', uniqueAssets);
   }
 
-  Future<void> recordCryptoProfit(double profit) async {
-    final currentCryptoProfit = _userProgress['crypto_king'] ?? 0;
-    await updateProgress('crypto_king', (currentCryptoProfit + profit).toInt());
-  }
+  // Crypto profit tracking removed - no longer needed
 
   Future<void> _checkMasterOfAllAchievement() async {
     // Don't check if Master of All is already unlocked
@@ -382,47 +379,8 @@ class AchievementProvider with ChangeNotifier {
     }
   }
 
-  Future<void> recordTechStockPurchase(String symbol) async {
-    if (Achievement.getTechStocks().contains(symbol)) {
-      final currentTechStocks = _userProgress['tech_giant'] ?? 0;
-      await updateProgress('tech_giant', currentTechStocks + 1);
-    }
-  }
-
-  Future<void> recordEnergyStockPurchase(String symbol) async {
-    if (Achievement.getEnergyStocks().contains(symbol)) {
-      final currentEnergyStocks = _userProgress['energy_investor'] ?? 0;
-      await updateProgress('energy_investor', currentEnergyStocks + 1);
-    }
-  }
-
-  Future<void> recordHealthcareStockPurchase(String symbol) async {
-    if (Achievement.getHealthcareStocks().contains(symbol)) {
-      final currentHealthcareStocks = _userProgress['healthcare_hero'] ?? 0;
-      await updateProgress('healthcare_hero', currentHealthcareStocks + 1);
-    }
-  }
-
-  Future<void> recordFinancialStockPurchase(String symbol) async {
-    if (Achievement.getFinancialStocks().contains(symbol)) {
-      final currentFinancialStocks = _userProgress['financial_wizard'] ?? 0;
-      await updateProgress('financial_wizard', currentFinancialStocks + 1);
-    }
-  }
-
-  Future<void> recordMemeStockPurchase(String symbol) async {
-    if (Achievement.getMemeStocks().contains(symbol)) {
-      final currentMemeStocks = _userProgress['meme_lord'] ?? 0;
-      await updateProgress('meme_lord', currentMemeStocks + 1);
-    }
-  }
-
-  Future<void> recordSP500StockPurchase(String symbol) async {
-    if (Achievement.getSP500Stocks().contains(symbol)) {
-      final currentSP500Stocks = _userProgress['blue_chip'] ?? 0;
-      await updateProgress('blue_chip', currentSP500Stocks + 1);
-    }
-  }
+  // All sector-based achievement tracking methods removed
+  // Achievements now focus on trading behavior, not specific sectors
 
   Future<void> recordHighValueTrade(double tradeValue) async {
     if (tradeValue >= 50000) {
@@ -556,41 +514,8 @@ class AchievementProvider with ChangeNotifier {
     return locked.first;
   }
 
-  // Additional achievement tracking methods
-  Future<void> recordETFPurchase(String symbol) async {
-    if (Achievement.getETFSymbols().contains(symbol)) {
-      final currentETFs = _userProgress['etf_fan'] ?? 0;
-      await updateProgress('etf_fan', currentETFs + 1);
-    }
-  }
-
-  Future<void> recordDividendStockPurchase(String symbol) async {
-    if (Achievement.getDividendStocks().contains(symbol)) {
-      final currentDividendStocks = _userProgress['dividend_hunter'] ?? 0;
-      await updateProgress('dividend_hunter', currentDividendStocks + 1);
-    }
-  }
-
-  Future<void> recordSmallCapPurchase(String symbol) async {
-    if (Achievement.getSmallCapStocks().contains(symbol)) {
-      final currentSmallCap = _userProgress['small_cap'] ?? 0;
-      await updateProgress('small_cap', currentSmallCap + 1);
-    }
-  }
-
-  Future<void> recordInternationalPurchase(String symbol) async {
-    if (Achievement.getInternationalStocks().contains(symbol)) {
-      final currentInternational = _userProgress['international'] ?? 0;
-      await updateProgress('international', currentInternational + 1);
-    }
-  }
-
-  Future<void> recordConsumerStockPurchase(String symbol) async {
-    if (Achievement.getConsumerStocks().contains(symbol)) {
-      final currentConsumer = _userProgress['consumer_staples'] ?? 0;
-      await updateProgress('consumer_staples', currentConsumer + 1);
-    }
-  }
+  // Sector-based tracking methods removed as requested
+  // All achievements now focus on trading behavior rather than specific sectors
 
   // Additional missing tracking methods
   Future<void> recordLongHold(int days) async {
@@ -624,9 +549,7 @@ class AchievementProvider with ChangeNotifier {
     }
   }
 
-  Future<void> recordSectorDiversification(int sectorCount) async {
-    await updateProgress('sector_rotator', sectorCount);
-  }
+  // Sector diversification removed - no longer tracking sector-specific achievements
 
   Future<void> recordLimitOrder() async {
     final currentLimitOrders = _userProgress['market_maker'] ?? 0;
