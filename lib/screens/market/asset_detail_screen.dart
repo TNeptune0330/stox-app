@@ -775,8 +775,94 @@ class _AssetDetailScreenState extends State<AssetDetailScreen>
               )
             : LineChart(
                 LineChartData(
-                  gridData: const FlGridData(show: false),
-                  titlesData: const FlTitlesData(show: false),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    drawHorizontalLine: true,
+                    horizontalInterval: null,
+                    verticalInterval: null,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: Colors.white.withOpacity(0.2),
+                      strokeWidth: 0.5,
+                    ),
+                    getDrawingVerticalLine: (value) => FlLine(
+                      color: Colors.white.withOpacity(0.2),
+                      strokeWidth: 0.5,
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 50,
+                        interval: null,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '\$${value.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        interval: _priceData.isNotEmpty ? (_priceData.length - 1) / 5 : 1,
+                        getTitlesWidget: (value, meta) {
+                          if (_priceData.isEmpty) return const SizedBox.shrink();
+                          
+                          final index = value.toInt();
+                          if (index < 0 || index >= _priceData.length) {
+                            return const SizedBox.shrink();
+                          }
+                          
+                          // Format time based on selected timeframe
+                          String timeLabel = '';
+                          switch (_selectedTimeframe) {
+                            case '1D':
+                              final hour = (index * 6.5 / _priceData.length * 24).round();
+                              timeLabel = '${hour.toString().padLeft(2, '0')}:00';
+                              break;
+                            case '1W':
+                              final day = (index * 7 / _priceData.length).round();
+                              final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                              timeLabel = days[day % 7];
+                              break;
+                            case '1M':
+                              final day = (index * 30 / _priceData.length).round() + 1;
+                              timeLabel = day.toString();
+                              break;
+                            case '3M':
+                            case '1Y':
+                              final month = (index * (_selectedTimeframe == '3M' ? 3 : 12) / _priceData.length).round() + 1;
+                              final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                              timeLabel = months[(month - 1) % 12];
+                              break;
+                          }
+                          
+                          return Text(
+                            timeLabel,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
                     LineChartBarData(
