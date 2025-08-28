@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stox Trader — Product Showcase</title>
+  <meta name="description" content="Stox Trader — a modern, gamified stock‑market simulator with real market data, virtual trading, analytics, achievements, and more. Discover features, screenshots, and how it works." />
+  <meta property="og:title" content="Stox Trader — Product Showcase" />
+  <meta property="og:description" content="Explore Stox Trader’s features, screenshots, and highlights — a realistic, risk‑free trading simulator with Google sign‑in, market data, analytics, and achievements." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/assets/og-stox-showcase.png" />
+  <meta name="theme-color" content="#3B82F6" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            neon: {
+              primary: '#3B82F6',
+              primaryDim: '#2563EB',
+              success: '#10B981',
+              error: '#EF4444',
+              warning: '#F59E0B',
+              info: '#3B82F6',
+              bgDark: '#0B1220',
+              surfaceDark: '#151E2E',
+              surfaceDark2: '#1D2A3B',
+              strokeDark: '#243145',
+              textPrimary: '#E9F1FF',
+              textSecondary: '#A7B4C7',
+              textMuted: '#7B8AA0',
+              chartLine: '#3B82F6',
+              donutIncome: '#EA580C',
+              donutOutcome: '#EF4444',
+              badgeRed: '#EF4444',
+              badgeOrange: '#F59E0B',
+              badgeYellow: '#EAB308',
+              badgeGreen: '#10B981',
+              badgeBlue: '#3B82F6',
+              badgePurple: '#8B5CF6',
+              badgePink: '#EC4899',
+              accentPink: '#EC4899',
+              accentOrange: '#EA580C',
+              accentYellow: '#EAB308',
+              accentCyan: '#06B6D4',
+              accentViolet: '#7C3AED'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,.7); }
+    .dark .glass { background: rgba(2,6,23,.6); }
+  </style>
+</head>
+<body class="bg-white text-slate-800 dark:bg-neon-bgDark dark:text-neon-textPrimary">
+  <!-- Navigation -->
+  <nav class="w-full bg-white/70 dark:bg-neon-surfaceDark/70 backdrop-blur border-b border-slate-200 dark:border-neon-strokeDark sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="#" class="text-xl font-bold text-neon-primary">Stox Trader</a>
+      <div class="flex items-center gap-6 text-sm">
+        <a href="#features" class="hover:underline">Features</a>
+        <a href="#screenshots" class="hover:underline">Screenshots</a>
+        <a href="#faq" class="hover:underline">FAQ</a>
+        <a href="#support" class="hover:underline">Support</a>
+        <button id="themeBtn" class="px-2 py-1 rounded border border-slate-300 dark:border-neon-strokeDark">☀︎/☾</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="relative isolate overflow-hidden">
+    <div class="absolute inset-0 -z-10 opacity-40 dark:opacity-30 bg-gradient-to-br from-neon-accentPink via-neon-accentOrange to-neon-accentYellow dark:from-neon-bgDark dark:via-neon-surfaceDark dark:to-neon-bgDark"></div>
+    <div class="max-w-6xl mx-auto px-4 py-20 sm:py-28 text-center">
+      <h1 class="text-5xl sm:text-6xl font-bold tracking-tight">Experience the Market with <span class="text-neon-primary">Stox Trader</span></h1>
+      <p class="mt-6 text-lg text-slate-600 dark:text-neon-textSecondary max-w-2xl mx-auto">The most intuitive stock market simulator app. Learn, practice, and track your trading strategies — risk free.</p>
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <a href="#features" class="px-6 py-3 rounded-xl bg-neon-primary text-white shadow hover:bg-neon-primaryDim transition">Explore Features</a>
+        <a href="#screenshots" class="px-6 py-3 rounded-xl ring-1 ring-neon-accentPink text-neon-accentPink hover:bg-neon-accentPink hover:text-white transition">See Screenshots</a>
+      </div>
+      <div class="mt-10 h-14 w-40 mx-auto bg-slate-200 dark:bg-neon-surfaceDark2 rounded-lg grid place-items-center text-xs">App Store Badge Placeholder</div>
+    </div>
+  </header>
+
+  <!-- Screenshots -->
+  <section id="screenshots" class="py-16">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="mb-8 flex items-center justify-between">
+        <h2 class="text-2xl sm:text-3xl font-semibold text-neon-accentOrange">Screenshots</h2>
+        <span class="text-sm text-slate-500">Placeholders — replace with your app images</span>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="p-3 rounded-2xl ring-2 ring-neon-accentPink bg-white dark:bg-neon-surfaceDark">
+          <div class="aspect-[9/19] w-full rounded-xl bg-neon-accentPink/20 grid place-items-center text-xs">iPhone — 1290×2796</div>
+          <p class="mt-3 text-sm text-neon-accentPink">Onboarding & Sign‑in</p>
+        </div>
+        <div class="p-3 rounded-2xl ring-2 ring-neon-accentOrange bg-white dark:bg-neon-surfaceDark">
+          <div class="aspect-[9/19] w-full rounded-xl bg-neon-accentOrange/20 grid place-items-center text-xs">iPhone — 1290×2796</div>
+          <p class="mt-3 text-sm text-neon-accentOrange">Market & Quotes</p>
+        </div>
+        <div class="p-3 rounded-2xl ring-2 ring-neon-accentYellow bg-white dark:bg-neon-surfaceDark">
+          <div class="aspect-[4/3] w-full rounded-xl bg-neon-accentYellow/20 grid place-items-center text-xs">iPad — 2048×1536</div>
+          <p class="mt-3 text-sm text-neon-accentYellow">Portfolio & Analytics</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="py-16 bg-white/50 dark:bg-neon-surfaceDark/30">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-2xl sm:text-3xl font-semibold mb-8 text-neon-accentPink">Highlights</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <article class="p-6 rounded-2xl ring-2 ring-neon-badgeGreen bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-badgeGreen">Google Sign‑in</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Secure Google OAuth 2.0 accounts with profile and session management.</p>
+        </article>
+        <article class="p-6 rounded-2xl ring-2 ring-neon-badgeOrange bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-badgeOrange">Market Data</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Stocks via Finnhub, crypto via CoinGecko, ETFs & indices with historical charts.</p>
+        </article>
+        <article class="p-6 rounded-2xl ring-2 ring-neon-badgeRed bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-badgeRed">Virtual Trading</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Start with $10,000 virtual cash, execute buy/sell orders, track P&L and diversification.</p>
+        </article>
+        <article class="p-6 rounded-2xl ring-2 ring-neon-badgeYellow bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-badgeYellow">Watchlists & Alerts</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Create personal watchlists, categories, and get price alerts.</p>
+        </article>
+        <article class="p-6 rounded-2xl ring-2 ring-neon-badgePink bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-badgePink">Achievements</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Unlock milestones, earn badges, and share progress.</p>
+        </article>
+        <article class="p-6 rounded-2xl ring-2 ring-neon-primary bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-primary">Analytics & Reports</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Performance charts, risk metrics, benchmarking (S&P 500, NASDAQ), and exports.</p>
+        </article>
+        <article class="p-6 rounded-2xl ring-2 ring-neon-accentOrange bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-accentOrange">Social & Leaderboards</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Compete globally, challenge friends, and share portfolios.</p>
+        </article>
+        <article class="p-6 rounded-2xl ring-2 ring-neon-accentPink bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-accentPink">Educational Content</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Interactive tutorials, strategy guides, news, and economic calendar.</p>
+        </article>
+        <article class="p-6 rounded-2xl ring-2 ring-neon-accentYellow bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold text-neon-accentYellow">Cross‑Device Sync</h3>
+          <p class="mt-2 text-sm text-neon-textMuted">Use it seamlessly across iPhone, iPad, and the web.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-20">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-3xl font-semibold text-center mb-12 text-neon-accentGreen">Frequently Asked Questions</h2>
+      <div class="max-w-3xl mx-auto space-y-3" id="accordion"></div>
+    </div>
+  </section>
+
+  <!-- Support -->
+  <section id="support" class="py-20 bg-white/50 dark:bg-neon-surfaceDark/30">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-3xl font-semibold text-center mb-12 text-neon-error">Need Help?</h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="p-6 rounded-2xl ring-2 ring-neon-accentPink bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold mb-4 text-neon-accentPink">Support</h3>
+          <p class="text-sm mb-4">Email us at <a class="underline" href="mailto:pradhancode@gmail.com">pradhancode@gmail.com</a>. Response within 1–2 business days.</p>
+          <form action="mailto:pradhancode@gmail.com" method="post" enctype="text/plain" class="grid gap-4 text-sm">
+            <input class="rounded-xl px-3 py-2 ring-1 ring-neon-strokeDark bg-white dark:bg-neon-bgDark" type="email" name="email" placeholder="you@example.com" required>
+            <input class="rounded-xl px-3 py-2 ring-1 ring-neon-strokeDark bg-white dark:bg-neon-bgDark" name="subject" placeholder="Subject" required>
+            <textarea class="rounded-xl px-3 py-2 ring-1 ring-neon-strokeDark bg-white dark:bg-neon-bgDark" rows="4" name="message" placeholder="Message..." required></textarea>
+            <button class="px-4 py-2 rounded-xl bg-neon-primary text-white hover:bg-neon-primaryDim">Send</button>
+          </form>
+        </div>
+        <div class="p-6 rounded-2xl ring-2 ring-neon-accentOrange bg-white dark:bg-neon-surfaceDark">
+          <h3 class="font-semibold mb-4 text-neon-accentOrange">Policies & Legal</h3>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#" class="underline text-neon-accentOrange">Terms of Use</a></li>
+            <li><a href="#" class="underline text-neon-accentOrange">Privacy Policy</a></li>
+            <li><a href="#" class="underline text-neon-accentOrange">Data Handling</a></li>
+          </ul>
+          <p class="mt-4 text-xs text-slate-500">Educational use only. No real money involved.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 border-t border-slate-200 dark:border-neon-strokeDark">
+    <div class="max-w-6xl mx-auto px-4 text-sm text-slate-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <p>© <span id="year"></span> Stox Trader • All rights reserved.</p>
+      <div class="flex gap-4">
+        <a class="underline text-neon-accentPink" href="https://github.com/TNeptune0330/stox-app" target="_blank">GitHub</a>
+        <a class="underline text-neon-accentYellow" href="#support">Support</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme toggle
+    const btn = document.getElementById('themeBtn');
+    const root = document.documentElement;
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      root.classList.add('dark');
+    }
+    btn.addEventListener('click', () => {
+      root.classList.toggle('dark');
+      localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    // Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // FAQ
+    const faqs = [
+      { q: 'Is Stox Trader free?', a: 'Yes, Stox Trader is completely free to use. All trades are simulated with virtual cash.' },
+      { q: 'Are stock prices real‑time?', a: 'Data may include standard exchange delays. Use them for practice only, not for real trading decisions.' },
+      { q: 'Do I need an account to use Stox Trader?', a: 'Yes. You sign in with your Google account so your portfolio and watchlists sync across devices.' },
+      { q: 'Will I lose my data if I reinstall?', a: 'No. All your data is tied to your Google login and will sync back after reinstall.' },
+      { q: 'How do I request a feature?', a: 'Send us an email with the subject “Feature Request.” We’d love to hear your ideas.' }
+    ];
+
+    const acc = document.getElementById('accordion');
+    faqs.forEach((item, idx) => {
