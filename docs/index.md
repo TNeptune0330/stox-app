@@ -275,9 +275,9 @@ Welcome to the support page for **Stox Trader** — a comprehensive stock market
 - **Professional Advice:** Consult financial advisors for actual investment decisions
 
 ### Terms & Policies
-- **Terms of Use:** [View our Terms](./terms.html)
-- **Privacy Policy:** [Read our Privacy Policy](./privacy.html)
-- **Data Policy:** [Understand our Data Handling](./privacy.html#data-handling)
+- **Terms of Use:** [View our Terms](./terms)
+- **Privacy Policy:** [Read our Privacy Policy](./privacy)
+- **Data Policy:** [Understand our Data Handling](./privacy#data-security-and-protection)
 
 ### Contact & Legal
 - **Support Email:** [pradhancode@gmail.com](mailto:pradhancode@gmail.com)

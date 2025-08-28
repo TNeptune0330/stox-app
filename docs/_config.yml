@@ -99,7 +99,7 @@ github:
 # google_analytics: GA_TRACKING_ID
 
 # Footer customization
-footer_content: "© 2025 Stox Trader. All rights reserved. | <a href='./privacy.html'>Privacy</a> | <a href='./terms.html'>Terms</a>"
+footer_content: "© 2025 Stox Trader. All rights reserved. | <a href='./privacy'>Privacy</a> | <a href='./terms'>Terms</a>"
 
 # Show excerpts on homepage
 show_excerpts: true

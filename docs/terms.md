@@ -104,7 +104,7 @@ For any content you create in the app:
 ## 6. Privacy and Data Protection
 
 ### Data Collection
-We collect and process information as described in our [Privacy Policy](./privacy.html):
+We collect and process information as described in our [Privacy Policy](./privacy):
 - **Account Information:** Name and email from your OAuth provider
 - **Usage Data:** How you interact with the app for improvement purposes
 - **Portfolio Data:** Your simulated trades and investment tracking
