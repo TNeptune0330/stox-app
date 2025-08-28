@@ -510,7 +510,7 @@ class AchievementProvider with ChangeNotifier {
     if (locked.isEmpty) return null;
     
     // Sort by progress and return the one closest to completion
-    locked.sort((a, b) => b.progress.compareTo(a.progress));
+    locked.sort((a, b) => b.currentProgress.compareTo(a.currentProgress));
     return locked.first;
   }
 
