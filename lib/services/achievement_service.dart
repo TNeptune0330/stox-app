@@ -81,7 +81,7 @@ class AchievementService {
   }
 
   // Get user's current trade count from database
-  Future<int?> getUserTradeCount(String userId) async {
+  Future<int> getUserTradeCount(String userId) async {
     return await _connectionManager.executeWithFallback<int>(
       () async {
         final response = await _supabase.rpc('get_user_trade_count', params: {
@@ -90,13 +90,13 @@ class AchievementService {
         
         _connectionManager.recordSuccess();
         print('✅ Retrieved trade count from database: $response');
-        return response as int?;
+        return (response as int?) ?? 0;
       },
       () async {
         print('📱 Network failure: Cannot retrieve trade count');
-        return null;
+        return 0;
       },
-    );
+    ) ?? 0;
   }
 
   // Sync trade achievements with database

@@ -319,8 +319,7 @@ class AchievementProvider with ChangeNotifier {
     
     try {
       // Get trade count from database using our SQL function
-      final response = await _achievementService.getUserTradeCount(_currentUserId!);
-      final tradeCount = response ?? 0;
+      final tradeCount = await _achievementService.getUserTradeCount(_currentUserId!);
       
       // Update all trade-based achievement progress
       await updateProgress('first_trade', tradeCount >= 1 ? 1 : 0);
