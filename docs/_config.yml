@@ -37,7 +37,7 @@ twitter:
   username: stoxtrader
   card: summary
 
-logo: /assets/images/stox-logo.png  # Add your logo if available
+logo: ./assets/images/stox-logo.png
 
 social:
   name: Stox Trader

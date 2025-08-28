@@ -11,7 +11,7 @@ This Privacy Policy describes how **Stox Trader** ("we", "us", "our", "the app")
 ## Information We Collect
 
 ### Account Information
-When you sign in with Google OAuth or Apple ID, we receive and store:
+When you sign in with Google OAuth, we receive and store:
 - **Name:** Your display name for in-app personalization
 - **Email Address:** For account identification and support communications
 - **Profile Picture:** Optional, for app personalization
@@ -71,7 +71,7 @@ We collect anonymous, aggregated data to improve the app:
 We work with trusted service providers who help us operate the app:
 
 **Authentication Providers:**
-- **Google/Apple:** Handle secure login and account verification
+- **Google:** Handles secure login and account verification
 - **Data Processing:** Only receive necessary profile information for account creation
 
 **Analytics and Monitoring:**

@@ -29,7 +29,7 @@ Stox Trader is a **stock market simulation application** designed for educationa
 
 ### Account Creation
 - **Accurate Information:** You must provide accurate and current information during registration
-- **OAuth Authentication:** Sign-in is handled through Google OAuth or Apple ID
+- **OAuth Authentication:** Sign-in is handled through Google OAuth
 - **Account Security:** You are responsible for maintaining the security of your account credentials
 - **Authorized Use:** You may not share your account or allow others to use it
 

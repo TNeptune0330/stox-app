@@ -19,8 +19,8 @@ Welcome to the support page for **Stox Trader** — a comprehensive stock market
 
 ### First Time Users
 1. **Download** Stox Trader from the App Store
-2. **Sign In** using Google OAuth or Apple ID
-3. **Start Trading** with $100,000 virtual currency
+2. **Sign In** using Google OAuth
+3. **Start Trading** with $10,000 virtual currency
 4. **Build Watchlists** of stocks you want to monitor
 5. **Explore Features** like portfolio analytics and achievements
 
@@ -41,8 +41,8 @@ Welcome to the support page for **Stox Trader** — a comprehensive stock market
 - **Check Internet Connection:** Ensure you have a stable internet connection
 - **Update App:** Make sure you're running the latest version from the App Store
 - **Clear App Cache:** Force close and reopen the app
-- **Provider Issues:** If using Google/Apple sign-in, check if those services are working
-- **Account Verification:** Ensure your Google/Apple account is verified and active
+- **Provider Issues:** If using Google sign-in, check if Google services are working
+- **Account Verification:** Ensure your Google account is verified and active
 
 #### Sign-In Keeps Failing
 - **Device Compatibility:** Ensure your device meets minimum requirements (iOS 13+ or Android 8+)
@@ -256,9 +256,8 @@ Welcome to the support page for **Stox Trader** — a comprehensive stock market
 ## Known Issues & Status
 
 ### Current Known Issues
-- **Market Data Delays:** Occasional 5-10 minute delays during high traffic
-- **iOS 18 Compatibility:** Minor UI adjustments needed for latest iOS
-- **Large Portfolio Performance:** Slight lag with 100+ holdings
+- **Market Data Delays:** Occasional delays during high traffic periods
+- **Large Portfolio Performance:** Slight lag with many holdings
 - **Weekend Data:** Some data sources have limited weekend coverage
 
 ### Service Status
@@ -266,11 +265,6 @@ Welcome to the support page for **Stox Trader** — a comprehensive stock market
 - **User Authentication:** ✅ Operational  
 - **Portfolio Sync:** ✅ Operational
 - **Mobile Apps:** ✅ Operational
-
-### Scheduled Maintenance
-- **Weekly:** Sundays 2-4 AM PST for database optimization
-- **Monthly:** First Saturday of each month for major updates
-- **Emergency:** Unscheduled maintenance announced via app notifications
 
 ## Legal & Compliance
 
