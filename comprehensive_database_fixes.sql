@@ -113,6 +113,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Enhanced achievement tracking and progress management
 -- ============================================================================
 
+-- Drop existing function if it exists (to handle signature changes)
+DROP FUNCTION IF EXISTS update_achievement_progress(UUID, TEXT, INTEGER, INTEGER, JSONB);
+DROP FUNCTION IF EXISTS update_achievement_progress(UUID, TEXT, INTEGER, INTEGER);
+
 -- Enhanced function to update achievement progress
 CREATE OR REPLACE FUNCTION update_achievement_progress(
   user_id_param UUID,
@@ -156,6 +160,10 @@ EXCEPTION
     RETURN QUERY SELECT FALSE::BOOLEAN, SQLERRM::TEXT;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop existing unlock function if it exists (to handle signature changes)
+DROP FUNCTION IF EXISTS unlock_achievement(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS unlock_achievement(UUID, TEXT);
 
 -- Enhanced function to unlock achievement
 CREATE OR REPLACE FUNCTION unlock_achievement(
